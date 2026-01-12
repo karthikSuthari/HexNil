@@ -1,0 +1,1493 @@
+================================================================================
+                         HEXNIL - OEM BATTERY INTELLIGENCE PLATFORM
+                              Complete Feature Documentation
+================================================================================
+
+Version: 2.0
+Platform: Android (minSdk 26+)
+Architecture: MVVM with Room Database + Foreground Service
+AI Engine: HexNil-AI (Deterministic Heuristic Intelligence)
+
+================================================================================
+                              TABLE OF CONTENTS
+================================================================================
+
+1.  Battery Health & Degradation Analysis
+2.  Charging Behavior & Safety Validation
+3.  Thermal Monitoring & Battery Heating Intelligence
+4.  Battery Drain Root-Cause Analysis (AI-Driven)
+5.  Idle Drain & Standby Power Leakage Detection
+6.  Battery Performance Before & After Updates
+7.  Battery Stress & Load Testing
+8.  Battery Protection & Abuse Detection
+9.  Battery Calibration & Accuracy Testing
+10. AI Battery Advisor (HexNil-AI)
+11. Battery Reports & OEM Dashboards
+12. Compliance & Certification Support
+
+================================================================================
+                    MODULE 1: BATTERY HEALTH & DEGRADATION ANALYSIS
+================================================================================
+
+Purpose: Detect long-term battery wear before devices reach users.
+
+Implementation Files:
+- Manager: BatteryHealthManager.java
+- Model: BatteryHealth.java
+- DAO: BatteryHealthDao.java
+- UI: HealthFragment.java
+
+FEATURES:
+
+1.1 Real Battery Health Estimation
+    - Goes beyond Android's basic percentage
+    - Uses charge counter data (BATTERY_PROPERTY_CHARGE_COUNTER)
+    - Calculates actual mAh capacity vs design capacity
+    - Formula: healthPct = (currentCapacity / designCapacity) * 100
+
+1.2 Capacity Fade Tracking
+    - Monitors design capacity vs actual capacity over time
+    - Tracks capacity fade percentage: capacityFade = 100 - healthPct
+    - Records estimatedCapacityMah from discharge cycles
+    - Uses 72-hour discharge window for capacity estimation
+
+1.3 Cycle Count Estimation
+    - Calculates charge cycle equivalents from total charge/discharge
+    - Formula: cycleEquivalents = totalChargeAccumulated / designCapacity
+    - Tracks both partial and full cycles
+    - 7-day rolling window for cycle calculation
+
+1.4 Battery Aging Model
+    - Degradation rate per month (fadePerMonth)
+    - Degradation per 100 cycles (fadePer100Cycles)
+    - Degradation trend classification: "stable", "gradual", "accelerating"
+    - Predicted End-of-Life (EOL) in months when health drops below 80%
+
+1.5 Early Detection of Abnormal Degradation
+    - hasAbnormalWear: Flags when health < 80% or degradation > 5%/month
+    - hasAbnormalAging: Flags when fade > 3% per 100 cycles
+    - hasSwellingRisk: High temp during non-charging indicates swelling
+    - hasCalibrationIssue: >10% mismatch between reported and actual level
+
+1.6 Supplier/Batch Quality Tracking
+    - Stores batteryModel, manufacturer, batchId
+    - Calculates supplierAverageHealth across all devices
+    - Calculates batchAverageHealth for batch comparison
+    - Enables OEM to catch bad battery batches
+
+SCORING SYSTEM:
+- capacityScore: Based on health percentage (0-100)
+- resistanceScore: Based on internal resistance (60-100)
+- cycleScore: Based on cycle count vs 800 cycle baseline (0-100)
+- overallScore: (capacityScore * 0.6) + (cycleScore * 0.3) + (resistanceScore * 0.1)
+
+OEM VALUE:
+- Catch bad battery batches early
+- Validate supplier quality
+- Predict warranty risks
+- Data-driven supplier negotiations
+
+================================================================================
+                    MODULE 2: CHARGING BEHAVIOR & SAFETY VALIDATION
+================================================================================
+
+Purpose: Ensure charging logic is safe, stable, and optimized.
+
+Implementation Files:
+- Manager: ChargingAnalyzer.java
+- Model: ChargingSession.java
+- DAO: ChargingSessionDao.java
+- UI: ChargingFragment.java
+
+FEATURES:
+
+2.1 Charging Speed Detection
+    - Classifies: Slow (<1A), Normal (1-2A), Fast (>2A)
+    - Detects isFastCharging flag from system
+    - Calculates chargingSpeed: chargedAmount / hours
+    - Tracks charging rate in %/hour
+
+2.2 Charging Curve Validation
+    - Records voltage curve (voltageCurve JSON)
+    - Records current curve (currentCurve JSON)
+    - Tracks avgVoltage, maxVoltage, minVoltage
+    - Tracks avgCurrent, maxCurrent, minCurrent
+    - Monitors charging efficiency: (chargedAmount * 10) / energyDelivered
+
+2.3 Over-Current & Over-Voltage Detection
+    - Over-current threshold: >2500mA triggers overCurrentEvents counter
+    - Over-voltage threshold: >4450mV triggers overVoltageEvents counter
+    - Over-temperature threshold: >44°C triggers overTempEvents counter
+    - Real-time safety status evaluation
+
+2.4 Charger Type Recognition
+    - Generates chargerFingerprint: vendorId:productId
+    - Classifies chargerQuality: "fast", "normal"
+    - Detects USB type and charging source
+    - Identifies OEM vs third-party chargers
+
+2.5 Charging Interruption & Fluctuation Logs
+    - Tracks currentFluctuations: >500mA change between samples
+    - Tracks voltageFluctuations: >80mV change between samples
+    - Records interruptionTimestamps and interruptionDurations
+    - Calculates interruption count and patterns
+
+SAFETY EVALUATION:
+- safetyStatus: "safe", "warning", "critical"
+- safetyNotes: Contextual notes about safety concerns
+- Real-time evaluation during charging
+
+SESSION METRICS:
+- startTime, endTime, chargingDuration
+- startLevel, endLevel, chargedAmount
+- startTemperature, endTemperature, maxTemperature, avgTemperature
+- energyDelivered (mWh accumulated)
+
+OEM VALUE:
+- Prevent charging-related explosions
+- Optimize fast-charging firmware
+- Detect incompatibility with third-party chargers
+- Validate charging IC behavior
+
+================================================================================
+                MODULE 3: THERMAL MONITORING & BATTERY HEATING INTELLIGENCE
+================================================================================
+
+Purpose: Detect heating issues caused by battery, apps, or firmware.
+
+Implementation Files:
+- Manager: ThermalMonitor.java
+- Models: ThermalEvent.java, ThermalHeatBucket.java
+- DAOs: ThermalEventDao.java, ThermalHeatBucketDao.java
+- UI: ThermalFragment.java
+
+FEATURES:
+
+3.1 Real-Time Battery Temperature Tracking
+    - Continuous monitoring via BatteryManager
+    - Temperature in tenths of degrees (converted to Celsius)
+    - Sample interval: 30s charging, 60s normal
+
+3.2 Temperature Spike Detection
+    - WARNING threshold: 42°C
+    - CRITICAL threshold: 45°C
+    - Creates ThermalEvent on threshold breach
+    - Tracks spike duration and peak temperature
+
+3.3 Correlation: Battery Heat vs CPU/GPU Load
+    - Records cpuUsage during thermal events
+    - Records gpuUsage during thermal events
+    - Tracks foregroundApp causing heat
+    - Captures screenOn state and networkType
+
+3.4 Thermal Threshold Violation Alerts
+    - eventType: "spike", "threshold_violation", "sustained_high"
+    - severity: "normal", "warning", "critical"
+    - Sustained high: >2 minutes above threshold
+    - Records temperatureRise from baseline
+
+3.5 Heat Map Over Time (ThermalHeatBucket)
+    - Aggregates by temperature buckets: "<35", "35-40", "40-45", ">45"
+    - Groups by hourBlock (0-23)
+    - Tracks durationMs in each bucket
+    - Records maxTemp, avgTemp, sampleCount
+    - Identifies topForegroundApp per bucket
+
+THERMAL EVENT FIELDS:
+- timestamp, duration, cooldownTime
+- batteryTemp, cpuTemp, ambientTemp
+- peakTemperature, temperatureRise
+- triggerActivity, resolution
+- currentDraw, batteryLevel
+
+OEM VALUE:
+- Fix heating complaints before launch
+- Validate thermal design
+- Improve battery longevity
+- Correlate app behavior with thermal issues
+
+================================================================================
+                MODULE 4: BATTERY DRAIN ROOT-CAUSE ANALYSIS (AI-DRIVEN)
+================================================================================
+
+Purpose: Identify why battery drains faster than expected.
+
+Implementation Files:
+- Managers: DrainAnalyzer.java, AppDrainRanker.java, AppUsageCollector.java
+- Models: DrainEvent.java, AppBatteryUsage.java, AppDrainRank.java
+- DAOs: DrainEventDao.java, AppBatteryUsageDao.java, AppDrainRankDao.java
+- UI: DrainFragment.java
+
+FEATURES:
+
+4.1 App-Wise Battery Drain Ranking
+    - Collects per-app usage via UsageStatsManager
+    - Computes drainScore per app:
+      drainScore = drain + (screenTime * 1.0) + (fgTime * 0.7) + (bgTime * 0.4) + (wakelock * 0.3)
+    - Ranks top 5 apps by contribution
+    - Calculates contributionPct for each app
+
+4.2 System App vs User App Comparison
+    - Separates system apps from user-installed
+    - Tracks systemPct vs userPct attribution
+    - Identifies misbehaving pre-installed apps
+
+4.3 Background Wake-Lock Detection
+    - Tracks partialWakelockTime per app
+    - Records wakelockCount
+    - Calculates wakelock contribution to drain
+    - Flags excessive background activity
+
+4.4 Network Drain Analysis
+    - networkType: "mobile", "wifi", "none"
+    - networkDrainEstimate: 40% of drain for mobile, 20% for wifi
+    - Correlates network state with drain rate
+
+4.5 Screen-On vs Screen-Off Drain Analysis
+    - Separate tracking for screenOn events
+    - Calculates screenOnTime per drain event
+    - displayDrainEstimate: (brightness/255) * drainRate
+    - cpuDrainEstimate: (cpuLoad/100) * drainRate
+
+DRAIN EVENT CLASSIFICATION:
+- drainType: "heavy", "normal", "idle", "standby"
+- drainCategory: "display", "system", "idle"
+- expectedDrain vs actual (anomaly detection)
+- anomalyScore: (actual - expected) / expected
+
+DRAIN METRICS:
+- startLevel, endLevel, drainAmount
+- drainRatePerHour
+- primaryCause (top app/process)
+- recommendations for excessive drain
+
+OEM VALUE:
+- Optimize system apps
+- Detect misbehaving pre-installed apps
+- Improve standby time benchmarks
+- Data-driven app optimization
+
+================================================================================
+                MODULE 5: IDLE DRAIN & STANDBY POWER LEAKAGE DETECTION
+================================================================================
+
+Purpose: Ensure minimal battery loss when phone is idle.
+
+Implementation Files:
+- Manager: IdleDrainAnalyzer.java
+- Model: IdleDrainSession.java
+- DAO: IdleDrainSessionDao.java
+- UI: IdleFragment.java
+
+FEATURES:
+
+5.1 Deep Sleep Success Rate
+    - Tracks deepSleepPercentage: time in doze / total idle time
+    - deepSleepSuccessRate: ratio of successful deep sleep
+    - Monitors dozeEntryTime and dozeExitTime
+
+5.2 Idle Drain Per Hour
+    - drainPerHour: drainAmount / durationHours
+    - Benchmarking:
+      * Excellent: <0.3%/hr
+      * Good: 0.3-0.5%/hr
+      * Fair: 0.5-1.0%/hr
+      * Poor: 1.0-2.0%/hr
+      * Failing: >2.0%/hr
+
+5.3 Doze Mode Effectiveness Validation
+    - dozeEffectiveness: 100 - (drainPerHour * 200)
+    - dozeEffectivenessScore (0-100)
+    - Tracks dozeActive state
+    - sessionType: "deep_doze" or "idle"
+
+5.4 Background Service Leakage Detection
+    - hasLeakage: drainPerHour > 1.0 or wakeups > 3
+    - leakageSources: "alarms/network"
+    - leakageClass: "NORMAL", "WARNING", "LEAK"
+    - Classification based on:
+      * Drain rate
+      * Deep sleep rate
+      * Wakeup count
+
+5.5 Wake-Up Tracking
+    - alarmWakeups: Count of alarm-triggered wakes
+    - networkWakeups: Count of network-triggered wakes
+    - Total wakeup impact on idle drain
+
+IDLE SESSION FIELDS:
+- startTime, endTime, startLevel, endLevel
+- drainAmount, drainPerHour
+- expectedDrain (0.5%/hr baseline)
+- drainDelta: actual - expected
+- recommendations
+
+OEM VALUE:
+- Meet standby benchmarks
+- Catch firmware bugs
+- Improve real-world battery life claims
+- Validate doze implementation
+
+================================================================================
+                MODULE 6: BATTERY PERFORMANCE BEFORE & AFTER UPDATES
+================================================================================
+
+Purpose: Validate OTA updates don't degrade battery.
+
+Implementation Files:
+- Manager: UpdateComparisonManager.java
+- Model: UpdateComparison.java
+- DAO: MiscDao.java
+- UI: (Integrated in Dashboard/Reports)
+
+FEATURES:
+
+6.1 Pre-Update vs Post-Update Comparison
+    - 7-day window before and after update
+    - Compares: drain rates, charging times, temperatures
+    - Tracks previousVersion and currentVersion
+    - updateType: "major", "minor", "security", "unknown"
+
+6.2 Drain Rate Comparison
+    - preAvgDrainScreenOn vs postAvgDrainScreenOn
+    - preAvgDrainScreenOff vs postAvgDrainScreenOff
+    - preDrainRate vs postDrainRate
+    - preIdleDrain vs postIdleDrain
+    - Calculates deltas for each metric
+
+6.3 Charging Time Changes
+    - preAvgChargingTime vs postAvgChargingTime
+    - chargingTimeChange delta
+    - Detects regression in charging speed
+
+6.4 Thermal Behavior Changes
+    - preAvgTemperature vs postAvgTemperature
+    - preMaxTemperature vs postMaxTemperature
+    - thermalAvgChange, thermalPeakChange
+
+6.5 AI Verdict System
+    - overallImpact: "improved", "neutral", "degraded"
+    - impactScore: Weighted calculation
+    - confidenceLevel: Based on sample count
+    - recommendation: Action items for OEM
+
+VERDICT SCORING:
+- score -= drainRateChange * 2.0
+- score -= idleDrainChange * 1.5
+- score -= chargingTimeChange * 1.0
+- score -= thermalPeakChange * 1.0
+- Thresholds: REGRESSION > 10%, IMPROVEMENT < -5%
+
+DAILY SERIES:
+- Builds daily data points for charts
+- preSeriesJson, postSeriesJson
+- Enables timeline visualization
+
+OEM VALUE:
+- Prevent update backlash
+- Data-driven OTA approval
+- Rollback decision support
+- Track firmware quality over time
+
+================================================================================
+                    MODULE 7: BATTERY STRESS & LOAD TESTING
+================================================================================
+
+Purpose: Simulate extreme real-world usage.
+
+Implementation Files:
+- Manager: StressTestManager.java
+- Model: StressTestResult.java
+- DAO: MiscDao.java
+- UI: (Test launcher in Settings/Reports)
+
+FEATURES:
+
+7.1 Heavy Gaming Drain Simulation
+    - testType: "gaming"
+    - Parameters: GPU+CPU load, WiFi network, 80% brightness
+    - Baseline drain: 18%/hr
+    - Measures actual vs baseline variance
+
+7.2 Camera + GPS + Network Stress Test
+    - testType: "camera_gps_network"
+    - Parameters: camera active, GPS on, cell+wifi
+    - Baseline drain: 15%/hr
+    - Simulates navigation/recording scenarios
+
+7.3 Continuous Charging Stress Test
+    - testType: "charging"
+    - Parameters: fast charger, screen off
+    - Tracks chargingInterruptions
+    - Monitors charging stability score
+
+7.4 High-Temperature Environment Simulation
+    - testType: "thermal"
+    - Parameters: hot environment, mixed load
+    - highTemperatureScenario flag
+    - Tests thermal throttling behavior
+
+STRESS TEST METRICS:
+- testDurationMinutes (configurable)
+- startLevel, endLevel, drainAmount, drainRate
+- startTemperature, maxTemperature, endTemperature, avgTemperature
+- thermalThrottleEvents, thermalThrottleTime
+- avgCpuUsage, maxCpuUsage, avgGpuUsage, maxGpuUsage
+- avgMemoryUsage, maxMemoryUsage
+
+STABILITY METRICS:
+- testCompleted: Boolean
+- crashCount, restartCount, errorCount
+- failureReasons
+- safetyTriggerCount, safetyNotes
+
+SCORING SYSTEM:
+- drainScore: Lower drain = higher score (0-100)
+- thermalScore: Lower temp = higher score (0-100)
+- thermalResilienceScore: Combines temp + throttle penalty
+- stabilityScore: Based on crashes/errors
+- chargingStabilityScore: Interruptions + thermal
+- overallScore: Weighted average (30% drain, 30% thermal, 20% stability, 20% charging)
+
+VERDICT:
+- Pass: overallScore >= 80
+- Marginal: overallScore >= 60
+- Fail: overallScore < 60
+- verdictDetails: Explanation
+
+OEM VALUE:
+- Validate flagship claims
+- Identify extreme-case failures
+- Improve durability score
+- Pre-launch stress validation
+
+================================================================================
+                    MODULE 8: BATTERY PROTECTION & ABUSE DETECTION
+================================================================================
+
+Purpose: Detect dangerous or abnormal usage.
+
+Implementation Files:
+- Managers: SafetyMonitor.java, ProtectionManager.java
+- Model: SafetyEvent.java
+- DAO: SafetyEventDao.java
+- UI: SafetyFragment.java
+
+FEATURES:
+
+8.1 Over-Discharge Detection
+    - Threshold: Battery level <= 10%
+    - Tracks overDischargeEvents count
+    - 30-minute cooldown between events
+    - Creates SafetyEvent with severity
+
+8.2 Repeated Fast-Charge Abuse Detection
+    - Flags: isFastCharging + (current > 2500mA OR temp > 44°C)
+    - Counts fastChargeAbuse events
+    - Triggers report after 3+ abuse events
+    - 6-hour cooldown between reports
+
+8.3 Battery Swelling Risk Indicators
+    - Checks latestHealth.hasSwellingRisk
+    - Also triggers if capacityFade > 20%
+    - High temperature during idle = swelling indicator
+    - Combined with health data for accuracy
+
+8.4 Unsafe Temperature Exposure Logging
+    - Over-temp threshold: >= 45°C
+    - Records batteryTemperature and thresholdValue
+    - Severity: "warning" (45-48°C), "critical" (>48°C)
+    - Logs measurementUnit and triggerValue
+
+SAFETY EVENT TYPES:
+- over_temp: Temperature exceeded threshold
+- over_voltage: Voltage exceeded 4500mV
+- over_current: Current exceeded 2500mA
+- over_discharge: Battery critically low
+
+SAFETY EVENT FIELDS:
+- timestamp, eventType, severity
+- batteryLevel, wasCharging, chargingType
+- batteryTemperature, voltage, current
+- thresholdValue, triggerValue, measurementUnit
+- expectedVoltage, expectedCurrent
+
+PROTECTION REPORT:
+- Weekly assessment via assessWindow()
+- Tracks: fastAbuseCount, overDischargeCount, swelling
+- safetyViolations summary string
+- safetyScore: 100 - (violations * 10)
+- certificationReadiness: 100 - (violations * 8)
+
+OEM VALUE:
+- Reduce safety incidents
+- Improve battery protection logic
+- Legal & compliance support
+- Early warning system for recalls
+
+================================================================================
+                MODULE 9: BATTERY CALIBRATION & ACCURACY TESTING
+================================================================================
+
+Purpose: Ensure battery percentage shown is accurate.
+
+Implementation Files:
+- Manager: CalibrationManager.java
+- Model: CalibrationData.java
+- DAO: MiscDao.java
+- UI: CalibrationFragment.java
+
+FEATURES:
+
+9.1 Battery Percentage Drift Detection
+    - Compares reportedLevel vs estimatedActualLevel
+    - levelDrift = estimatedActualLevel - reportedLevel
+    - driftDirection: "under_reporting", "over_reporting", "stable"
+    - Tracks avgDrift and maxDrift over time
+
+9.2 Calibration Recommendation Engine
+    - needsCalibration: |drift| > 8% or hasSuddenDrops
+    - calibrationRecommendation: "Discharge to 5% then charge to 100%"
+    - calibrationSchedule: "Run calibration this week" or "Recheck monthly"
+    - daysSinceCalibration tracking
+
+9.3 Sudden Drop Issue Detection
+    - Detects: >= 5% drop in <= 15 minutes
+    - suddenDropCount counter
+    - avgDropSize, worstDrop metrics
+    - hasSuddenDrops flag
+
+9.4 AI-Based SOC (State of Charge) Correction
+    - correctedSoc: reportedLevel + levelDrift
+    - correctionConfidence (0-100%)
+    - Based on: recency, drift penalty, drop penalty, sample count, trend
+    - Formula: 30 + sampleScore + trendBonus - driftPenalty - dropPenalty
+
+CALIBRATION METRICS:
+- reportedLevel, estimatedActualLevel
+- levelDrift, driftExceeded (|drift| > 8)
+- socMismatch (|drift| > 5)
+- socAccuracy: 100 - |drift|
+- calibrationQuality: 100 - (|drift| * 2) - (drops * 5)
+
+CALIBRATION TRACKING:
+- lastFullCharge, lastLowBattery, lastDeepDischarge
+- fullChargeCount, deepDischargeCount
+- lastCalibration timestamp
+- isCalibrated: quality >= 70 and no sudden drops
+
+HEALTH IMPACT:
+- healthImpactScore: |drift| * 0.5 + drops * 2
+- Affects overall device reliability score
+
+OEM VALUE:
+- Prevent user trust issues
+- Improve UX accuracy
+- Reduce service center complaints
+- Identify fuel gauge IC issues
+
+================================================================================
+                    MODULE 10: AI BATTERY ADVISOR (HEXNIL-AI)
+================================================================================
+
+Purpose: Central intelligence for battery decisions.
+
+Implementation Files:
+- Manager: HexNilAI.java
+- Supporting: IssueClassifier.java, TrendAnalyzer.java, RecommendationEngine.java,
+              RiskEvaluator.java, MetricsRollupManager.java
+- Model: AIAnalysisResult.java, RollupMetrics.java
+- DAO: MiscDao.java
+- UI: AiAnalysisFragment.java
+
+FEATURES:
+
+10.1 Automatic Battery Issue Classification
+    - IssueClassifier analyzes all data sources
+    - issuesDetected: Boolean flag
+    - issueCount: Number of active issues
+    - detectedIssues: JSON array of issues
+    - issueCategory: firmware/app/hardware
+
+10.2 Root-Cause Explanation
+    - rootCause: Primary source of problems
+    - rootCauseExplanation: Detailed analysis
+    - contributingFactors: JSON array of factors
+    - issueConfidence: 0-1.0 confidence score
+
+10.3 Fix Recommendations for Engineers
+    - recommendations: JSON of actionable items
+    - primaryRecommendation: Top priority fix
+    - engineerActions: Technical fixes
+    - userActions: User-facing suggestions
+
+10.4 Risk Severity Scoring
+    - riskScore: 0-100 (combined from all sources)
+    - Components:
+      * Base risk from RollupMetrics
+      * +15-30 for degraded OTA updates
+      * +12 for drift exceeded
+      * +8 for sudden drops
+      * +5 for needs calibration
+      * +10 for health < 80%
+      * +8 for fade > 5% per 100 cycles
+      * +5 for cycles > 500
+    - severity: "low", "medium", "high", "critical"
+    - urgency: Based on risk thresholds
+
+10.5 OEM-Friendly Diagnostic Reports
+    - executiveSummary: One-line overview
+    - technicalSummary: Detailed metrics
+    - oemReportData: Structured data for OEM systems
+
+TREND ANALYSIS:
+- trend: "improving", "stable", "degrading"
+- trendSlope: Rate of change
+- trendPrediction: Future outlook
+
+SCORING BREAKDOWN:
+- overallBatteryScore: 100 - riskScore
+- healthScore: From RollupMetrics
+- performanceScore: 100 - (trendSlope * 5)
+- safetyScore: Based on temp/fast-charge abuse
+- reliabilityScore: Based on degradation trend
+
+COMPREHENSIVE ANALYSIS:
+- runComprehensiveAnalysis(periodLabel, startTime)
+- Combines all 11 other modules
+- Returns AIAnalysisResult with full diagnosis
+- Persists to database for historical tracking
+
+OEM VALUE:
+- Faster debugging
+- Reduced manual testing
+- Intelligent decision-making
+- Automated QA insights
+
+================================================================================
+                    MODULE 11: BATTERY REPORTS & OEM DASHBOARDS
+================================================================================
+
+Purpose: Enterprise-level visibility.
+
+Implementation Files:
+- Managers: ReportGenerator.java, PDFReportBuilder.java, CSVExporter.java,
+            OEMDashboardData.java, ChartDataProvider.java, DashboardDataProvider.java
+- UI: ReportsFragment.java, DashboardFragment.java
+- Export: ReportExporter.java
+
+FEATURES:
+
+11.1 Device-Wise Battery Score
+    - overallBatteryScore per device
+    - Aggregated from all analysis modules
+    - Historical tracking over time
+
+11.2 Model-Wise Comparison
+    - OEMDashboardData aggregates across devices
+    - averageHealth, averageScreenOnDrain, averageScreenOffDrain
+    - averagePeakTemp, criticalSafetyEvents
+    - totalSnapshots for data quality
+
+11.3 Supplier-Wise Battery Performance
+    - BatteryHealth tracks: manufacturer, batchId
+    - supplierAverageHealth: Aggregate by supplier
+    - batchAverageHealth: Aggregate by batch
+    - Enables supplier quality comparison
+
+11.4 Exportable Reports (PDF/CSV)
+    
+    PDF Reports (PDFReportBuilder):
+    - buildAnalysisPdf(): AI analysis summary
+    - buildCompliancePdf(): Compliance report
+    - Includes: severity, risk, issues, recommendations
+    - Executive summary for leadership
+    
+    CSV Reports (CSVExporter):
+    - buildAnalysisCsv(): Analysis data export
+    - buildComplianceCsv(): Compliance data export
+    - Headers + data rows for spreadsheet analysis
+    - Fields: timestamp, severity, risk, issues, scores
+
+11.5 Timeline Graphs for Executives
+    - ChartDataProvider: Time-series data
+    - Daily aggregations for trends
+    - Pre/post update comparison series
+    - Heat bucket distributions
+
+REPORT GENERATOR:
+- runDailyAnalysis(): 24-hour analysis
+- buildDailyPdfReport(): PDF output
+- buildDailyCsvSummary(): CSV output
+
+DASHBOARD DATA:
+- Real-time metrics aggregation
+- Period-based filtering
+- OEM-specific data structures
+
+OEM VALUE:
+- Executive reporting
+- Manufacturing quality tracking
+- Data-backed decisions
+- Supplier negotiations support
+
+================================================================================
+                MODULE 12: COMPLIANCE & CERTIFICATION SUPPORT
+================================================================================
+
+Purpose: Support regulatory and safety standards.
+
+Implementation Files:
+- Managers: ComplianceReportGenerator.java, ComplianceMatrixBuilder.java
+- Models: ComplianceReport.java, ComplianceEvidence.java
+- DAOs: ComplianceEvidenceDao.java, MiscDao.java
+- UI: ComplianceFragment.java
+
+FEATURES:
+
+12.1 Battery Safety Threshold Validation
+    - Over-current: Warning 2500mA, Critical 3000mA
+    - Over-voltage: Warning 4450mV
+    - Over-temp: Warning 43°C, Critical 46°C
+    - Creates ComplianceEvidence for each violation
+
+12.2 Charging Compliance Logs
+    - Tracks charging.over_current events
+    - Tracks charging.over_voltage events
+    - Tracks charging.over_temp events
+    - Links to ChargingSession source data
+
+12.3 Thermal Safety Audit Trails
+    - thermal.critical_temp rule monitoring
+    - Links to ThermalEvent source data
+    - Records peakTemperature vs threshold
+    - Severity classification per event
+
+12.4 Certification-Ready Reports
+    - ComplianceReport with full compliance matrix
+    - Standards support: IEC 62133, UL 2054, UN 38.3
+    - certificationReadiness score (0-100%)
+    - certificationGaps: What's missing
+    - certificationRecommendations
+
+COMPLIANCE RULES (CORE_RULES):
+- safety.over_current
+- safety.over_voltage
+- safety.over_temp
+- safety.over_discharge
+- thermal.critical_temp
+- charging.over_current
+- charging.over_voltage
+- charging.over_temp
+
+COMPLIANCE STATUS:
+- PASS: No violations
+- ATTENTION: Minor violations
+- FAIL: Critical violations
+
+COMPLIANCE EVIDENCE:
+- ruleId: Which rule was evaluated
+- timestamp: When violation occurred
+- metricValue: Actual measured value
+- thresholdValue: Limit that was exceeded
+- sourceModule: Which module detected it
+- sourceEventId: Link to original event
+- severity: warning/critical
+- category: safety/thermal/charging
+- notes: Additional context
+
+COMPLIANCE REPORT FIELDS:
+- safetyCompliant, tempCompliant, voltageCompliant, currentCompliant
+- safetyViolationCount, tempViolationCount, voltageViolationCount, currentViolationCount
+- safetyScore (0-100)
+- complianceMatrix: JSON of rule statuses
+- certificationReadiness (0-100%)
+- reviewStatus: "approved", "attention", "rejected"
+- reviewNotes
+- evidenceCount, evidenceIds, evidenceSummary
+
+PROTECTION VALIDATION:
+- overDischargeProtectionWorking
+- overchargeProtectionWorking
+- thermalProtectionWorking
+- thermalShutdownEvents, thermalThrottleEvents
+
+OEM VALUE:
+- Faster certifications
+- Reduced compliance risk
+- Legal documentation support
+- Audit-ready evidence trails
+
+================================================================================
+                         SUPPORTING INFRASTRUCTURE
+================================================================================
+
+BACKGROUND SERVICE:
+- BatteryMonitorService.java (Foreground Service)
+- Continuous monitoring with wake lock
+- Intervals: 30s charging, 60s normal, 30s low battery
+- Handles: BATTERY_CHANGED, POWER_CONNECTED/DISCONNECTED, BATTERY_LOW/OKAY
+
+DATA COLLECTION:
+- BatteryDataCollector.java
+- Collects from BatteryManager, UsageStatsManager
+- Creates BatterySnapshot with 50+ fields
+
+DATABASE (Room):
+- HexNilDatabase.java
+- 12 DAO interfaces
+- 17 Entity models
+- Automatic migration support
+
+BROADCAST RECEIVERS:
+- BatteryReceiver.java: Battery state changes
+- BootReceiver.java: Start service on boot
+
+NETWORK:
+- AppwriteClientProvider.java: Backend connectivity
+- AppwriteFunctionCaller.java: Serverless function calls
+
+================================================================================
+                         DATABASE ARCHITECTURE (DETAILED)
+================================================================================
+
+Database Type: Room (SQLite abstraction layer for Android)
+Database Name: hexnil_battery_db
+Current Version: 11
+Export Schema: true
+
+Implementation File: HexNilDatabase.java
+Location: app/src/main/java/com/example/hexnil/database/
+
+--------------------------------------------------------------------------------
+                              ENTITY TABLES (17)
+--------------------------------------------------------------------------------
+
+1. battery_snapshots
+   - Primary data collection table
+   - 50+ fields per snapshot
+   - Key Fields: id, timestamp, level, temperature, voltage, current,
+                 isCharging, isFastCharging, chargingType, health, status,
+                 plugged, technology, chargeCounter, energyCounter, capacity,
+                 designCapacity, screenOn, isDozeMode, foregroundApp,
+                 cpuUsage, dischargeRate, chargeRate, cpuLoadTotal,
+                 topAppPackage, gpuLoad, networkState, chargerVendorId,
+                 chargerProductId, voltageSamplesJson, currentSamplesJson
+
+2. battery_health
+   - Long-term health tracking
+   - Key Fields: id, timestamp, designCapacityMah, currentCapacityMah,
+                 estimatedCapacityMah, healthPercentage, capacityFade,
+                 capacityFadePercent, cycleCount, estimatedCycles,
+                 totalChargeAccumulated, totalDischargeAccumulated,
+                 internalResistance, degradationRate, degradationTrend,
+                 fadePer100Cycles, fadePerMonth, hasAbnormalWear,
+                 hasAbnormalAging, hasSwellingRisk, hasCalibrationIssue,
+                 agingNotes, predictedEOL, capacityScore, resistanceScore,
+                 cycleScore, overallScore, batteryModel, manufacturer,
+                 batchId, supplierAverageHealth, batchAverageHealth,
+                 lastFullCharge, lastFullDischarge, needsCalibration
+
+3. charging_sessions
+   - Complete charging cycle records
+   - Key Fields: id, startTime, endTime, chargingDuration, startLevel, endLevel,
+                 chargedAmount, startTemperature, endTemperature, maxTemperature,
+                 avgTemperature, maxCurrent, minCurrent, avgCurrent, maxVoltage,
+                 minVoltage, avgVoltage, energyDelivered, chargingSpeed,
+                 chargingType, isFastCharging, chargingEfficiency,
+                 chargerFingerprint, chargerQuality, safetyStatus, safetyNotes,
+                 overCurrentEvents, overVoltageEvents, overTempEvents,
+                 currentFluctuations, voltageFluctuations, voltageCurveJson,
+                 currentCurveJson, curveSampleIntervalMs, curveStabilityScore,
+                 interruptionCount, interruptionTimestamps, interruptionDurations
+
+4. thermal_events
+   - Temperature anomaly records
+   - Key Fields: id, timestamp, duration, cooldownTime, eventType, severity,
+                 batteryTemp, cpuTemp, ambientTemp, peakTemperature,
+                 temperatureRise, foregroundApp, cpuUsage, gpuUsage,
+                 isCharging, screenOn, batteryLevel, currentDraw,
+                 networkType, triggerActivity, resolution
+
+5. thermal_heat_buckets
+   - Aggregated heat map data
+   - Key Fields: id, startTime, endTime, tempBucket, hourBlock, sampleCount,
+                 durationMs, chargingCount, topForegroundApp, maxTemp, avgTemp
+
+6. drain_events
+   - Discharge period tracking
+   - Key Fields: id, startTime, endTime, startLevel, endLevel, drainAmount,
+                 drainRatePerHour, screenOn, foregroundApp, isCharging,
+                 drainType, drainCategory, isIdle, screenState, primaryCause,
+                 networkType, networkDrainEstimate, displayDrainEstimate,
+                 cpuDrainEstimate, avgBrightness, screenOnTime, isAnomalous,
+                 expectedDrain, anomalyScore, analysisNotes, recommendations
+
+7. idle_drain_sessions
+   - Standby drain analysis
+   - Key Fields: id, startTime, endTime, startLevel, endLevel, drainAmount,
+                 drainPerHour, wasScreenOff, wasUnplugged, dozeActive,
+                 deepSleepPercentage, dozeEffectiveness, sessionType,
+                 expectedDrain, drainDelta, hasLeakage, leakageSources,
+                 benchmarkResult, recommendations, dozeEntryTime, dozeExitTime,
+                 alarmWakeups, networkWakeups, deepSleepSuccessRate,
+                 dozeEffectivenessScore, leakageClass
+
+8. app_battery_usage
+   - Per-app usage statistics
+   - Key Fields: id, timestamp, periodStart, periodEnd, packageName,
+                 foregroundTime, backgroundTime, screenOnTimeMs,
+                 foregroundTimeMs, backgroundTimeMs, networkBytes,
+                 wakelockTime, wakelockCount, drainAmount,
+                 partialWakelockTime, alarmWakeCount, networkWakeCount,
+                 wakelockDrainScore
+
+9. app_drain_ranks
+   - App drain rankings per window
+   - Key Fields: id, windowLabel, windowStart, windowEnd, rank, packageName,
+                 drainScore, contributionPct, screenTimeMs, foregroundTimeMs,
+                 backgroundTimeMs
+
+10. safety_events
+    - Safety threshold violations
+    - Key Fields: id, timestamp, eventType, severity, batteryLevel, wasCharging,
+                  chargingType, batteryTemperature, voltage, current,
+                  thresholdValue, triggerValue, measurementUnit,
+                  expectedVoltage, expectedCurrent, protectionAction
+
+11. calibration_data
+    - SOC calibration metrics
+    - Key Fields: id, timestamp, reportedLevel, estimatedActualLevel, levelDrift,
+                  avgDrift, maxDrift, driftDirection, hasSuddenDrops,
+                  suddenDropCount, avgDropSize, worstDrop, lastFullCharge,
+                  lastLowBattery, lastDeepDischarge, fullChargeCount,
+                  deepDischargeCount, calibrationQuality, isCalibrated,
+                  needsCalibration, calibrationRecommendation, calibrationSchedule,
+                  daysSinceCalibration, lastCalibration, healthImpactScore,
+                  socAccuracy, driftExceeded, socMismatch, correctedSoc,
+                  correctionConfidence, recommendationReason
+
+12. stress_test_results
+    - Load test results
+    - Key Fields: id, timestamp, testStartTime, testEndTime, testType, testName,
+                  testDurationMinutes, testParameters, startLevel, endLevel,
+                  drainAmount, drainRate, peakDrainRate, startTemperature,
+                  maxTemperature, endTemperature, avgTemperature,
+                  thermalThrottleEvents, thermalThrottleTime, avgCpuUsage,
+                  maxCpuUsage, avgGpuUsage, maxGpuUsage, avgMemoryUsage,
+                  maxMemoryUsage, chargeGained, avgChargingCurrent,
+                  maxChargingCurrent, chargingInterruptions, testCompleted,
+                  crashCount, restartCount, errorCount, failureReasons,
+                  drainScore, thermalScore, stabilityScore, overallScore,
+                  baselineDrain, drainVariance, baselineThermal, thermalVariance,
+                  passed, verdict, verdictDetails, testLogs, recommendations,
+                  highTemperatureScenario, safetyTriggerCount, safetyNotes,
+                  thermalResilienceScore, chargingStabilityScore
+
+13. update_comparisons
+    - OTA impact analysis
+    - Key Fields: id, previousVersion, currentVersion, updateTimestamp,
+                  updateType, preAvgDrainScreenOn, preAvgDrainScreenOff,
+                  postAvgDrainScreenOn, postAvgDrainScreenOff,
+                  preAvgChargingTime, postAvgChargingTime,
+                  preAvgTemperature, postAvgTemperature,
+                  preMaxTemperature, postMaxTemperature,
+                  preIdleDrain, postIdleDrain, preBatteryHealth, postBatteryHealth,
+                  overallImpact, impactScore, confidenceLevel, recommendation,
+                  analysisNotes, preDrainRate, postDrainRate, drainRateDelta,
+                  drainRateChange, thermalPeakDelta, thermalPeakChange,
+                  preSeriesJson, postSeriesJson
+
+14. ai_analysis_results
+    - AI analysis output
+    - Key Fields: id, timestamp, analysisStartTime, analysisEndTime,
+                  analysisType, analysisPeriod, dataPointsAnalyzed,
+                  issuesDetected, issueCount, detectedIssues, primaryIssue,
+                  contributingFactors, issueCategory, issueConfidence, rootCause,
+                  riskScore, severity, requiresAction, urgency, trend, trendSlope,
+                  trendPrediction, recommendations, primaryRecommendation,
+                  engineerActions, userActions, overallBatteryScore, healthScore,
+                  performanceScore, safetyScore, reliabilityScore,
+                  rootCauseExplanation, executiveSummary, technicalSummary,
+                  oemReportData
+
+15. device_info
+    - Device identification
+    - Key Fields: id, timestamp, deviceModel, manufacturer, brand, device,
+                  product, board, hardware, serialNumber, androidVersion,
+                  sdkVersion, buildNumber, firmwareVersion, batteryCapacity
+
+16. compliance_reports
+    - Certification reports
+    - Key Fields: id, timestamp, periodStart, periodEnd, reportType, reportVersion,
+                  generatedBy, deviceModel, deviceSerial, firmwareVersion,
+                  batteryPartNumber, safetyCompliant, safetyViolationCount,
+                  safetyViolations, safetyScore, maxOperatingTemp, maxChargingTemp,
+                  tempCompliant, tempViolationCount, tempViolationDetails,
+                  minVoltage, maxVoltage, voltageCompliant, voltageViolationCount,
+                  voltageViolationDetails, maxChargingCurrent, maxDischargeCurrent,
+                  currentCompliant, currentViolationCount, currentViolationDetails,
+                  lowestVoltage, overDischargeProtectionWorking, overDischargeEvents,
+                  highestVoltage, overchargeProtectionWorking, overchargeEvents,
+                  thermalProtectionWorking, thermalShutdownEvents, thermalThrottleEvents,
+                  iecCompliant, ulCompliant, unCompliant, standardsNotes,
+                  certificationReadiness, certificationGaps, certificationRecommendations,
+                  auditTrail, dataPointsAnalyzed, dataQuality, executiveSummary,
+                  technicalDetails, complianceMatrix, attachments, reviewStatus,
+                  reviewNotes, evidenceSummary, evidenceIds, evidenceCount
+
+17. compliance_evidence
+    - Audit trail evidence
+    - Key Fields: id, timestamp, ruleId, metricValue, thresholdValue,
+                  sourceModule, severity, category, sourceEventId, notes
+
+--------------------------------------------------------------------------------
+                              DAO INTERFACES (12)
+--------------------------------------------------------------------------------
+
+1. BatterySnapshotDao
+   Methods: insert(), getLatest(), getSnapshotsSince(), getCountSince(),
+            deleteOlderThan()
+
+2. BatteryHealthDao
+   Methods: insert(), getLatest(), getHealthHistorySince(),
+            getAverageHealthBySupplier(), getAverageHealthByBatch(),
+            getAverageHealth()
+
+3. ChargingSessionDao
+   Methods: insert(), update(), getLatest(), getSessionsSince(),
+            getIncompleteSession()
+
+4. ThermalEventDao
+   Methods: insert(), update(), getLatest(), getEventsSince(),
+            getAveragePeakTemperature()
+
+5. ThermalHeatBucketDao
+   Methods: insert(), getBucketsSince(), getBucketsByHour()
+
+6. DrainEventDao
+   Methods: insert(), update(), getLatest(), getEventsSince(),
+            getAverageScreenOnDrain(), getAverageScreenOffDrain()
+
+7. IdleDrainSessionDao
+   Methods: insert(), update(), getLatest(), getSessionsSince()
+
+8. AppBatteryUsageDao
+   Methods: insert(), getUsageSince(), getUsageByPackage()
+
+9. AppDrainRankDao
+   Methods: insert(), insertAll(), getRanksByWindow()
+
+10. SafetyEventDao
+    Methods: insert(), getLatest(), getEventsSince(), getCriticalEventCount()
+
+11. ComplianceEvidenceDao
+    Methods: insert(), insertAll(), getEvidenceSince(), getEvidenceByRule()
+
+12. MiscDao (handles multiple entities)
+    - Calibration: insertCalibration(), getLatestCalibration()
+    - StressTest: insertStressTest(), getStressTestsSince()
+    - UpdateComparison: insertUpdateComparison(), getLatestUpdateComparison()
+    - AIAnalysis: insertAIAnalysis(), getLatestAIAnalysis()
+    - DeviceInfo: insertDeviceInfo(), getLatestDeviceInfo()
+    - ComplianceReport: insertComplianceReport(), getLatestComplianceReport()
+
+--------------------------------------------------------------------------------
+                         DATABASE MIGRATIONS (11 versions)
+--------------------------------------------------------------------------------
+
+MIGRATION_1_2: Added diagnostics columns
+  - battery_snapshots: cpuLoadTotal, topAppPackage, gpuLoad, networkState,
+                       chargerVendorId, chargerProductId, voltageSamplesJson,
+                       currentSamplesJson
+  - app_battery_usage: partialWakelockTime
+  - idle_drain_sessions: dozeEntryTime, dozeExitTime, alarmWakeups, networkWakeups
+
+MIGRATION_2_3: Added charging curve data
+  - charging_sessions: voltageCurveJson, currentCurveJson, curveSampleIntervalMs,
+                       curveStabilityScore, interruptionCount,
+                       interruptionTimestamps, interruptionDurations
+
+MIGRATION_3_4: Created thermal_heat_buckets table
+
+MIGRATION_4_5: Created app_drain_ranks table
+
+MIGRATION_5_6: Added compliance evidence
+  - Created compliance_evidence table
+  - compliance_reports: evidenceSummary, evidenceIds, evidenceCount
+
+MIGRATION_6_7: Added health/aging columns
+  - battery_health: estimatedCapacityMah, capacityFadePercent, fadePer100Cycles,
+                    fadePerMonth, hasAbnormalAging, agingNotes,
+                    supplierAverageHealth, batchAverageHealth
+
+MIGRATION_7_8: Added wakelock metrics
+  - app_battery_usage: alarmWakeCount, networkWakeCount, wakelockDrainScore
+  - idle_drain_sessions: deepSleepSuccessRate, dozeEffectivenessScore, leakageClass
+
+MIGRATION_8_9: Added OTA analytics
+  - update_comparisons: preDrainRate, postDrainRate, drainRateDelta,
+                        drainRateChange, thermalPeakDelta, thermalPeakChange,
+                        preSeriesJson, postSeriesJson
+
+MIGRATION_9_10: Added stress test safety flags
+  - stress_test_results: highTemperatureScenario, safetyTriggerCount, safetyNotes,
+                         thermalResilienceScore, chargingStabilityScore
+
+MIGRATION_10_11: Added calibration intelligence
+  - calibration_data: driftExceeded, socMismatch, correctedSoc,
+                      correctionConfidence, recommendationReason
+
+================================================================================
+                         ANDROID SYSTEM APIs USED
+================================================================================
+
+1. BatteryManager API
+   ─────────────────────────────────────────────────────────────────────────────
+   Location: android.os.BatteryManager
+   Used in: BatteryDataCollector.java, BatteryReceiver.java, BatteryMonitorService.java
+   
+   Data Retrieved:
+   - EXTRA_LEVEL: Battery percentage (0-100)
+   - EXTRA_SCALE: Maximum battery level
+   - EXTRA_STATUS: Charging/Discharging/Full/Not charging
+   - EXTRA_HEALTH: Good/Overheat/Dead/Over voltage/Unspecified failure
+   - EXTRA_PLUGGED: AC/USB/Wireless charging source
+   - EXTRA_VOLTAGE: Battery voltage in millivolts
+   - EXTRA_TEMPERATURE: Battery temperature in tenths of °C
+   - EXTRA_TECHNOLOGY: Battery chemistry (Li-ion, etc.)
+   - BATTERY_PROPERTY_CHARGE_COUNTER: Remaining capacity in microampere-hours
+   - BATTERY_PROPERTY_CURRENT_NOW: Instantaneous current in microamperes
+   - BATTERY_PROPERTY_CURRENT_AVERAGE: Average current in microamperes
+   - BATTERY_PROPERTY_CAPACITY: Remaining capacity percentage
+   - BATTERY_PROPERTY_ENERGY_COUNTER: Remaining energy in nanowatt-hours
+
+2. UsageStatsManager API
+   ─────────────────────────────────────────────────────────────────────────────
+   Location: android.app.usage.UsageStatsManager
+   Used in: AppUsageCollector.java
+   Permission Required: PACKAGE_USAGE_STATS (special permission)
+   
+   Data Retrieved:
+   - Per-app foreground time
+   - Per-app total time in foreground
+   - Usage statistics intervals (daily/weekly/monthly)
+
+3. PowerManager API
+   ─────────────────────────────────────────────────────────────────────────────
+   Location: android.os.PowerManager
+   Used in: BatteryMonitorService.java, BatteryDataCollector.java
+   
+   Features Used:
+   - PARTIAL_WAKE_LOCK: Keep CPU running for background monitoring
+   - isDeviceIdleMode(): Check if device is in Doze mode
+   - isInteractive(): Check if screen is on
+   - isPowerSaveMode(): Check if battery saver is active
+
+4. ActivityManager API
+   ─────────────────────────────────────────────────────────────────────────────
+   Location: android.app.ActivityManager
+   Used in: BatteryDataCollector.java
+   
+   Data Retrieved:
+   - Running processes
+   - Memory info
+   - Foreground app detection
+
+5. ConnectivityManager API
+   ─────────────────────────────────────────────────────────────────────────────
+   Location: android.net.ConnectivityManager
+   Used in: BatteryDataCollector.java
+   
+   Data Retrieved:
+   - Network type (WiFi/Mobile/None)
+   - Network state
+
+6. Intent Broadcasts (System Events)
+   ─────────────────────────────────────────────────────────────────────────────
+   Used in: BatteryReceiver.java, BatteryMonitorService.java
+   
+   Broadcasts Monitored:
+   - ACTION_BATTERY_CHANGED: Any battery state change
+   - ACTION_POWER_CONNECTED: Charger plugged in
+   - ACTION_POWER_DISCONNECTED: Charger unplugged
+   - ACTION_BATTERY_LOW: Battery below 15%
+   - ACTION_BATTERY_OKAY: Battery above 15%
+   - ACTION_BOOT_COMPLETED: Device boot (to restart service)
+
+================================================================================
+                         EXTERNAL SERVICES & APIs
+================================================================================
+
+1. APPWRITE BACKEND (Cloud Functions)
+   ─────────────────────────────────────────────────────────────────────────────
+   Purpose: Secure proxy for AI API calls (OpenAI)
+   Type: Serverless Functions (NOT database storage)
+   
+   Configuration Files:
+   - AppwriteClientProvider.java: Client initialization
+   - AppwriteFunctionCaller.java: Function execution
+   - appwrite/functions/proxy/index.js: Serverless function code
+   
+   BuildConfig Variables Required:
+   - APPWRITE_ENDPOINT: e.g., "https://sgp.cloud.appwrite.io/v1"
+   - APPWRITE_PROJECT_ID: e.g., "696459cc001abc691815"
+   
+   Function Details (proxy):
+   - Runtime: Node.js 18
+   - Authentication: Requires X-Appwrite-User-ID header
+   - Rate Limit: 30 requests per minute per user
+   - Payload: JSON with "prompt" field (max 4000 chars)
+   
+   Security Features:
+   - Project ID validation
+   - User authentication required
+   - API keys stored server-side only
+   - No secrets exposed to client
+
+2. OPENAI API (via Appwrite Proxy)
+   ─────────────────────────────────────────────────────────────────────────────
+   Purpose: AI-powered battery analysis insights
+   Endpoint: https://api.openai.com/v1/chat/completions
+   Access: Through Appwrite function proxy ONLY (keys never on device)
+   Model: gpt-4o-mini
+   Max Tokens: 128
+   
+   Usage in HexNil:
+   - AI analysis explanations
+   - Recommendation generation
+   - Issue classification assistance
+
+================================================================================
+                         DATA FLOW ARCHITECTURE
+================================================================================
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                              ANDROID DEVICE                                  │
+├─────────────────────────────────────────────────────────────────────────────┤
+│                                                                             │
+│  ┌──────────────────┐    ┌──────────────────┐    ┌──────────────────┐      │
+│  │  BatteryManager  │    │ UsageStatsManager│    │  PowerManager    │      │
+│  │       API        │    │       API        │    │      API         │      │
+│  └────────┬─────────┘    └────────┬─────────┘    └────────┬─────────┘      │
+│           │                       │                       │                 │
+│           └───────────────────────┼───────────────────────┘                 │
+│                                   │                                         │
+│                                   ▼                                         │
+│                    ┌──────────────────────────┐                             │
+│                    │   BatteryDataCollector   │                             │
+│                    │   (Raw Data Collection)  │                             │
+│                    └────────────┬─────────────┘                             │
+│                                 │                                           │
+│                                 ▼                                           │
+│                    ┌──────────────────────────┐                             │
+│                    │  BatteryMonitorService   │                             │
+│                    │   (Foreground Service)   │                             │
+│                    └────────────┬─────────────┘                             │
+│                                 │                                           │
+│           ┌─────────────────────┼─────────────────────┐                     │
+│           │                     │                     │                     │
+│           ▼                     ▼                     ▼                     │
+│  ┌────────────────┐   ┌────────────────┐   ┌────────────────┐              │
+│  │HealthManager   │   │ChargingAnalyzer│   │ ThermalMonitor │              │
+│  │ DrainAnalyzer  │   │ SafetyMonitor  │   │ IdleDrainAnal. │              │
+│  │ CalibrationMgr │   │ ProtectionMgr  │   │ StressTestMgr  │              │
+│  └───────┬────────┘   └───────┬────────┘   └───────┬────────┘              │
+│          │                    │                    │                        │
+│          └────────────────────┼────────────────────┘                        │
+│                               │                                             │
+│                               ▼                                             │
+│                    ┌──────────────────────────┐                             │
+│                    │     ROOM DATABASE        │                             │
+│                    │   (hexnil_battery_db)    │                             │
+│                    │      17 Tables           │                             │
+│                    │      12 DAOs             │                             │
+│                    └────────────┬─────────────┘                             │
+│                                 │                                           │
+│           ┌─────────────────────┼─────────────────────┐                     │
+│           │                     │                     │                     │
+│           ▼                     ▼                     ▼                     │
+│  ┌────────────────┐   ┌────────────────┐   ┌────────────────┐              │
+│  │   HexNilAI     │   │ReportGenerator │   │  UI Fragments  │              │
+│  │  (Analysis)    │   │ (PDF/CSV)      │   │  (13 screens)  │              │
+│  └───────┬────────┘   └───────┬────────┘   └────────────────┘              │
+│          │                    │                                             │
+│          │                    ▼                                             │
+│          │           ┌────────────────┐                                     │
+│          │           │ Local Storage  │                                     │
+│          │           │ (PDF/CSV files)│                                     │
+│          │           └────────────────┘                                     │
+│          │                                                                  │
+└──────────┼──────────────────────────────────────────────────────────────────┘
+           │
+           │ (Optional AI Enhancement)
+           ▼
+┌──────────────────────────────────────────────────────────────────────────────┐
+│                              CLOUD SERVICES                                  │
+├──────────────────────────────────────────────────────────────────────────────┤
+│                                                                              │
+│  ┌─────────────────────┐         ┌─────────────────────┐                    │
+│  │   APPWRITE CLOUD    │         │     OPENAI API      │                    │
+│  │  (Function Proxy)   │────────▶│  (gpt-4o-mini)      │                    │
+│  │                     │         │                     │                    │
+│  │  - Authentication   │         │  - Chat Completions │                    │
+│  │  - Rate Limiting    │         │  - Analysis Assist  │                    │
+│  │  - Key Protection   │         │                     │                    │
+│  └─────────────────────┘         └─────────────────────┘                    │
+│                                                                              │
+└──────────────────────────────────────────────────────────────────────────────┘
+
+================================================================================
+                         PERMISSIONS REQUIRED
+================================================================================
+
+AndroidManifest.xml Permissions:
+
+1. FOREGROUND_SERVICE
+   - Required for: Continuous battery monitoring
+   - Type: Normal permission (auto-granted)
+
+2. FOREGROUND_SERVICE_DATA_SYNC
+   - Required for: Android 14+ foreground service type
+   - Type: Normal permission
+
+3. RECEIVE_BOOT_COMPLETED
+   - Required for: Auto-start monitoring on device boot
+   - Type: Normal permission
+
+4. PACKAGE_USAGE_STATS
+   - Required for: Per-app battery usage data
+   - Type: Special permission (requires user grant in Settings)
+   - Grant via: Settings > Apps > Special access > Usage access
+
+5. BATTERY_STATS (System only)
+   - Required for: Detailed battery statistics
+   - Type: Signature permission (OEM builds only)
+   - Alternative: Limited data via BatteryManager
+
+6. INTERNET
+   - Required for: Appwrite function calls
+   - Type: Normal permission
+
+7. WAKE_LOCK
+   - Required for: Keep CPU running during monitoring
+   - Type: Normal permission
+
+================================================================================
+                         STORAGE SUMMARY
+================================================================================
+
+LOCAL STORAGE (Primary):
+┌─────────────────────────────────────────────────────────────────┐
+│  Room Database (SQLite)                                         │
+│  Location: /data/data/com.example.hexnil/databases/             │
+│  File: hexnil_battery_db                                        │
+│  Size: Varies (typically 10-100MB with history)                 │
+│  Tables: 17                                                     │
+│  Version: 11                                                    │
+│  ALL DATA STAYS ON DEVICE - NO CLOUD SYNC                       │
+└─────────────────────────────────────────────────────────────────┘
+
+EXPORT FILES:
+┌─────────────────────────────────────────────────────────────────┐
+│  PDF Reports: Analysis summaries, compliance reports            │
+│  CSV Exports: Raw data for spreadsheet analysis                 │
+│  Location: App's external files directory or Downloads          │
+└─────────────────────────────────────────────────────────────────┘
+
+CLOUD STORAGE:
+┌─────────────────────────────────────────────────────────────────┐
+│  ❌ NOT USED                                                    │
+│  All battery data remains on-device                             │
+│  Appwrite used for function calls only, NOT data storage        │
+│  Privacy-first design - OEM controls all data                   │
+└─────────────────────────────────────────────────────────────────┘
+
+================================================================================
+                              DATA MODELS
+================================================================================
+
+1.  BatterySnapshot - Raw battery data point (50+ fields)
+2.  BatteryHealth - Long-term health metrics
+3.  ChargingSession - Complete charging cycle data
+4.  ThermalEvent - Temperature anomaly records
+5.  ThermalHeatBucket - Aggregated thermal data
+6.  DrainEvent - Discharge period tracking
+7.  IdleDrainSession - Standby drain analysis
+8.  AppBatteryUsage - Per-app usage stats
+9.  AppDrainRank - App drain rankings
+10. SafetyEvent - Safety threshold violations
+11. CalibrationData - SOC calibration metrics
+12. UpdateComparison - OTA impact analysis
+13. StressTestResult - Load test results
+14. ComplianceReport - Certification reports
+15. ComplianceEvidence - Audit trail evidence
+16. AIAnalysisResult - AI analysis output
+17. RollupMetrics - Aggregated metrics
+18. DeviceInfo - Device identification
+
+================================================================================
+                              UI FRAGMENTS
+================================================================================
+
+1.  DashboardFragment - Overview & quick stats
+2.  HealthFragment - Battery health details
+3.  ChargingFragment - Charging analysis
+4.  ThermalFragment - Temperature monitoring
+5.  DrainFragment - Drain analysis
+6.  IdleFragment - Standby drain
+7.  SafetyFragment - Safety events
+8.  CalibrationFragment - Calibration status
+9.  AiAnalysisFragment - AI insights
+10. ReportsFragment - Export reports
+11. ComplianceFragment - Compliance status
+12. SettingsFragment - App configuration
+13. DeviceInfoFragment - Device details
+
+================================================================================
+                         TECHNICAL SPECIFICATIONS
+================================================================================
+
+Platform Requirements:
+- Android 8.0+ (API 26+)
+- Permissions: FOREGROUND_SERVICE, RECEIVE_BOOT_COMPLETED,
+               PACKAGE_USAGE_STATS, BATTERY_STATS
+
+Architecture:
+- MVVM pattern
+- Room database for persistence
+- Foreground service for monitoring
+- ExecutorService for background processing
+
+Data Collection Frequency:
+- Charging: Every 30 seconds
+- Normal: Every 60 seconds
+- Low battery: Every 30 seconds
+- Event-triggered: Immediate
+
+Storage:
+- SQLite via Room
+- Automatic cleanup of old data
+- Export to PDF/CSV
+
+================================================================================
+                              VERSION HISTORY
+================================================================================
+
+v2.0 (Current)
+- Complete implementation of all 12 modules
+- AI-driven analysis engine
+- Compliance & certification support
+- OEM dashboard capabilities
+- PDF/CSV export
+
+================================================================================
+                              CONTACT & SUPPORT
+================================================================================
+
+Project: HexNil - OEM Battery Intelligence Platform
+Purpose: Enterprise battery testing and validation for Android OEMs
+
+================================================================================
+                         END OF DOCUMENTATION
+================================================================================

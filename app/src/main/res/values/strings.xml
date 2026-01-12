@@ -1,0 +1,16 @@
+<resources>
+    <string name="app_name">HexNil</string>
+    <string name="nav_dashboard">Dashboard</string>
+    <string name="nav_charging">Charging</string>
+    <string name="nav_thermal">Thermal</string>
+    <string name="nav_drain">Drain</string>
+    <string name="nav_safety">Safety</string>
+    <string name="screen_health">Health</string>
+    <string name="screen_idle">Idle</string>
+    <string name="screen_calibration">Calibration</string>
+    <string name="screen_ai">AI Analysis</string>
+    <string name="screen_reports">Reports</string>
+    <string name="screen_compliance">Compliance</string>
+    <string name="screen_device">Device Info</string>
+    <string name="screen_settings">Settings</string>
+</resources>

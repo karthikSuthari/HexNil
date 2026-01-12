@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+    <item
+        android:id="@+id/nav_dashboard"
+        android:icon="@drawable/ic_launcher_foreground"
+        android:title="@string/nav_dashboard" />
+    <item
+        android:id="@+id/nav_charging"
+        android:icon="@drawable/ic_launcher_foreground"
+        android:title="@string/nav_charging" />
+    <item
+        android:id="@+id/nav_thermal"
+        android:icon="@drawable/ic_launcher_foreground"
+        android:title="@string/nav_thermal" />
+    <item
+        android:id="@+id/nav_drain"
+        android:icon="@drawable/ic_launcher_foreground"
+        android:title="@string/nav_drain" />
+    <item
+        android:id="@+id/nav_safety"
+        android:icon="@drawable/ic_launcher_foreground"
+        android:title="@string/nav_safety" />
+</menu>
