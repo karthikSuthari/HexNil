@@ -25,6 +25,12 @@ public interface SafetyEventDao {
     @Query("SELECT * FROM safety_events ORDER BY timestamp DESC LIMIT 1")
     SafetyEvent getLatest();
     
+    @Query("SELECT * FROM safety_events ORDER BY timestamp DESC")
+    List<SafetyEvent> getAll();
+    
+    @Query("SELECT COUNT(*) FROM safety_events")
+    int getCount();
+    
     @Query("SELECT * FROM safety_events WHERE timestamp >= :startTime ORDER BY timestamp DESC")
     List<SafetyEvent> getEventsSince(long startTime);
     

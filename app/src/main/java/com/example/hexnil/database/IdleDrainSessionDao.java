@@ -25,6 +25,12 @@ public interface IdleDrainSessionDao {
     @Query("SELECT * FROM idle_drain_sessions ORDER BY startTime DESC LIMIT 1")
     IdleDrainSession getLatest();
     
+    @Query("SELECT * FROM idle_drain_sessions ORDER BY startTime DESC")
+    List<IdleDrainSession> getAll();
+    
+    @Query("SELECT COUNT(*) FROM idle_drain_sessions")
+    int getCount();
+    
     @Query("SELECT * FROM idle_drain_sessions WHERE endTime = 0 LIMIT 1")
     IdleDrainSession getActiveSession();
     

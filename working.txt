@@ -1,0 +1,1077 @@
+================================================================================
+                    HEXNIL BATTERY DIAGNOSTICS - COMPLETE GUIDE
+                 OEM-Grade Battery Monitoring & Analysis Application
+================================================================================
+
+Last Updated: January 14, 2026
+Version: 3.2 (Backend Pipeline + Smoke Tests)
+
+================================================================================
+                        HEXNIL SYSTEM ARCHITECTURE DIAGRAM
+================================================================================
+
++-----------------------------------------------------------------------------+
+|                              ANDROID DEVICE                                 |
+|  +-----------------------------------------------------------------------+  |
+|  |                      BROADCAST INTENTS                                |  |
+|  |  * ACTION_BATTERY_CHANGED    * ACTION_SCREEN_ON/OFF                   |  |
+|  |  * ACTION_POWER_CONNECTED    * ACTION_DEVICE_IDLE_MODE_CHANGED        |  |
+|  |  * ACTION_POWER_DISCONNECTED * ACTION_BATTERY_LOW/OKAY                |  |
+|  +------------------------------------+----------------------------------+  |
+|                                       |                                     |
+|                                       v                                     |
+|  +-----------------------------------------------------------------------+  |
+|  |                    HEXNIL ANDROID APP                                 |  |
+|  |                                                                       |  |
+|  |  +---------------+    +------------------------------------------+    |  |
+|  |  | MainActivity  |--->|     BatteryMonitorService                |    |  |
+|  |  |               |    |     (Foreground Service)                 |    |  |
+|  |  | * Start/Stop  |    |                                          |    |  |
+|  |  | * UI Display  |    |  +------------------------------------+  |    |  |
+|  |  +---------------+    |  |    ADAPTIVE SAMPLING ENGINE        |  |    |  |
+|  |                       |  |                                    |  |    |  |
+|  |  +---------------+    |  |  Intervals:                        |  |    |  |
+|  |  | BootReceiver  |--->|  |  * Charging: 30s                   |  |    |  |
+|  |  |               |    |  |  * Fast Charge: 20s                |  |    |  |
+|  |  | Auto-start on |    |  |  * Discharge: 60s                  |  |    |  |
+|  |  | device boot   |    |  |  * Low Battery: 30s                |  |    |  |
+|  |  +---------------+    |  |  * Critical: 15s                   |  |    |  |
+|  |                       |  |  * High Temp: 15s                  |  |    |  |
+|  |                       |  |  * Screen Off: 2min                |  |    |  |
+|  |                       |  |  * Idle/Doze: 5min                 |  |    |  |
+|  |                       |  +------------------------------------+  |    |  |
+|  |                       +---------------------+--------------------+    |  |
+|  |                                             |                         |  |
+|  |                                             v                         |  |
+|  |           +--- Room Database (SQLite) ---+  |                         |  |
+|  |           | battery_snapshots            |<-+                         |  |
+|  |           | charging_sessions            |                            |  |
+|  |           | thermal_events               |                            |  |
+|  |           | drain_events                 |                            |  |
+|  |           | battery_health_recs          |                            |  |
+|  |           | safety_events                |                            |  |
+|  |           +------------------------------+                            |  |
+|  +------------------------------------+----------------------------------+  |
+|                                       |                                     |
++---------------------------------------+-------------------------------------+
+                                        |
+                        WiFi / HTTP Sync (POST /sync)
+                                        |
+                                        v
++-----------------------------------------------------------------------------+
+|                           BACKEND SERVER (Python)                           |
+|                                                                             |
+|  +-----------------------------------------------------------------------+  |
+|  |                    FastAPI Server (hexnil_fastapi_server.py)          |  |
+|  |                    Port: 8000                                         |  |
+|  |                                                                       |  |
+|  |  Endpoints:                                                           |  |
+|  |  +-------------+  +-------------+  +-------------+  +-------------+   |  |
+|  |  | POST /sync  |  | POST        |  | GET /health |  | GET         |   |  |
+|  |  | (all data)  |  | /register   |  | (status)    |  | /sync-log   |   |  |
+|  |  +-------------+  +-------------+  +-------------+  +-------------+   |  |
+|  |                                                                       |  |
+|  |  Pydantic Models:                                                     |  |
+|  |  * BatterySnapshotSync    * ChargingSessionSync                       |  |
+|  |  * ThermalEventSync       * DrainEventSync                            |  |
+|  |  * BatteryHealthSync      * SafetyEventSync                           |  |
+|  |  * DeviceRegistration     * SyncPayload                               |  |
+|  +-----------------------------------------------------------------------+  |
+|                                       |                                     |
+|                                       v                                     |
+|  +-----------------------------------------------------------------------+  |
+|  |                    MySQL Database (hexnil_backend user)               |  |
+|  |                                                                       |  |
+|  |  Raw Tables (from device):         Metadata Tables:                   |  |
+|  |  +-------------------+             +-------------------+              |  |
+|  |  | battery_snapshots |             | devices           |              |  |
+|  |  | charging_sessions |             | sync_log          |              |  |
+|  |  | thermal_events    |             +-------------------+              |  |
+|  |  | drain_events      |                                                |  |
+|  |  | battery_health    |                                                |  |
+|  |  | safety_events     |                                                |  |
+|  |  +-------------------+                                                |  |
+|  +-----------------------------------------------------------------------+  |
+|                                       |                                     |
++---------------------------------------+-------------------------------------+
+                                        |
+                        Scheduled / On-demand processing
+                                        |
+                                        v
++-----------------------------------------------------------------------------+
+|                        AI PIPELINE (Python)                                 |
+|                                                                             |
+|  +-----------------------------------------------------------------------+  |
+|  |                 HexNil AI Pipeline (hexnil_ai_pipeline.py)            |  |
+|  |                 Uses: hexnil_ai MySQL user                            |  |
+|  |                                                                       |  |
+|  |  Processing Steps:                                                    |  |
+|  |  +-------------------+  +-------------------+  +-------------------+  |  |
+|  |  | 1. Read Raw Data  |  | 2. Compute Hourly |  | 3. Compute Daily  |  |  |
+|  |  | (watermark-based) |  |    Metrics        |  |    Metrics        |  |  |
+|  |  +-------------------+  +-------------------+  +-------------------+  |  |
+|  |                                                                       |  |
+|  |  +-------------------+  +-------------------+  +-------------------+  |  |
+|  |  | 4. Detect         |  | 5. Calculate      |  | 6. Update         |  |  |
+|  |  |    Anomalies      |  |    Risk Scores    |  |    Watermarks     |  |  |
+|  |  +-------------------+  +-------------------+  +-------------------+  |  |
+|  |                                                                       |  |
+|  |  Anomaly Thresholds:                                                  |  |
+|  |  * High Temperature: > 42°C                                           |  |
+|  |  * Low Voltage: < 3.4V                                                |  |
+|  |  * High Drain Rate: > 15%/hr                                          |  |
+|  |  * Fast Charging Issues: < 0.5A avg current                           |  |
+|  +-----------------------------------------------------------------------+  |
+|                                       |                                     |
+|                                       v                                     |
+|  +-----------------------------------------------------------------------+  |
+|  |                    AI Derived Tables (hexnil_ai user)                 |  |
+|  |                                                                       |  |
+|  |  +-------------------+  +-------------------+  +-------------------+  |  |
+|  |  | hourly_metrics    |  | daily_metrics     |  | anomalies         |  |  |
+|  |  | (per device-hour) |  | (per device-day)  |  | (detected issues) |  |  |
+|  |  +-------------------+  +-------------------+  +-------------------+  |  |
+|  |                                                                       |  |
+|  |  +-------------------+  +-------------------+                         |  |
+|  |  | risk_scores       |  | ai_watermarks     |                         |  |
+|  |  | (0-100 score)     |  | (last processed)  |                         |  |
+|  |  +-------------------+  +-------------------+                         |  |
+|  |                                                                       |  |
+|  +-----------------------------------------------------------------------+  |
+|                                                                             |
++-----------------------------------------------------------------------------+
+
+================================================================================
+                           DATA FLOW DIAGRAM
+================================================================================
+
+    +---------------+
+    |   Android     |
+    |   Battery     |---------------------------------------------+
+    |   Manager     |                                             |
+    +---------------+                                             |
+           |                                                      |
+           | Battery Intent                                       |
+           v                                                      |
+    +---------------------------------------------+               |
+    |        BatteryMonitorService                |               |
+    |  +---------------------------------------+  |               |
+    |  |   BatteryDataCollector                |  |               |
+    |  |   * Read BatteryManager values        |<-+               |
+    |  |   * Collect system state              |                  |
+    |  |   * Validate & score quality          |                  |
+    |  +-------------------+-------------------+                  |
+    |                      |                                      |
+    |                      | BatterySnapshot                      |
+    |                      v                                      |
+    |  +---------------------------------------+                  |
+    |  |         Manager Processing            |                  |
+    |  |                                       |                  |
+    |  |  BatteryHealthManager ---+            |                  |
+    |  |  ChargingAnalyzer -------+            |                  |
+    |  |  ThermalMonitor ---------+--> Events  |                  |
+    |  |  DrainAnalyzer ----------+            |                  |
+    |  |  SafetyMonitor ----------+            |                  |
+    |  |                                       |                  |
+    |  +-------------------+-------------------+                  |
+    |                      |                                      |
+    |                      | Every 5 minutes                      |
+    |                      v                                      |
+    |  +---------------------------------------+                  |
+    |  |      AppUsageCollector                |                  |
+    |  |   * Query UsageStatsManager           |                  |
+    |  |   * Collect per-app metrics           |                  |
+    |  |   * Calculate efficiency ratings      |                  |
+    |  +-------------------+-------------------+                  |
+    |                      |                                      |
+    |                      | AppBatteryUsage[]                    |
+    |                      v                                      |
+    |  +---------------------------------------+                  |
+    |  |           HexNilAI                    |  <-- Every 30min |
+    |  |   * Trend analysis                    |                  |
+    |  |   * Pattern detection                 |                  |
+    |  |   * Risk scoring                      |                  |
+    |  +-------------------+-------------------+                  |
+    |                      |                                      |
+    |                      v                                      |
+    |  +---------------------------------------+                  |
+    |  |        AnomalyDetector                |                  |
+    |  |   * Check all thresholds              |                  |
+    |  |   * Generate anomaly records          |                  |
+    |  |   * Create recommendations            |                  |
+    |  +-------------------+-------------------+                  |
+    |                      |                                      |
+    +----------------------+--------------------------------------+
+                           |
+                           | All Data
+                           v
+    +-------------------------------------------------------------+
+    |                    HexNilDatabase                           |
+    |                                                             |
+    |  +---------------+  +---------------+  +---------------+    |
+    |  | Snapshots     |  | App Usage     |  | Anomalies     |    |
+    |  | (time-series  |  | (per-app      |  | (AI-detected  |    |
+    |  |  battery)     |  |  tracking)    |  |  issues)      |    |
+    |  +---------------+  +---------------+  +---------------+    |
+    |                                                             |
+    |  +---------------+  +---------------+  +---------------+    |
+    |  | Charging      |  | Drain         |  | Thermal       |    |
+    |  | Sessions      |  | Events        |  | Events        |    |
+    |  +---------------+  +---------------+  +---------------+    |
+    |                                                             |
+    +-------------------------------------------------------------+
+                           |
+                           v
+    +-------------------------------------------------------------+
+    |                    USER INTERFACE                           |
+    |                                                             |
+    |  +---------------+  +---------------+  +---------------+    |
+    |  | Dashboard     |  | Health View   |  | Charging      |    |
+    |  |               |  |               |  | Analysis      |    |
+    |  +---------------+  +---------------+  +---------------+    |
+    |                                                             |
+    |  +---------------+  +---------------+  +---------------+    |
+    |  | Drain         |  | Thermal       |  | AI Advisor    |    |
+    |  | Analysis      |  | Monitor       |  |               |    |
+    |  +---------------+  +---------------+  +---------------+    |
+    |                                                             |
+    +-------------------------------------------------------------+
+
+================================================================================
+                        SAMPLING TIMELINE EXAMPLE
+================================================================================
+
+Time     Event                    Interval    Context
+--------------------------------------------------------------------------------
+00:00    App Started              immediate   service_start
+00:30    Snapshot #1              30s         charging
+01:00    Snapshot #2              30s         charging
+01:30    Snapshot #3              30s         charging
+02:00    Charger Unplugged        immediate   power_disconnected
+02:00    Snapshot #4              immediate   charging_end
+03:00    Snapshot #5              60s         discharging
+04:00    Snapshot #6              60s         discharging
+05:00    App Usage Collected      -           25 apps tracked
+05:00    Snapshot #7              60s         discharging
+06:00    Screen Off               immediate   screen_off
+06:00    Snapshot #8              immediate   screen_off
+08:00    Snapshot #9              2min        screen_off
+10:00    Snapshot #10             2min        screen_off
+10:00    App Usage Collected      -           25 apps tracked
+15:00    Snapshot #11             5min        idle (doze)
+20:00    Snapshot #12             5min        idle (doze)
+25:00    Snapshot #13             5min        idle (doze)
+30:00    AI Analysis Runs         -           risk=0, issues=0
+30:00    Anomaly Check            -           0 anomalies found
+...
+
+================================================================================
+
+TABLE OF CONTENTS
+-----------------
+1. OVERVIEW
+2. PREREQUISITES & REQUIREMENTS
+3. INSTALLATION GUIDE
+4. HOW TO RUN THE APP
+5. APP PERMISSIONS EXPLAINED
+6. DATA COLLECTION - WHAT IT COLLECTS
+7. DATA STORAGE - WHERE IT STORES
+8. DATABASE TABLES EXPLAINED
+9. MONITORING SERVICE DETAILS
+10. AI ANALYSIS & ANOMALY DETECTION
+11. ADB COMMANDS FOR TESTING
+12. TROUBLESHOOTING
+13. FILE STRUCTURE
+
+================================================================================
+1. OVERVIEW
+================================================================================
+
+HexNil is an OEM-grade battery diagnostics application that provides:
+- Continuous real-time battery monitoring
+- Per-app battery usage tracking
+- Thermal monitoring and alerts
+- Charging session analysis
+- AI-powered anomaly detection
+- Battery health tracking over time
+- Detailed compliance and safety reports
+
+Package Name: com.example.hexnil
+Database Version: 19
+Target SDK: 36 (Android 15)
+
+================================================================================
+2. PREREQUISITES & REQUIREMENTS
+================================================================================
+
+HARDWARE:
+- Android device (tested on Vivo I2302)
+- USB cable for ADB connection
+- Computer with Android Studio or ADB installed
+
+SOFTWARE:
+- Android 6.0+ (API 23+)
+- ADB (Android Debug Bridge)
+- ADB Path: C:\Users\sutha\AppData\Local\Android\Sdk\platform-tools\adb.exe
+
+DEVELOPER OPTIONS:
+- USB Debugging: ENABLED
+- Stay Awake: ENABLED (optional, for testing)
+
+================================================================================
+3. INSTALLATION GUIDE
+================================================================================
+
+METHOD 1: From Android Studio
+-----------------------------
+1. Open project: c:\Users\sutha\AndroidStudioProjects\HexNil2
+2. Connect device via USB
+3. Click "Run" (green play button) or press Shift+F10
+4. Select your device
+5. Wait for build and installation
+
+METHOD 2: From Command Line
+---------------------------
+Step 1: Build the APK
+    cd c:\Users\sutha\AndroidStudioProjects\HexNil2
+    .\gradlew.bat assembleDebug
+
+Step 2: Locate APK
+    APK Location: app\build\outputs\apk\debug\app-debug.apk
+
+Step 3: Install via ADB
+    adb install -r app\build\outputs\apk\debug\app-debug.apk
+
+Step 4: Verify installation
+    adb shell pm list packages | findstr hexnil
+
+================================================================================
+4. HOW TO RUN THE APP
+================================================================================
+
+METHOD 1: From Device
+--------------------
+1. Find "HexNil" app icon on your device
+2. Tap to open
+3. Grant all requested permissions
+4. App will automatically start monitoring
+
+METHOD 2: From ADB (Recommended for Testing)
+--------------------------------------------
+Start the app:
+    adb shell am start -n com.example.hexnil/.MainActivity
+
+Stop the app:
+    adb shell am force-stop com.example.hexnil
+
+Clear app data (fresh start):
+    adb shell pm clear com.example.hexnil
+
+Restart with fresh data:
+    adb shell pm clear com.example.hexnil && adb shell am start -n com.example.hexnil/.MainActivity
+
+================================================================================
+5. APP PERMISSIONS EXPLAINED
+================================================================================
+
+REQUIRED PERMISSIONS:
+--------------------
+1. BATTERY_STATS - Read battery statistics (protected)
+2. RECEIVE_BOOT_COMPLETED - Start monitoring after device reboot
+3. REQUEST_IGNORE_BATTERY_OPTIMIZATIONS - Prevent doze from killing service
+4. FOREGROUND_SERVICE - Run continuous monitoring service
+5. FOREGROUND_SERVICE_SPECIAL_USE - Android 14+ foreground service type
+6. WAKE_LOCK - Keep CPU awake for data collection
+
+OPTIONAL PERMISSIONS:
+--------------------
+7. READ_PHONE_STATE - Get device info
+8. ACCESS_NETWORK_STATE - Monitor network state
+9. ACCESS_WIFI_STATE - Monitor WiFi state
+10. BLUETOOTH_CONNECT - Monitor Bluetooth state
+11. INTERNET - For remote monitoring feature
+12. QUERY_ALL_PACKAGES - Get list of installed apps
+13. PACKAGE_USAGE_STATS - Get per-app usage statistics
+14. POST_NOTIFICATIONS - Show monitoring notification
+15. VIBRATE - Alert notifications
+
+HOW TO GRANT USAGE ACCESS PERMISSION:
+------------------------------------
+1. Go to Settings → Apps → Special app access
+2. Find "Usage access" or "Usage data access"
+3. Find "HexNil" and enable it
+4. This is REQUIRED for per-app battery usage tracking
+
+================================================================================
+6. DATA COLLECTION - WHAT IT COLLECTS
+================================================================================
+
+A) BATTERY SNAPSHOTS (Every 30-300 seconds, adaptive)
+-----------------------------------------------------
+Collected at these intervals:
+- Normal discharge: 60 seconds
+- Charging: 30 seconds
+- Fast charging: 20 seconds
+- Low battery (<20%): 30 seconds
+- Critical battery (<10%): 15 seconds
+- High temperature (>40°C): 15 seconds
+- Screen off: 2 minutes
+- Device idle/doze: 5 minutes
+
+Each snapshot contains:
+- Battery level (0-100%)
+- Battery status (charging, discharging, full)
+- Battery health (good, overheat, dead, etc.)
+- Voltage (millivolts)
+- Temperature (in tenths of °C, e.g., 285 = 28.5°C)
+- Current flow (microamperes)
+- Charge counter (microampere-hours)
+- Energy counter (nanowatt-hours)
+- Screen state (on/off)
+- Screen brightness (0-255)
+- WiFi/Mobile/Bluetooth/GPS state
+- Signal strength (dBm)
+- Charging type (USB, AC, Wireless)
+- Fast charging status
+- CPU usage (%)
+- Memory usage (%)
+- Doze mode state
+- Top foreground app
+- Number of running apps
+- Validation/quality score
+
+B) APP BATTERY USAGE (Every 5 minutes)
+-------------------------------------
+For EACH installed app, collects:
+- Package name (e.g., com.instagram.android)
+- App name (e.g., Instagram)
+- Is system app (true/false)
+- Foreground time (milliseconds)
+- Background time (milliseconds)
+- Battery percentage used
+- Drain rate per hour (%/hr)
+- CPU time consumed (ms)
+- Network bytes used
+- Wakelock count and duration
+- Alarm wake count
+- Network wake count
+- GPS request count
+- Background wakes count
+- Push notifications count
+- Efficiency rating (efficient/normal/inefficient/problematic)
+- Period start and end timestamps
+
+C) CHARGING SESSIONS
+-------------------
+When you plug in charger, records:
+- Start time and end time
+- Start level and end level
+- Amount charged
+- Charging type (USB/AC/Wireless)
+- Fast charging status
+- Max/Min/Avg voltage
+- Max/Min/Avg current
+- Temperature curve (start, max, end, avg)
+- Charging duration
+- Charging speed
+- Energy delivered (mAh)
+- Charging efficiency (%)
+- Power (watts)
+- CC phase and CV phase data
+- Interruption count and timestamps
+- Safety score
+- Charger fingerprint
+
+D) DRAIN EVENTS
+--------------
+When discharging, records:
+- Drain start and end time
+- Amount drained (%)
+- Drain rate per hour
+- Context (screen on/off, apps used)
+- Was idle or active
+
+E) THERMAL EVENTS
+----------------
+When temperature exceeds thresholds:
+- Event type (warning/critical)
+- Max temperature reached
+- Duration of high temperature
+- Trigger activity (what caused it)
+- Throttling occurred (true/false)
+
+F) BATTERY HEALTH RECORDS
+------------------------
+Periodically tracks:
+- Health percentage
+- Cycle count estimate
+- Degradation rate
+- Capacity comparison (design vs actual)
+
+G) ANOMALY RECORDS (AI-detected issues)
+--------------------------------------
+When AI detects problems:
+- Anomaly type (app_drain, thermal, battery_health, charging, usage_pattern, idle_drain)
+- Severity (critical, high, medium, low, info)
+- Confidence score (0-100%)
+- Source app (if app-related)
+- Title and detailed description
+- Expected vs actual values
+- Deviation percentage
+- Metric name and unit
+- Recommendations
+- Root cause analysis
+- Impact description
+- Time period analyzed
+
+================================================================================
+7. DATA STORAGE - WHERE IT STORES
+================================================================================
+
+PRIMARY DATABASE LOCATION:
+-------------------------
+/data/data/com.example.hexnil/databases/hexnil_database
+
+This is the main SQLite database file that stores ALL collected data.
+
+COMPANION FILES:
+---------------
+/data/data/com.example.hexnil/databases/hexnil_database-shm  (shared memory)
+/data/data/com.example.hexnil/databases/hexnil_database-wal  (write-ahead log)
+
+HOW TO ACCESS DATABASE (requires USB debugging):
+-----------------------------------------------
+List database files:
+    adb shell run-as com.example.hexnil ls -la databases/
+
+Check database size:
+    adb shell run-as com.example.hexnil ls -lh databases/hexnil_database
+
+Pull database to computer:
+    adb exec-out run-as com.example.hexnil cat databases/hexnil_database > hexnil_db.db
+
+Then open hexnil_db.db with any SQLite viewer (DB Browser for SQLite, etc.)
+
+SHARED PREFERENCES:
+------------------
+Location: /data/data/com.example.hexnil/shared_prefs/
+Contents: App settings, calibration data, service state
+
+CACHE:
+-----
+Location: /data/data/com.example.hexnil/cache/
+Contents: Temporary data, exported reports
+
+================================================================================
+8. DATABASE TABLES EXPLAINED
+================================================================================
+
+VERSION: 19 (latest with anomaly_records)
+
+TABLE 1: battery_snapshots
+-------------------------
+Purpose: Core time-series battery data
+Collected: Every 30-300 seconds (adaptive)
+Fields: 52 columns including:
+    - id (auto-generated primary key)
+    - timestamp (when captured)
+    - sequenceNumber (ordering)
+    - level, status, health, plugged
+    - voltage, temperature, currentNow, currentAverage
+    - chargeCounter, energyCounter
+    - capacityMah, healthPercentage
+    - chargeRate, dischargeRate
+    - screenOn, screenBrightness
+    - wifiEnabled, mobileDataEnabled, bluetoothEnabled, gpsEnabled
+    - isCharging, isFastCharging, chargingType
+    - cpuUsage, memoryUsage, isDozeMode
+    - topAppPackage, runningApps
+    - qualityScore, validationStatus
+
+TABLE 2: app_battery_usage
+-------------------------
+Purpose: Per-app battery consumption tracking
+Collected: Every 5 minutes for all running apps
+Fields:
+    - id, timestamp, periodStart, periodEnd
+    - packageName, appName, isSystemApp
+    - foregroundTime, backgroundTime
+    - batteryPercentUsed, drainPerHour
+    - cpuTimeMs, networkBytes
+    - wakelockCount, wakelockTime
+    - alarmCount, gpsRequests
+    - efficiencyRating
+    - drainReasons, optimizationTips
+
+TABLE 3: charging_sessions
+-------------------------
+Purpose: Complete charging cycle analysis
+Collected: Start-to-end of each charging session
+Fields: 80+ columns for comprehensive charging data
+
+TABLE 4: drain_events
+--------------------
+Purpose: Battery drain period tracking
+Collected: During discharge periods
+Fields: Drain amount, rate, duration, context
+
+TABLE 5: thermal_events
+----------------------
+Purpose: High temperature incidents
+Collected: When temp > 40°C
+Fields: Temperature, duration, trigger, throttling
+
+TABLE 6: battery_health_records
+------------------------------
+Purpose: Long-term health tracking
+Collected: Periodically
+Fields: Health %, cycle count, degradation rate
+
+TABLE 7: anomaly_records
+-----------------------
+Purpose: AI-detected issues and problems
+Collected: During AI analysis (every 30 minutes)
+Fields:
+    - id, detectedAt
+    - anomalyType, severity, confidenceScore
+    - sourceApp, sourceAppName
+    - title, description, technicalDetails
+    - expectedValue, actualValue, deviationPercent
+    - metricName, metricUnit
+    - batteryLevel, wasCharging, screenOn, deviceState
+    - periodStart, periodEnd, dataPointsAnalyzed
+    - recommendation, rootCause, impact
+    - acknowledged, resolved, resolvedAt
+    - occurrenceCount, isRecurring
+
+TABLE 8: analysis_results
+------------------------
+Purpose: AI comprehensive analysis results
+Collected: Every 30 minutes
+Fields: Risk score, issues, recommendations
+
+TABLE 9: idle_drain_sessions
+---------------------------
+Purpose: Battery drain while device idle
+Fields: Drain during doze, screen off periods
+
+TABLE 10: safety_events
+----------------------
+Purpose: Safety alerts and warnings
+Fields: Safety type, severity, timestamp
+
+TABLE 11: compliance_evidence
+----------------------------
+Purpose: OEM compliance documentation
+Fields: Test results, validation data
+
+================================================================================
+9. MONITORING SERVICE DETAILS
+================================================================================
+
+SERVICE NAME: BatteryMonitorService
+TYPE: Foreground Service (runs continuously)
+
+WHEN IT STARTS:
+1. When app is opened (MainActivity.onCreate)
+2. When device boots (BootReceiver)
+3. When app starts (HexNilApplication.onCreate)
+
+HOW IT WORKS:
+1. Registers for battery broadcast events
+2. Captures snapshots at adaptive intervals
+3. Runs analysis managers on each snapshot
+4. Collects app usage every 5 minutes
+5. Runs AI analysis every 30 minutes
+
+BROADCAST EVENTS MONITORED:
+- ACTION_BATTERY_CHANGED - Battery state changes
+- ACTION_POWER_CONNECTED - Charger plugged in
+- ACTION_POWER_DISCONNECTED - Charger unplugged
+- ACTION_BATTERY_LOW - Battery below 15%
+- ACTION_BATTERY_OKAY - Battery recovered
+- ACTION_SCREEN_ON - Screen turned on
+- ACTION_SCREEN_OFF - Screen turned off
+- ACTION_DEVICE_IDLE_MODE_CHANGED - Doze mode changes
+
+ADAPTIVE SAMPLING INTERVALS:
+- Normal discharge: 60 seconds
+- Charging: 30 seconds  
+- Fast charging: 20 seconds
+- Low battery (<20%): 30 seconds
+- Critical (<10%): 15 seconds
+- High temp (>40°C): 15 seconds
+- Screen off: 2 minutes
+- Idle/Doze: 5 minutes
+
+MANAGERS INITIALIZED:
+1. BatteryDataCollector - Collects snapshots
+2. BatteryHealthManager - Tracks health over time
+3. ChargingAnalyzer - Analyzes charging sessions
+4. ThermalMonitor - Monitors temperature
+5. DrainAnalyzer - Analyzes drain patterns
+6. IdleDrainAnalyzer - Tracks idle drain
+7. SafetyMonitor - Checks safety thresholds
+8. CalibrationManager - Calibrates readings
+9. ProtectionManager - Protects battery
+10. AppUsageCollector - Collects per-app usage
+11. HexNilAI - AI analysis engine
+
+CHECK IF SERVICE IS RUNNING:
+    adb shell dumpsys activity services com.example.hexnil
+
+Look for: isForeground=true, startRequested=true
+
+================================================================================
+10. AI ANALYSIS & ANOMALY DETECTION
+================================================================================
+
+AI ANALYSIS RUNS:
+- Every 30 minutes automatically
+- 5 minutes after app start (initial analysis)
+- Can be triggered manually from app
+
+ANOMALY DETECTION THRESHOLDS:
+----------------------------
+APP DRAIN ANOMALIES:
+- High: App drains > 15%/hour
+- Critical: App drains > 25%/hour
+
+THERMAL ANOMALIES:
+- Warning: Temperature > 40°C
+- Critical: Temperature > 45°C
+
+BATTERY HEALTH ANOMALIES:
+- Warning: Health < 85%
+- Critical: Health < 75%
+- High degradation: > 0.5%/month loss
+
+CHARGING ANOMALIES:
+- Low efficiency: < 75%
+- High temperature during charge
+- Excessive interruptions
+
+IDLE DRAIN ANOMALIES:
+- High: > 2%/hour while idle
+- Critical: > 5%/hour while idle
+
+USAGE PATTERN ANOMALIES:
+- Excessive wakelocks: > 50 count
+- High background time: > 30 minutes
+
+WHEN ANOMALY IS DETECTED:
+1. Creates AnomalyRecord with full details
+2. Stores in anomaly_records table
+3. Logs to Android logcat
+4. Includes: type, severity, expected vs actual, recommendations
+
+VIEW DETECTED ANOMALIES VIA ADB:
+    adb logcat | findstr "Anomaly"
+
+================================================================================
+11. ADB COMMANDS FOR TESTING
+================================================================================
+
+DEVICE CONNECTION:
+-----------------
+Check connected devices:
+    adb devices
+
+Connect to device (if multiple):
+    adb -s DEVICE_ID shell
+
+APP CONTROL:
+-----------
+Start app:
+    adb shell am start -n com.example.hexnil/.MainActivity
+
+Stop app:
+    adb shell am force-stop com.example.hexnil
+
+Clear data:
+    adb shell pm clear com.example.hexnil
+
+Uninstall:
+    adb uninstall com.example.hexnil
+
+Install:
+    adb install -r app\build\outputs\apk\debug\app-debug.apk
+
+SERVICE MONITORING:
+------------------
+Check service status:
+    adb shell dumpsys activity services com.example.hexnil
+
+Check if service running:
+    adb shell dumpsys activity services | findstr hexnil
+
+LOGGING:
+-------
+View all logs:
+    adb logcat
+
+View HexNil logs only:
+    adb logcat | findstr "HexNil\|BatteryMonitor\|Anomaly\|AI"
+
+View AI analysis logs:
+    adb logcat | findstr "AI Analysis\|Anomaly"
+
+Clear logs:
+    adb logcat -c
+
+DATABASE ACCESS:
+---------------
+List database files:
+    adb shell run-as com.example.hexnil ls -la databases/
+
+Check database size:
+    adb shell run-as com.example.hexnil du -h databases/hexnil_database
+
+Pull database to PC:
+    adb exec-out run-as com.example.hexnil cat databases/hexnil_database > hexnil_db.db
+
+BATTERY SIMULATION (FOR TESTING):
+--------------------------------
+Simulate unplugged (stop USB charging):
+    adb shell dumpsys battery set usb 0
+
+Simulate plugged:
+    adb shell dumpsys battery set usb 1
+
+Set battery level (testing):
+    adb shell dumpsys battery set level 50
+
+Reset battery to real values:
+    adb shell dumpsys battery reset
+
+PERMISSIONS:
+-----------
+Check app permissions:
+    adb shell dumpsys package com.example.hexnil | findstr permission
+
+Grant usage stats permission (requires adb root):
+    adb shell appops set com.example.hexnil PACKAGE_USAGE_STATS allow
+
+================================================================================
+12. TROUBLESHOOTING
+================================================================================
+
+PROBLEM: App crashes on start
+SOLUTION: 
+1. Clear app data: adb shell pm clear com.example.hexnil
+2. Reinstall: adb install -r app-debug.apk
+3. Check logs: adb logcat | findstr "hexnil\|Exception\|Error"
+
+PROBLEM: No data being collected
+SOLUTION:
+1. Check service running: adb shell dumpsys activity services com.example.hexnil
+2. Check permissions granted
+3. Grant usage access permission manually in Settings
+
+PROBLEM: App usage not showing
+SOLUTION:
+1. Go to Settings → Apps → Special app access → Usage access
+2. Find HexNil and enable
+3. Restart app
+
+PROBLEM: Database migration error
+SOLUTION:
+1. Clear app data: adb shell pm clear com.example.hexnil
+2. This resets database to latest version
+
+PROBLEM: Service stops after some time
+SOLUTION:
+1. Disable battery optimization for HexNil
+2. Lock app in recent apps (if device supports)
+3. Check: Settings → Apps → HexNil → Battery → Unrestricted
+
+PROBLEM: High battery usage by HexNil itself
+SOLUTION:
+1. This is expected for continuous monitoring
+2. Service uses ~1-3% per hour
+3. Can adjust sampling intervals in code
+
+PROBLEM: Device disconnected from ADB
+SOLUTION:
+1. Check USB cable connection
+2. Toggle USB debugging off/on
+3. Run: adb kill-server && adb start-server
+4. Accept USB debugging prompt on device
+
+================================================================================
+13. FILE STRUCTURE
+================================================================================
+
+c:\Users\sutha\AndroidStudioProjects\HexNil2\
+│
+├── app\
+│   ├── build.gradle.kts              # App build configuration
+│   ├── proguard-rules.pro            # Proguard rules
+│   │
+│   ├── schemas\                      # Database schema exports
+│   │   └── com.example.hexnil.database.HexNilDatabase\
+│   │       ├── 11.json
+│   │       ├── 14.json
+│   │       ├── 15.json
+│   │       ├── 16.json
+│   │       ├── 17.json
+│   │       ├── 18.json
+│   │       ├── 19.json               # Current schema (with anomaly_records)
+│   │       └── working.txt           # This file
+│   │
+│   └── src\main\
+│       ├── AndroidManifest.xml       # App manifest with permissions
+│       │
+│       └── java\com\example\hexnil\
+│           │
+│           ├── MainActivity.java              # Main entry point
+│           ├── HexNilApplication.java         # Application class
+│           │
+│           ├── database\                      # Database layer
+│           │   ├── HexNilDatabase.java        # Room database definition
+│           │   ├── BatterySnapshotDao.java    # Snapshot queries
+│           │   ├── AppBatteryUsageDao.java    # App usage queries
+│           │   ├── ChargingSessionDao.java    # Charging queries
+│           │   ├── DrainEventDao.java         # Drain event queries
+│           │   ├── ThermalEventDao.java       # Thermal queries
+│           │   ├── BatteryHealthDao.java      # Health queries
+│           │   ├── AnomalyRecordDao.java      # Anomaly queries
+│           │   └── ... (other DAOs)
+│           │
+│           ├── model\                         # Data models (entities)
+│           │   ├── BatterySnapshot.java       # Core battery data
+│           │   ├── AppBatteryUsage.java       # Per-app usage
+│           │   ├── ChargingSession.java       # Charging data
+│           │   ├── DrainEvent.java            # Drain events
+│           │   ├── ThermalEvent.java          # Thermal events
+│           │   ├── BatteryHealth.java         # Health records
+│           │   ├── AnomalyRecord.java         # AI anomalies
+│           │   ├── AIAnalysisResult.java      # AI results
+│           │   └── ... (other models)
+│           │
+│           ├── service\                       # Background services
+│           │   ├── BatteryMonitorService.java # Main monitoring service
+│           │   └── RemoteMonitorServer.java   # HTTP server for remote access
+│           │
+│           ├── manager\                       # Business logic managers
+│           │   ├── BatteryDataCollector.java  # Data collection
+│           │   ├── BatteryHealthManager.java  # Health tracking
+│           │   ├── ChargingAnalyzer.java      # Charging analysis
+│           │   ├── ThermalMonitor.java        # Temperature monitoring
+│           │   ├── DrainAnalyzer.java         # Drain analysis
+│           │   ├── IdleDrainAnalyzer.java     # Idle drain tracking
+│           │   ├── SafetyMonitor.java         # Safety checks
+│           │   ├── CalibrationManager.java    # Calibration
+│           │   ├── ProtectionManager.java     # Battery protection
+│           │   ├── AppUsageCollector.java     # App usage collection
+│           │   ├── HexNilAI.java              # AI analysis engine
+│           │   ├── AnomalyDetector.java       # Anomaly detection
+│           │   └── ... (other managers)
+│           │
+│           ├── receiver\                      # Broadcast receivers
+│           │   └── BootReceiver.java          # Starts service on boot
+│           │
+│           └── ui\                            # User interface
+│               ├── SettingsFragment.java
+│               ├── BatteryHealthActivity.java
+│               ├── ChargingAnalysisActivity.java
+│               ├── ThermalMonitorActivity.java
+│               ├── DrainAnalysisActivity.java
+│               ├── AIAdvisorActivity.java
+│               └── ... (other activities)
+│
+├── build.gradle.kts                  # Project build configuration
+├── settings.gradle.kts               # Project settings
+├── gradle.properties                 # Gradle properties
+├── gradlew.bat                       # Gradle wrapper (Windows)
+├── gradlew                           # Gradle wrapper (Linux/Mac)
+│
+├── backend/                          # Python Backend System
+│   ├── __init__.py                   # Package marker
+│   ├── hexnil_fastapi_server.py      # FastAPI REST server
+│   ├── hexnil_ai_pipeline.py         # AI processing pipeline
+│   ├── hexnil_mysql_schema.sql       # Canonical MySQL schema
+│   └── ingest_spool.py               # SQLite async spool
+│
+├── test_backend_smoke.py             # Backend smoke tests (16 tests)
+├── test_ai_smoke.py                  # AI pipeline smoke tests (14 tests)
+├── run_all_smoke_tests.py            # Combined test runner
+├── smoke_test_pipeline.py            # Legacy pipeline tester
+├── setup_database.py                 # Database setup utility
+├── run_hexnil_backend.py             # Backend server launcher
+├── run_hexnil_ai.py                  # AI pipeline launcher
+├── requirements.txt                  # Python dependencies
+├── START_HEXNIL_PIPELINE.bat         # Windows batch launcher
+├── info.txt                          # Feature documentation
+└── working.txt                       # This architecture guide
+
+================================================================================
+                           SMOKE TEST SUMMARY
+================================================================================
+
+BACKEND SMOKE TESTS (test_backend_smoke.py) - 16 Tests:
+--------------------------------------------------------
+ 1. test_health_endpoint          - Server health check
+ 2. test_db_connection            - MySQL connection verify
+ 3. test_sync_battery_snapshots   - Sync snapshot data
+ 4. test_sync_charging_sessions   - Sync charging sessions
+ 5. test_sync_thermal_events      - Sync thermal events
+ 6. test_sync_drain_events        - Sync drain events
+ 7. test_sync_battery_health      - Sync health records
+ 8. test_sync_safety_events       - Sync safety events
+ 9. test_sync_all_data            - Combined sync operation
+10. test_device_registration      - Register new device
+11. test_sync_log_created         - Verify sync logging
+12. test_duplicate_handling       - Handle duplicate syncs
+13. test_empty_payload            - Handle empty payloads
+14. test_validation_errors        - Pydantic validation
+15. test_invalid_device_id        - Invalid device rejection
+16. test_large_batch              - Large data batch (100 records)
+
+AI SMOKE TESTS (test_ai_smoke.py) - 14 Tests:
+----------------------------------------------
+ 1. test_ai_db_connection         - AI MySQL user connection
+ 2. test_read_raw_snapshots       - Read battery_snapshots
+ 3. test_read_raw_charging        - Read charging_sessions
+ 4. test_write_hourly_metrics     - Insert hourly metrics
+ 5. test_write_daily_metrics      - Insert daily metrics
+ 6. test_write_anomalies          - Insert anomalies
+ 7. test_watermark_create         - Create watermark record
+ 8. test_watermark_read           - Read watermark value
+ 9. test_watermark_update         - Update watermark value
+10. test_compute_hourly_metrics   - Compute hourly aggregations
+11. test_compute_daily_metrics    - Compute daily aggregations
+12. test_detect_anomalies         - Detect threshold violations
+13. test_risk_score_calculation   - Calculate risk scores
+14. test_incremental_processing   - Watermark-based processing
+
+RUNNING TESTS:
+--------------
+# Activate virtual environment
+.\.venv\Scripts\Activate.ps1
+
+# Run all 30 tests
+python run_all_smoke_tests.py
+
+# Run backend only (16 tests)
+python run_all_smoke_tests.py --backend-only
+
+# Run AI only (14 tests)
+python run_all_smoke_tests.py --ai-only
+
+EXPECTED OUTPUT:
+----------------
+=== ALL SMOKE TESTS SUMMARY ===
+Backend Tests: 16 passed, 0 failed
+AI Tests: 14 passed, 0 failed
+Total: 30 passed, 0 failed
+All smoke tests PASSED!
+
+================================================================================
+                              END OF DOCUMENTATION
+================================================================================
+
+Last Updated: January 14, 2026
+Database Version: 19
+App Version: 3.2 (Backend Pipeline)
+Author: HexNil Development Team

@@ -1,0 +1,4518 @@
+{
+  "formatVersion": 1,
+  "database": {
+    "version": 14,
+    "identityHash": "3dc17e198deee8607a7d5fc71f41ed93",
+    "entities": [
+      {
+        "tableName": "battery_snapshots",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `timestamp` INTEGER NOT NULL, `sequenceNumber` INTEGER NOT NULL, `elapsedRealtimeMs` INTEGER NOT NULL, `level` INTEGER NOT NULL, `status` INTEGER NOT NULL, `health` INTEGER NOT NULL, `plugged` INTEGER NOT NULL, `voltage` INTEGER NOT NULL, `temperature` INTEGER NOT NULL, `chargeCounter` INTEGER NOT NULL, `currentNow` INTEGER NOT NULL, `currentAverage` INTEGER NOT NULL, `energyCounter` INTEGER NOT NULL, `capacityMah` REAL NOT NULL, `designCapacityMah` REAL NOT NULL, `healthPercentage` REAL NOT NULL, `chargeRate` REAL NOT NULL, `dischargeRate` REAL NOT NULL, `screenOn` INTEGER NOT NULL, `screenBrightness` INTEGER NOT NULL, `wifiEnabled` INTEGER NOT NULL, `mobileDataEnabled` INTEGER NOT NULL, `bluetoothEnabled` INTEGER NOT NULL, `gpsEnabled` INTEGER NOT NULL, `signalStrength` INTEGER NOT NULL, `isCharging` INTEGER NOT NULL, `isFastCharging` INTEGER NOT NULL, `chargingType` TEXT, `isDozeMode` INTEGER NOT NULL, `cpuUsage` INTEGER NOT NULL, `memoryUsage` INTEGER NOT NULL, `cpuLoadTotal` INTEGER NOT NULL, `topAppPackage` TEXT, `gpuLoad` INTEGER NOT NULL, `networkState` TEXT, `chargerVendorId` INTEGER NOT NULL, `chargerProductId` INTEGER NOT NULL, `voltageSamplesJson` TEXT, `currentSamplesJson` TEXT, `foregroundApp` TEXT, `runningApps` INTEGER NOT NULL, `samplingContext` TEXT, `samplingIntervalMs` INTEGER NOT NULL, `timeSincePreviousMs` INTEGER NOT NULL, `validationStatus` TEXT, `qualityScore` INTEGER NOT NULL, `validationFlags` INTEGER NOT NULL, `validationNotes` TEXT, `sensorDataChanged` INTEGER NOT NULL, `sessionId` INTEGER NOT NULL)",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "timestamp",
+            "columnName": "timestamp",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "sequenceNumber",
+            "columnName": "sequenceNumber",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "elapsedRealtimeMs",
+            "columnName": "elapsedRealtimeMs",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "level",
+            "columnName": "level",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "status",
+            "columnName": "status",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "health",
+            "columnName": "health",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "plugged",
+            "columnName": "plugged",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "voltage",
+            "columnName": "voltage",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "temperature",
+            "columnName": "temperature",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "chargeCounter",
+            "columnName": "chargeCounter",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "currentNow",
+            "columnName": "currentNow",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "currentAverage",
+            "columnName": "currentAverage",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "energyCounter",
+            "columnName": "energyCounter",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "capacityMah",
+            "columnName": "capacityMah",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "designCapacityMah",
+            "columnName": "designCapacityMah",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "healthPercentage",
+            "columnName": "healthPercentage",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "chargeRate",
+            "columnName": "chargeRate",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "dischargeRate",
+            "columnName": "dischargeRate",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "screenOn",
+            "columnName": "screenOn",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "screenBrightness",
+            "columnName": "screenBrightness",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "wifiEnabled",
+            "columnName": "wifiEnabled",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "mobileDataEnabled",
+            "columnName": "mobileDataEnabled",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "bluetoothEnabled",
+            "columnName": "bluetoothEnabled",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "gpsEnabled",
+            "columnName": "gpsEnabled",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "signalStrength",
+            "columnName": "signalStrength",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "isCharging",
+            "columnName": "isCharging",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "isFastCharging",
+            "columnName": "isFastCharging",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "chargingType",
+            "columnName": "chargingType",
+            "affinity": "TEXT",
+            "notNull": false
+          },
+          {
+            "fieldPath": "isDozeMode",
+            "columnName": "isDozeMode",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "cpuUsage",
+            "columnName": "cpuUsage",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "memoryUsage",
+            "columnName": "memoryUsage",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "cpuLoadTotal",
+            "columnName": "cpuLoadTotal",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "topAppPackage",
+            "columnName": "topAppPackage",
+            "affinity": "TEXT",
+            "notNull": false
+          },
+          {
+            "fieldPath": "gpuLoad",
+            "columnName": "gpuLoad",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "networkState",
+            "columnName": "networkState",
+            "affinity": "TEXT",
+            "notNull": false
+          },
+          {
+            "fieldPath": "chargerVendorId",
+            "columnName": "chargerVendorId",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "chargerProductId",
+            "columnName": "chargerProductId",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "voltageSamplesJson",
+            "columnName": "voltageSamplesJson",
+            "affinity": "TEXT",
+            "notNull": false
+          },
+          {
+            "fieldPath": "currentSamplesJson",
+            "columnName": "currentSamplesJson",
+            "affinity": "TEXT",
+            "notNull": false
+          },
+          {
+            "fieldPath": "foregroundApp",
+            "columnName": "foregroundApp",
+            "affinity": "TEXT",
+            "notNull": false
+          },
+          {
+            "fieldPath": "runningApps",
+            "columnName": "runningApps",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "samplingContext",
+            "columnName": "samplingContext",
+            "affinity": "TEXT",
+            "notNull": false
+          },
+          {
+            "fieldPath": "samplingIntervalMs",
+            "columnName": "samplingIntervalMs",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "timeSincePreviousMs",
+            "columnName": "timeSincePreviousMs",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "validationStatus",
+            "columnName": "validationStatus",
+            "affinity": "TEXT",
+            "notNull": false
+          },
+          {
+            "fieldPath": "qualityScore",
+            "columnName": "qualityScore",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "validationFlags",
+            "columnName": "validationFlags",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "validationNotes",
+            "columnName": "validationNotes",
+            "affinity": "TEXT",
+            "notNull": false
+          },
+          {
+            "fieldPath": "sensorDataChanged",
+            "columnName": "sensorDataChanged",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "sessionId",
+            "columnName": "sessionId",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": true,
+          "columnNames": [
+            "id"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_battery_snapshots_timestamp",
+            "unique": false,
+            "columnNames": [
+              "timestamp"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_battery_snapshots_timestamp` ON `${TABLE_NAME}` (`timestamp`)"
+          },
+          {
+            "name": "index_battery_snapshots_samplingContext",
+            "unique": false,
+            "columnNames": [
+              "samplingContext"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_battery_snapshots_samplingContext` ON `${TABLE_NAME}` (`samplingContext`)"
+          },
+          {
+            "name": "index_battery_snapshots_isCharging_timestamp",
+            "unique": false,
+            "columnNames": [
+              "isCharging",
+              "timestamp"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_battery_snapshots_isCharging_timestamp` ON `${TABLE_NAME}` (`isCharging`, `timestamp`)"
+          },
+          {
+            "name": "index_battery_snapshots_validationStatus",
+            "unique": false,
+            "columnNames": [
+              "validationStatus"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_battery_snapshots_validationStatus` ON `${TABLE_NAME}` (`validationStatus`)"
+          }
+        ],
+        "foreignKeys": []
+      },
+      {
+        "tableName": "charging_sessions",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `startTime` INTEGER NOT NULL, `endTime` INTEGER NOT NULL, `startLevel` INTEGER NOT NULL, `endLevel` INTEGER NOT NULL, `chargedAmount` INTEGER NOT NULL, `peakLevel` INTEGER NOT NULL, `chargingType` TEXT, `plugType` INTEGER NOT NULL, `isFastCharging` INTEGER NOT NULL, `isOriginalCharger` INTEGER NOT NULL, `chargingProtocol` TEXT, `maxVoltage` REAL NOT NULL, `minVoltage` REAL NOT NULL, `avgVoltage` REAL NOT NULL, `maxCurrent` REAL NOT NULL, `minCurrent` REAL NOT NULL, `avgCurrent` REAL NOT NULL, `startTemperature` REAL NOT NULL, `maxTemperature` REAL NOT NULL, `endTemperature` REAL NOT NULL, `avgTemperature` REAL NOT NULL, `temperatureRise` REAL NOT NULL, `interruptionCount` INTEGER NOT NULL, `overCurrentEvents` INTEGER NOT NULL, `overVoltageEvents` INTEGER NOT NULL, `overTempEvents` INTEGER NOT NULL, `currentFluctuations` INTEGER NOT NULL, `voltageFluctuations` INTEGER NOT NULL, `chargingDuration` INTEGER NOT NULL, `chargingSpeed` REAL NOT NULL, `energyDelivered` REAL NOT NULL, `chargingEfficiency` REAL NOT NULL, `powerWatts` REAL NOT NULL, `ccPhaseDuration` INTEGER NOT NULL, `cvPhaseDuration` INTEGER NOT NULL, `ccPhaseEndLevel` INTEGER NOT NULL, `ccPhaseAvgCurrent` REAL NOT NULL, `cvPhaseAvgCurrent` REAL NOT NULL, `ccToCvTransitionVoltage` REAL NOT NULL, `currentPhase` TEXT, `isOvernightCharging` INTEGER NOT NULL, `timeAtFullCharge` INTEGER NOT NULL, `percentAtFullCharge` REAL NOT NULL, `reachedFullCharge` INTEGER NOT NULL, `fullChargeHoldCount` INTEGER NOT NULL, `voltageCurveJson` TEXT, `currentCurveJson` TEXT, `temperatureCurveJson` TEXT, `curveSampleIntervalMs` INTEGER NOT NULL, `curveStabilityScore` REAL NOT NULL, `curveSampleCount` INTEGER NOT NULL, `interruptionTimestamps` TEXT, `interruptionDurations` TEXT, `longestInterruption` INTEGER NOT NULL, `totalInterruptionTime` INTEGER NOT NULL, `safetyStatus` TEXT, `safetyNotes` TEXT, `safetyScore` REAL NOT NULL, `temperatureScore` REAL NOT NULL, `voltageScore` REAL NOT NULL, `currentScore` REAL NOT NULL, `stabilityScore` REAL NOT NULL, `passedOEMCompliance` INTEGER NOT NULL, `complianceNotes` TEXT, `chargerFingerprint` TEXT, `chargerQuality` TEXT, `chargerVendorId` INTEGER NOT NULL, `chargerProductId` INTEGER NOT NULL, `chargerClassification` TEXT, `chargerPowerCapacity` REAL NOT NULL, `degradationImpact` REAL NOT NULL, `cycleEquivalent` REAL NOT NULL, `stressLevel` REAL NOT NULL, `degradationRiskLevel` TEXT, `degradationNotes` TEXT, `sessionContext` TEXT, `screenOnDuringCharge` INTEGER NOT NULL, `topAppDuringCharge` TEXT, `samplesCollected` INTEGER NOT NULL)",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "startTime",
+            "columnName": "startTime",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "endTime",
+            "columnName": "endTime",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "startLevel",
+            "columnName": "startLevel",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "endLevel",
+            "columnName": "endLevel",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "chargedAmount",
+            "columnName": "chargedAmount",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "peakLevel",
+            "columnName": "peakLevel",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "chargingType",
+            "columnName": "chargingType",
+            "affinity": "TEXT",
+            "notNull": false
+          },
+          {
+            "fieldPath": "plugType",
+            "columnName": "plugType",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "isFastCharging",
+            "columnName": "isFastCharging",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "isOriginalCharger",
+            "columnName": "isOriginalCharger",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "chargingProtocol",
+            "columnName": "chargingProtocol",
+            "affinity": "TEXT",
+            "notNull": false
+          },
+          {
+            "fieldPath": "maxVoltage",
+            "columnName": "maxVoltage",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "minVoltage",
+            "columnName": "minVoltage",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "avgVoltage",
+            "columnName": "avgVoltage",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "maxCurrent",
+            "columnName": "maxCurrent",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "minCurrent",
+            "columnName": "minCurrent",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "avgCurrent",
+            "columnName": "avgCurrent",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "startTemperature",
+            "columnName": "startTemperature",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "maxTemperature",
+            "columnName": "maxTemperature",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "endTemperature",
+            "columnName": "endTemperature",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "avgTemperature",
+            "columnName": "avgTemperature",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "temperatureRise",
+            "columnName": "temperatureRise",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "interruptionCount",
+            "columnName": "interruptionCount",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "overCurrentEvents",
+            "columnName": "overCurrentEvents",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "overVoltageEvents",
+            "columnName": "overVoltageEvents",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "overTempEvents",
+            "columnName": "overTempEvents",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "currentFluctuations",
+            "columnName": "currentFluctuations",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "voltageFluctuations",
+            "columnName": "voltageFluctuations",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "chargingDuration",
+            "columnName": "chargingDuration",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "chargingSpeed",
+            "columnName": "chargingSpeed",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "energyDelivered",
+            "columnName": "energyDelivered",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "chargingEfficiency",
+            "columnName": "chargingEfficiency",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "powerWatts",
+            "columnName": "powerWatts",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "ccPhaseDuration",
+            "columnName": "ccPhaseDuration",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "cvPhaseDuration",
+            "columnName": "cvPhaseDuration",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "ccPhaseEndLevel",
+            "columnName": "ccPhaseEndLevel",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "ccPhaseAvgCurrent",
+            "columnName": "ccPhaseAvgCurrent",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "cvPhaseAvgCurrent",
+            "columnName": "cvPhaseAvgCurrent",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "ccToCvTransitionVoltage",
+            "columnName": "ccToCvTransitionVoltage",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "currentPhase",
+            "columnName": "currentPhase",
+            "affinity": "TEXT",
+            "notNull": false
+          },
+          {
+            "fieldPath": "isOvernightCharging",
+            "columnName": "isOvernightCharging",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "timeAtFullCharge",
+            "columnName": "timeAtFullCharge",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "percentAtFullCharge",
+            "columnName": "percentAtFullCharge",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "reachedFullCharge",
+            "columnName": "reachedFullCharge",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "fullChargeHoldCount",
+            "columnName": "fullChargeHoldCount",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "voltageCurveJson",
+            "columnName": "voltageCurveJson",
+            "affinity": "TEXT",
+            "notNull": false
+          },
+          {
+            "fieldPath": "currentCurveJson",
+            "columnName": "currentCurveJson",
+            "affinity": "TEXT",
+            "notNull": false
+          },
+          {
+            "fieldPath": "temperatureCurveJson",
+            "columnName": "temperatureCurveJson",
+            "affinity": "TEXT",
+            "notNull": false
+          },
+          {
+            "fieldPath": "curveSampleIntervalMs",
+            "columnName": "curveSampleIntervalMs",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "curveStabilityScore",
+            "columnName": "curveStabilityScore",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "curveSampleCount",
+            "columnName": "curveSampleCount",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "interruptionTimestamps",
+            "columnName": "interruptionTimestamps",
+            "affinity": "TEXT",
+            "notNull": false
+          },
+          {
+            "fieldPath": "interruptionDurations",
+            "columnName": "interruptionDurations",
+            "affinity": "TEXT",
+            "notNull": false
+          },
+          {
+            "fieldPath": "longestInterruption",
+            "columnName": "longestInterruption",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "totalInterruptionTime",
+            "columnName": "totalInterruptionTime",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "safetyStatus",
+            "columnName": "safetyStatus",
+            "affinity": "TEXT",
+            "notNull": false
+          },
+          {
+            "fieldPath": "safetyNotes",
+            "columnName": "safetyNotes",
+            "affinity": "TEXT",
+            "notNull": false
+          },
+          {
+            "fieldPath": "safetyScore",
+            "columnName": "safetyScore",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "temperatureScore",
+            "columnName": "temperatureScore",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "voltageScore",
+            "columnName": "voltageScore",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "currentScore",
+            "columnName": "currentScore",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "stabilityScore",
+            "columnName": "stabilityScore",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "passedOEMCompliance",
+            "columnName": "passedOEMCompliance",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "complianceNotes",
+            "columnName": "complianceNotes",
+            "affinity": "TEXT",
+            "notNull": false
+          },
+          {
+            "fieldPath": "chargerFingerprint",
+            "columnName": "chargerFingerprint",
+            "affinity": "TEXT",
+            "notNull": false
+          },
+          {
+            "fieldPath": "chargerQuality",
+            "columnName": "chargerQuality",
+            "affinity": "TEXT",
+            "notNull": false
+          },
+          {
+            "fieldPath": "chargerVendorId",
+            "columnName": "chargerVendorId",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "chargerProductId",
+            "columnName": "chargerProductId",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "chargerClassification",
+            "columnName": "chargerClassification",
+            "affinity": "TEXT",
+            "notNull": false
+          },
+          {
+            "fieldPath": "chargerPowerCapacity",
+            "columnName": "chargerPowerCapacity",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "degradationImpact",
+            "columnName": "degradationImpact",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "cycleEquivalent",
+            "columnName": "cycleEquivalent",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "stressLevel",
+            "columnName": "stressLevel",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "degradationRiskLevel",
+            "columnName": "degradationRiskLevel",
+            "affinity": "TEXT",
+            "notNull": false
+          },
+          {
+            "fieldPath": "degradationNotes",
+            "columnName": "degradationNotes",
+            "affinity": "TEXT",
+            "notNull": false
+          },
+          {
+            "fieldPath": "sessionContext",
+            "columnName": "sessionContext",
+            "affinity": "TEXT",
+            "notNull": false
+          },
+          {
+            "fieldPath": "screenOnDuringCharge",
+            "columnName": "screenOnDuringCharge",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "topAppDuringCharge",
+            "columnName": "topAppDuringCharge",
+            "affinity": "TEXT",
+            "notNull": false
+          },
+          {
+            "fieldPath": "samplesCollected",
+            "columnName": "samplesCollected",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": true,
+          "columnNames": [
+            "id"
+          ]
+        },
+        "indices": [],
+        "foreignKeys": []
+      },
+      {
+        "tableName": "thermal_events",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `timestamp` INTEGER NOT NULL, `duration` INTEGER NOT NULL, `batteryTemp` REAL NOT NULL, `cpuTemp` REAL NOT NULL, `skinTemp` REAL NOT NULL, `ambientTemp` REAL NOT NULL, `eventType` TEXT, `severity` TEXT, `peakTemperature` REAL NOT NULL, `temperatureRise` REAL NOT NULL, `triggerActivity` TEXT, `foregroundApp` TEXT, `cpuUsage` INTEGER NOT NULL, `gpuUsage` INTEGER NOT NULL, `isCharging` INTEGER NOT NULL, `screenOn` INTEGER NOT NULL, `isGaming` INTEGER NOT NULL, `isCamera` INTEGER NOT NULL, `isNavigation` INTEGER NOT NULL, `heavyNetworkActivity` INTEGER NOT NULL, `networkType` TEXT, `batteryLevel` INTEGER NOT NULL, `currentDraw` REAL NOT NULL, `thermalZones` TEXT, `resolution` TEXT, `cooldownTime` INTEGER NOT NULL)",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "timestamp",
+            "columnName": "timestamp",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "duration",
+            "columnName": "duration",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "batteryTemp",
+            "columnName": "batteryTemp",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "cpuTemp",
+            "columnName": "cpuTemp",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "skinTemp",
+            "columnName": "skinTemp",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "ambientTemp",
+            "columnName": "ambientTemp",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "eventType",
+            "columnName": "eventType",
+            "affinity": "TEXT",
+            "notNull": false
+          },
+          {
+            "fieldPath": "severity",
+            "columnName": "severity",
+            "affinity": "TEXT",
+            "notNull": false
+          },
+          {
+            "fieldPath": "peakTemperature",
+            "columnName": "peakTemperature",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "temperatureRise",
+            "columnName": "temperatureRise",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "triggerActivity",
+            "columnName": "triggerActivity",
+            "affinity": "TEXT",
+            "notNull": false
+          },
+          {
+            "fieldPath": "foregroundApp",
+            "columnName": "foregroundApp",
+            "affinity": "TEXT",
+            "notNull": false
+          },
+          {
+            "fieldPath": "cpuUsage",
+            "columnName": "cpuUsage",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "gpuUsage",
+            "columnName": "gpuUsage",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "isCharging",
+            "columnName": "isCharging",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "screenOn",
+            "columnName": "screenOn",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "isGaming",
+            "columnName": "isGaming",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "isCamera",
+            "columnName": "isCamera",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "isNavigation",
+            "columnName": "isNavigation",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "heavyNetworkActivity",
+            "columnName": "heavyNetworkActivity",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "networkType",
+            "columnName": "networkType",
+            "affinity": "TEXT",
+            "notNull": false
+          },
+          {
+            "fieldPath": "batteryLevel",
+            "columnName": "batteryLevel",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "currentDraw",
+            "columnName": "currentDraw",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "thermalZones",
+            "columnName": "thermalZones",
+            "affinity": "TEXT",
+            "notNull": false
+          },
+          {
+            "fieldPath": "resolution",
+            "columnName": "resolution",
+            "affinity": "TEXT",
+            "notNull": false
+          },
+          {
+            "fieldPath": "cooldownTime",
+            "columnName": "cooldownTime",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": true,
+          "columnNames": [
+            "id"
+          ]
+        },
+        "indices": [],
+        "foreignKeys": []
+      },
+      {
+        "tableName": "drain_events",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `startTime` INTEGER NOT NULL, `endTime` INTEGER NOT NULL, `startLevel` INTEGER NOT NULL, `endLevel` INTEGER NOT NULL, `drainAmount` INTEGER NOT NULL, `drainRatePerHour` REAL NOT NULL, `screenOn` INTEGER NOT NULL, `screenState` TEXT, `isCharging` INTEGER NOT NULL, `isIdle` INTEGER NOT NULL, `drainType` TEXT, `drainCategory` TEXT, `primaryCause` TEXT, `topDrainingApps` TEXT, `foregroundApp` TEXT, `wakelockCount` INTEGER NOT NULL, `activeWakelocks` TEXT, `networkDrainEstimate` REAL NOT NULL, `networkType` TEXT, `dataSent` INTEGER NOT NULL, `dataReceived` INTEGER NOT NULL, `displayDrainEstimate` REAL NOT NULL, `avgBrightness` INTEGER NOT NULL, `screenOnTime` INTEGER NOT NULL, `cpuDrainEstimate` REAL NOT NULL, `avgCpuUsage` INTEGER NOT NULL, `gpsDrainEstimate` REAL NOT NULL, `gpsActive` INTEGER NOT NULL, `analysisNotes` TEXT, `recommendations` TEXT, `isAnomalous` INTEGER NOT NULL, `expectedDrain` REAL NOT NULL, `anomalyScore` REAL NOT NULL)",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "startTime",
+            "columnName": "startTime",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "endTime",
+            "columnName": "endTime",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "startLevel",
+            "columnName": "startLevel",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "endLevel",
+            "columnName": "endLevel",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "drainAmount",
+            "columnName": "drainAmount",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "drainRatePerHour",
+            "columnName": "drainRatePerHour",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "screenOn",
+            "columnName": "screenOn",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "screenState",
+            "columnName": "screenState",
+            "affinity": "TEXT",
+            "notNull": false
+          },
+          {
+            "fieldPath": "isCharging",
+            "columnName": "isCharging",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "isIdle",
+            "columnName": "isIdle",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "drainType",
+            "columnName": "drainType",
+            "affinity": "TEXT",
+            "notNull": false
+          },
+          {
+            "fieldPath": "drainCategory",
+            "columnName": "drainCategory",
+            "affinity": "TEXT",
+            "notNull": false
+          },
+          {
+            "fieldPath": "primaryCause",
+            "columnName": "primaryCause",
+            "affinity": "TEXT",
+            "notNull": false
+          },
+          {
+            "fieldPath": "topDrainingApps",
+            "columnName": "topDrainingApps",
+            "affinity": "TEXT",
+            "notNull": false
+          },
+          {
+            "fieldPath": "foregroundApp",
+            "columnName": "foregroundApp",
+            "affinity": "TEXT",
+            "notNull": false
+          },
+          {
+            "fieldPath": "wakelockCount",
+            "columnName": "wakelockCount",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "activeWakelocks",
+            "columnName": "activeWakelocks",
+            "affinity": "TEXT",
+            "notNull": false
+          },
+          {
+            "fieldPath": "networkDrainEstimate",
+            "columnName": "networkDrainEstimate",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "networkType",
+            "columnName": "networkType",
+            "affinity": "TEXT",
+            "notNull": false
+          },
+          {
+            "fieldPath": "dataSent",
+            "columnName": "dataSent",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "dataReceived",
+            "columnName": "dataReceived",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "displayDrainEstimate",
+            "columnName": "displayDrainEstimate",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "avgBrightness",
+            "columnName": "avgBrightness",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "screenOnTime",
+            "columnName": "screenOnTime",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "cpuDrainEstimate",
+            "columnName": "cpuDrainEstimate",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "avgCpuUsage",
+            "columnName": "avgCpuUsage",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "gpsDrainEstimate",
+            "columnName": "gpsDrainEstimate",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "gpsActive",
+            "columnName": "gpsActive",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "analysisNotes",
+            "columnName": "analysisNotes",
+            "affinity": "TEXT",
+            "notNull": false
+          },
+          {
+            "fieldPath": "recommendations",
+            "columnName": "recommendations",
+            "affinity": "TEXT",
+            "notNull": false
+          },
+          {
+            "fieldPath": "isAnomalous",
+            "columnName": "isAnomalous",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "expectedDrain",
+            "columnName": "expectedDrain",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "anomalyScore",
+            "columnName": "anomalyScore",
+            "affinity": "REAL",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": true,
+          "columnNames": [
+            "id"
+          ]
+        },
+        "indices": [],
+        "foreignKeys": []
+      },
+      {
+        "tableName": "app_battery_usage",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `timestamp` INTEGER NOT NULL, `periodStart` INTEGER NOT NULL, `periodEnd` INTEGER NOT NULL, `packageName` TEXT, `appName` TEXT, `isSystemApp` INTEGER NOT NULL, `isPreInstalled` INTEGER NOT NULL, `appCategory` TEXT, `foregroundTime` INTEGER NOT NULL, `backgroundTime` INTEGER NOT NULL, `batteryPercentUsed` REAL NOT NULL, `drainPerHour` REAL NOT NULL, `cpuTimeMs` REAL NOT NULL, `networkBytes` INTEGER NOT NULL, `wakelockCount` INTEGER NOT NULL, `wakelockTime` INTEGER NOT NULL, `partialWakelockTime` INTEGER NOT NULL, `alarmWakeCount` INTEGER NOT NULL, `networkWakeCount` INTEGER NOT NULL, `wakelockDrainScore` REAL NOT NULL, `alarmCount` INTEGER NOT NULL, `gpsRequests` INTEGER NOT NULL, `backgroundWakes` INTEGER NOT NULL, `pushNotifications` INTEGER NOT NULL, `backgroundServices` INTEGER NOT NULL, `hasExcessiveBackground` INTEGER NOT NULL, `categoryAverage` REAL NOT NULL, `deviationFromAverage` REAL NOT NULL, `efficiencyRating` TEXT, `drainReasons` TEXT, `optimizationTips` TEXT, `needsRestriction` INTEGER NOT NULL)",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "timestamp",
+            "columnName": "timestamp",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "periodStart",
+            "columnName": "periodStart",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "periodEnd",
+            "columnName": "periodEnd",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "packageName",
+            "columnName": "packageName",
+            "affinity": "TEXT",
+            "notNull": false
+          },
+          {
+            "fieldPath": "appName",
+            "columnName": "appName",
+            "affinity": "TEXT",
+            "notNull": false
+          },
+          {
+            "fieldPath": "isSystemApp",
+            "columnName": "isSystemApp",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "isPreInstalled",
+            "columnName": "isPreInstalled",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "appCategory",
+            "columnName": "appCategory",
+            "affinity": "TEXT",
+            "notNull": false
+          },
+          {
+            "fieldPath": "foregroundTime",
+            "columnName": "foregroundTime",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "backgroundTime",
+            "columnName": "backgroundTime",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "batteryPercentUsed",
+            "columnName": "batteryPercentUsed",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "drainPerHour",
+            "columnName": "drainPerHour",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "cpuTimeMs",
+            "columnName": "cpuTimeMs",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "networkBytes",
+            "columnName": "networkBytes",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "wakelockCount",
+            "columnName": "wakelockCount",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "wakelockTime",
+            "columnName": "wakelockTime",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "partialWakelockTime",
+            "columnName": "partialWakelockTime",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "alarmWakeCount",
+            "columnName": "alarmWakeCount",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "networkWakeCount",
+            "columnName": "networkWakeCount",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "wakelockDrainScore",
+            "columnName": "wakelockDrainScore",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "alarmCount",
+            "columnName": "alarmCount",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "gpsRequests",
+            "columnName": "gpsRequests",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "backgroundWakes",
+            "columnName": "backgroundWakes",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "pushNotifications",
+            "columnName": "pushNotifications",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "backgroundServices",
+            "columnName": "backgroundServices",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "hasExcessiveBackground",
+            "columnName": "hasExcessiveBackground",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "categoryAverage",
+            "columnName": "categoryAverage",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "deviationFromAverage",
+            "columnName": "deviationFromAverage",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "efficiencyRating",
+            "columnName": "efficiencyRating",
+            "affinity": "TEXT",
+            "notNull": false
+          },
+          {
+            "fieldPath": "drainReasons",
+            "columnName": "drainReasons",
+            "affinity": "TEXT",
+            "notNull": false
+          },
+          {
+            "fieldPath": "optimizationTips",
+            "columnName": "optimizationTips",
+            "affinity": "TEXT",
+            "notNull": false
+          },
+          {
+            "fieldPath": "needsRestriction",
+            "columnName": "needsRestriction",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": true,
+          "columnNames": [
+            "id"
+          ]
+        },
+        "indices": [],
+        "foreignKeys": []
+      },
+      {
+        "tableName": "app_drain_ranks",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `windowLabel` TEXT, `windowStart` INTEGER NOT NULL, `windowEnd` INTEGER NOT NULL, `rank` INTEGER NOT NULL, `packageName` TEXT, `drainScore` REAL NOT NULL, `contributionPct` REAL NOT NULL, `screenTimeMs` INTEGER NOT NULL, `foregroundTimeMs` INTEGER NOT NULL, `backgroundTimeMs` INTEGER NOT NULL)",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "windowLabel",
+            "columnName": "windowLabel",
+            "affinity": "TEXT",
+            "notNull": false
+          },
+          {
+            "fieldPath": "windowStart",
+            "columnName": "windowStart",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "windowEnd",
+            "columnName": "windowEnd",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "rank",
+            "columnName": "rank",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "packageName",
+            "columnName": "packageName",
+            "affinity": "TEXT",
+            "notNull": false
+          },
+          {
+            "fieldPath": "drainScore",
+            "columnName": "drainScore",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "contributionPct",
+            "columnName": "contributionPct",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "screenTimeMs",
+            "columnName": "screenTimeMs",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "foregroundTimeMs",
+            "columnName": "foregroundTimeMs",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "backgroundTimeMs",
+            "columnName": "backgroundTimeMs",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": true,
+          "columnNames": [
+            "id"
+          ]
+        },
+        "indices": [],
+        "foreignKeys": []
+      },
+      {
+        "tableName": "battery_health",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `timestamp` INTEGER NOT NULL, `designCapacityMah` REAL NOT NULL, `currentCapacityMah` REAL NOT NULL, `measuredCapacityMah` REAL NOT NULL, `estimatedCapacityMah` REAL NOT NULL, `capacityLossMah` REAL NOT NULL, `capacityFade` REAL NOT NULL, `healthPercentage` REAL NOT NULL, `capacityFadePercent` REAL NOT NULL, `stateOfHealth` REAL NOT NULL, `cycleCount` REAL NOT NULL, `fullCycleCount` INTEGER NOT NULL, `partialCycleAccumulator` REAL NOT NULL, `totalChargeAccumulated` INTEGER NOT NULL, `totalDischargeAccumulated` INTEGER NOT NULL, `deepCycleCount` INTEGER NOT NULL, `topOffCycleCount` INTEGER NOT NULL, `trackingDays` INTEGER NOT NULL, `firstRecordTimestamp` INTEGER NOT NULL, `fadePerCycle` REAL NOT NULL, `fadePer100Cycles` REAL NOT NULL, `fadePerMonth` REAL NOT NULL, `degradationRate` REAL NOT NULL, `smoothedDegradationRate` REAL NOT NULL, `degradationAcceleration` REAL NOT NULL, `degradationTrend` TEXT, `predictedEOL` REAL NOT NULL, `predictedReplacementDate` REAL NOT NULL, `eolConfidence` REAL NOT NULL, `internalResistance` REAL NOT NULL, `resistance25C` REAL NOT NULL, `resistanceIncrease` REAL NOT NULL, `voltageDropUnderLoad` REAL NOT NULL, `selfDischargeRate` REAL NOT NULL, `chargingEfficiency` REAL NOT NULL, `dischargeEfficiency` REAL NOT NULL, `hasAbnormalWear` INTEGER NOT NULL, `hasAbnormalAging` INTEGER NOT NULL, `hasSwellingRisk` INTEGER NOT NULL, `hasCalibrationIssue` INTEGER NOT NULL, `hasHighResistance` INTEGER NOT NULL, `hasCapacityInstability` INTEGER NOT NULL, `abnormalityDetails` TEXT, `agingNotes` TEXT, `wearDeviation` REAL NOT NULL, `wearSeverity` INTEGER NOT NULL, `capacityScore` REAL NOT NULL, `resistanceScore` REAL NOT NULL, `cycleScore` REAL NOT NULL, `degradationScore` REAL NOT NULL, `thermalScore` REAL NOT NULL, `overallScore` REAL NOT NULL, `batteryModel` TEXT, `manufacturer` TEXT, `manufactureDate` TEXT, `batchId` TEXT, `supplierAverageHealth` REAL NOT NULL, `batchAverageHealth` REAL NOT NULL, `supplierDeviation` REAL NOT NULL, `batchDeviation` REAL NOT NULL, `supplierQualityTier` TEXT, `batchQualityAlert` INTEGER NOT NULL, `lastFullCharge` INTEGER NOT NULL, `lastFullDischarge` INTEGER NOT NULL, `hasCalibrationCycle` INTEGER NOT NULL, `needsCalibration` INTEGER NOT NULL, `dataPointCount` INTEGER NOT NULL, `overallConfidence` REAL NOT NULL, `capacityConfidence` REAL NOT NULL, `cycleConfidence` REAL NOT NULL, `degradationConfidence` REAL NOT NULL, `meetsMinimumDataRequirement` INTEGER NOT NULL)",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "timestamp",
+            "columnName": "timestamp",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "designCapacityMah",
+            "columnName": "designCapacityMah",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "currentCapacityMah",
+            "columnName": "currentCapacityMah",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "measuredCapacityMah",
+            "columnName": "measuredCapacityMah",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "estimatedCapacityMah",
+            "columnName": "estimatedCapacityMah",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "capacityLossMah",
+            "columnName": "capacityLossMah",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "capacityFade",
+            "columnName": "capacityFade",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "healthPercentage",
+            "columnName": "healthPercentage",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "capacityFadePercent",
+            "columnName": "capacityFadePercent",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "stateOfHealth",
+            "columnName": "stateOfHealth",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "cycleCount",
+            "columnName": "cycleCount",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "fullCycleCount",
+            "columnName": "fullCycleCount",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "partialCycleAccumulator",
+            "columnName": "partialCycleAccumulator",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "totalChargeAccumulated",
+            "columnName": "totalChargeAccumulated",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "totalDischargeAccumulated",
+            "columnName": "totalDischargeAccumulated",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "deepCycleCount",
+            "columnName": "deepCycleCount",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "topOffCycleCount",
+            "columnName": "topOffCycleCount",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "trackingDays",
+            "columnName": "trackingDays",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "firstRecordTimestamp",
+            "columnName": "firstRecordTimestamp",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "fadePerCycle",
+            "columnName": "fadePerCycle",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "fadePer100Cycles",
+            "columnName": "fadePer100Cycles",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "fadePerMonth",
+            "columnName": "fadePerMonth",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "degradationRate",
+            "columnName": "degradationRate",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "smoothedDegradationRate",
+            "columnName": "smoothedDegradationRate",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "degradationAcceleration",
+            "columnName": "degradationAcceleration",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "degradationTrend",
+            "columnName": "degradationTrend",
+            "affinity": "TEXT",
+            "notNull": false
+          },
+          {
+            "fieldPath": "predictedEOL",
+            "columnName": "predictedEOL",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "predictedReplacementDate",
+            "columnName": "predictedReplacementDate",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "eolConfidence",
+            "columnName": "eolConfidence",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "internalResistance",
+            "columnName": "internalResistance",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "resistance25C",
+            "columnName": "resistance25C",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "resistanceIncrease",
+            "columnName": "resistanceIncrease",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "voltageDropUnderLoad",
+            "columnName": "voltageDropUnderLoad",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "selfDischargeRate",
+            "columnName": "selfDischargeRate",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "chargingEfficiency",
+            "columnName": "chargingEfficiency",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "dischargeEfficiency",
+            "columnName": "dischargeEfficiency",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "hasAbnormalWear",
+            "columnName": "hasAbnormalWear",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "hasAbnormalAging",
+            "columnName": "hasAbnormalAging",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "hasSwellingRisk",
+            "columnName": "hasSwellingRisk",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "hasCalibrationIssue",
+            "columnName": "hasCalibrationIssue",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "hasHighResistance",
+            "columnName": "hasHighResistance",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "hasCapacityInstability",
+            "columnName": "hasCapacityInstability",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "abnormalityDetails",
+            "columnName": "abnormalityDetails",
+            "affinity": "TEXT",
+            "notNull": false
+          },
+          {
+            "fieldPath": "agingNotes",
+            "columnName": "agingNotes",
+            "affinity": "TEXT",
+            "notNull": false
+          },
+          {
+            "fieldPath": "wearDeviation",
+            "columnName": "wearDeviation",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "wearSeverity",
+            "columnName": "wearSeverity",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "capacityScore",
+            "columnName": "capacityScore",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "resistanceScore",
+            "columnName": "resistanceScore",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "cycleScore",
+            "columnName": "cycleScore",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "degradationScore",
+            "columnName": "degradationScore",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "thermalScore",
+            "columnName": "thermalScore",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "overallScore",
+            "columnName": "overallScore",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "batteryModel",
+            "columnName": "batteryModel",
+            "affinity": "TEXT",
+            "notNull": false
+          },
+          {
+            "fieldPath": "manufacturer",
+            "columnName": "manufacturer",
+            "affinity": "TEXT",
+            "notNull": false
+          },
+          {
+            "fieldPath": "manufactureDate",
+            "columnName": "manufactureDate",
+            "affinity": "TEXT",
+            "notNull": false
+          },
+          {
+            "fieldPath": "batchId",
+            "columnName": "batchId",
+            "affinity": "TEXT",
+            "notNull": false
+          },
+          {
+            "fieldPath": "supplierAverageHealth",
+            "columnName": "supplierAverageHealth",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "batchAverageHealth",
+            "columnName": "batchAverageHealth",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "supplierDeviation",
+            "columnName": "supplierDeviation",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "batchDeviation",
+            "columnName": "batchDeviation",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "supplierQualityTier",
+            "columnName": "supplierQualityTier",
+            "affinity": "TEXT",
+            "notNull": false
+          },
+          {
+            "fieldPath": "batchQualityAlert",
+            "columnName": "batchQualityAlert",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "lastFullCharge",
+            "columnName": "lastFullCharge",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "lastFullDischarge",
+            "columnName": "lastFullDischarge",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "hasCalibrationCycle",
+            "columnName": "hasCalibrationCycle",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "needsCalibration",
+            "columnName": "needsCalibration",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "dataPointCount",
+            "columnName": "dataPointCount",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "overallConfidence",
+            "columnName": "overallConfidence",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "capacityConfidence",
+            "columnName": "capacityConfidence",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "cycleConfidence",
+            "columnName": "cycleConfidence",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "degradationConfidence",
+            "columnName": "degradationConfidence",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "meetsMinimumDataRequirement",
+            "columnName": "meetsMinimumDataRequirement",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": true,
+          "columnNames": [
+            "id"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_battery_health_timestamp",
+            "unique": false,
+            "columnNames": [
+              "timestamp"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_battery_health_timestamp` ON `${TABLE_NAME}` (`timestamp`)"
+          },
+          {
+            "name": "index_battery_health_manufacturer",
+            "unique": false,
+            "columnNames": [
+              "manufacturer"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_battery_health_manufacturer` ON `${TABLE_NAME}` (`manufacturer`)"
+          },
+          {
+            "name": "index_battery_health_batchId",
+            "unique": false,
+            "columnNames": [
+              "batchId"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_battery_health_batchId` ON `${TABLE_NAME}` (`batchId`)"
+          },
+          {
+            "name": "index_battery_health_healthPercentage",
+            "unique": false,
+            "columnNames": [
+              "healthPercentage"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_battery_health_healthPercentage` ON `${TABLE_NAME}` (`healthPercentage`)"
+          },
+          {
+            "name": "index_battery_health_hasAbnormalWear",
+            "unique": false,
+            "columnNames": [
+              "hasAbnormalWear"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_battery_health_hasAbnormalWear` ON `${TABLE_NAME}` (`hasAbnormalWear`)"
+          }
+        ],
+        "foreignKeys": []
+      },
+      {
+        "tableName": "idle_drain_sessions",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `startTime` INTEGER NOT NULL, `endTime` INTEGER NOT NULL, `startLevel` INTEGER NOT NULL, `endLevel` INTEGER NOT NULL, `drainAmount` REAL NOT NULL, `drainPerHour` REAL NOT NULL, `sessionType` TEXT, `wasScreenOff` INTEGER NOT NULL, `wasUnplugged` INTEGER NOT NULL, `dozeActive` INTEGER NOT NULL, `dozeEffectiveness` REAL NOT NULL, `dozeExits` INTEGER NOT NULL, `dozeExitReasons` TEXT, `deepSleepPercentage` REAL NOT NULL, `deepSleepTime` INTEGER NOT NULL, `lightSleepTime` INTEGER NOT NULL, `awakeTime` INTEGER NOT NULL, `deepSleepSuccessRate` REAL NOT NULL, `dozeEffectivenessScore` REAL NOT NULL, `leakageClass` TEXT, `wakelockEvents` INTEGER NOT NULL, `totalWakelockTime` INTEGER NOT NULL, `topWakelockHolders` TEXT, `alarmsFired` INTEGER NOT NULL, `alarmsDetails` TEXT, `networkWakes` INTEGER NOT NULL, `networkActivity` INTEGER NOT NULL, `networkDetails` TEXT, `syncEvents` INTEGER NOT NULL, `syncDetails` TEXT, `backgroundServices` INTEGER NOT NULL, `leakingServices` TEXT, `serviceLeakageEstimate` REAL NOT NULL, `dozeEntryTime` INTEGER NOT NULL, `dozeExitTime` INTEGER NOT NULL, `alarmWakeups` INTEGER NOT NULL, `networkWakeups` INTEGER NOT NULL, `expectedDrain` REAL NOT NULL, `drainDelta` REAL NOT NULL, `benchmarkResult` TEXT, `hasLeakage` INTEGER NOT NULL, `leakageSources` TEXT, `recommendations` TEXT)",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "startTime",
+            "columnName": "startTime",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "endTime",
+            "columnName": "endTime",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "startLevel",
+            "columnName": "startLevel",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "endLevel",
+            "columnName": "endLevel",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "drainAmount",
+            "columnName": "drainAmount",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "drainPerHour",
+            "columnName": "drainPerHour",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "sessionType",
+            "columnName": "sessionType",
+            "affinity": "TEXT",
+            "notNull": false
+          },
+          {
+            "fieldPath": "wasScreenOff",
+            "columnName": "wasScreenOff",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "wasUnplugged",
+            "columnName": "wasUnplugged",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "dozeActive",
+            "columnName": "dozeActive",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "dozeEffectiveness",
+            "columnName": "dozeEffectiveness",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "dozeExits",
+            "columnName": "dozeExits",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "dozeExitReasons",
+            "columnName": "dozeExitReasons",
+            "affinity": "TEXT",
+            "notNull": false
+          },
+          {
+            "fieldPath": "deepSleepPercentage",
+            "columnName": "deepSleepPercentage",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "deepSleepTime",
+            "columnName": "deepSleepTime",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "lightSleepTime",
+            "columnName": "lightSleepTime",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "awakeTime",
+            "columnName": "awakeTime",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "deepSleepSuccessRate",
+            "columnName": "deepSleepSuccessRate",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "dozeEffectivenessScore",
+            "columnName": "dozeEffectivenessScore",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "leakageClass",
+            "columnName": "leakageClass",
+            "affinity": "TEXT",
+            "notNull": false
+          },
+          {
+            "fieldPath": "wakelockEvents",
+            "columnName": "wakelockEvents",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "totalWakelockTime",
+            "columnName": "totalWakelockTime",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "topWakelockHolders",
+            "columnName": "topWakelockHolders",
+            "affinity": "TEXT",
+            "notNull": false
+          },
+          {
+            "fieldPath": "alarmsFired",
+            "columnName": "alarmsFired",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "alarmsDetails",
+            "columnName": "alarmsDetails",
+            "affinity": "TEXT",
+            "notNull": false
+          },
+          {
+            "fieldPath": "networkWakes",
+            "columnName": "networkWakes",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "networkActivity",
+            "columnName": "networkActivity",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "networkDetails",
+            "columnName": "networkDetails",
+            "affinity": "TEXT",
+            "notNull": false
+          },
+          {
+            "fieldPath": "syncEvents",
+            "columnName": "syncEvents",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "syncDetails",
+            "columnName": "syncDetails",
+            "affinity": "TEXT",
+            "notNull": false
+          },
+          {
+            "fieldPath": "backgroundServices",
+            "columnName": "backgroundServices",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "leakingServices",
+            "columnName": "leakingServices",
+            "affinity": "TEXT",
+            "notNull": false
+          },
+          {
+            "fieldPath": "serviceLeakageEstimate",
+            "columnName": "serviceLeakageEstimate",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "dozeEntryTime",
+            "columnName": "dozeEntryTime",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "dozeExitTime",
+            "columnName": "dozeExitTime",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "alarmWakeups",
+            "columnName": "alarmWakeups",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "networkWakeups",
+            "columnName": "networkWakeups",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "expectedDrain",
+            "columnName": "expectedDrain",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "drainDelta",
+            "columnName": "drainDelta",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "benchmarkResult",
+            "columnName": "benchmarkResult",
+            "affinity": "TEXT",
+            "notNull": false
+          },
+          {
+            "fieldPath": "hasLeakage",
+            "columnName": "hasLeakage",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "leakageSources",
+            "columnName": "leakageSources",
+            "affinity": "TEXT",
+            "notNull": false
+          },
+          {
+            "fieldPath": "recommendations",
+            "columnName": "recommendations",
+            "affinity": "TEXT",
+            "notNull": false
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": true,
+          "columnNames": [
+            "id"
+          ]
+        },
+        "indices": [],
+        "foreignKeys": []
+      },
+      {
+        "tableName": "safety_events",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `timestamp` INTEGER NOT NULL, `eventType` TEXT, `severity` TEXT, `wasProtectionTriggered` INTEGER NOT NULL, `triggerValue` REAL NOT NULL, `thresholdValue` REAL NOT NULL, `measurementUnit` TEXT, `batteryLevel` INTEGER NOT NULL, `wasCharging` INTEGER NOT NULL, `chargingType` TEXT, `activity` TEXT, `batteryTemperature` REAL NOT NULL, `ambientTemperature` REAL NOT NULL, `wasThermalShutdown` INTEGER NOT NULL, `voltage` REAL NOT NULL, `expectedVoltage` REAL NOT NULL, `current` REAL NOT NULL, `expectedCurrent` REAL NOT NULL, `lowestVoltage` REAL NOT NULL, `wasEmergencyShutdown` INTEGER NOT NULL, `abuseType` TEXT, `abuseCount` INTEGER NOT NULL, `abuseSeverity` REAL NOT NULL, `voltageAnomaly` REAL NOT NULL, `capacityAnomaly` REAL NOT NULL, `resistanceAnomaly` REAL NOT NULL, `swellingRiskScore` REAL NOT NULL, `protectionAction` TEXT, `resolutionTime` INTEGER NOT NULL, `wasResolved` INTEGER NOT NULL, `exceedsRegulatory` INTEGER NOT NULL, `regulatoryStandard` TEXT, `requiresReport` INTEGER NOT NULL, `deviceModel` TEXT, `firmwareVersion` TEXT, `batteryPartNumber` TEXT)",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "timestamp",
+            "columnName": "timestamp",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "eventType",
+            "columnName": "eventType",
+            "affinity": "TEXT",
+            "notNull": false
+          },
+          {
+            "fieldPath": "severity",
+            "columnName": "severity",
+            "affinity": "TEXT",
+            "notNull": false
+          },
+          {
+            "fieldPath": "wasProtectionTriggered",
+            "columnName": "wasProtectionTriggered",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "triggerValue",
+            "columnName": "triggerValue",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "thresholdValue",
+            "columnName": "thresholdValue",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "measurementUnit",
+            "columnName": "measurementUnit",
+            "affinity": "TEXT",
+            "notNull": false
+          },
+          {
+            "fieldPath": "batteryLevel",
+            "columnName": "batteryLevel",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "wasCharging",
+            "columnName": "wasCharging",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "chargingType",
+            "columnName": "chargingType",
+            "affinity": "TEXT",
+            "notNull": false
+          },
+          {
+            "fieldPath": "activity",
+            "columnName": "activity",
+            "affinity": "TEXT",
+            "notNull": false
+          },
+          {
+            "fieldPath": "batteryTemperature",
+            "columnName": "batteryTemperature",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "ambientTemperature",
+            "columnName": "ambientTemperature",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "wasThermalShutdown",
+            "columnName": "wasThermalShutdown",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "voltage",
+            "columnName": "voltage",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "expectedVoltage",
+            "columnName": "expectedVoltage",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "current",
+            "columnName": "current",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "expectedCurrent",
+            "columnName": "expectedCurrent",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "lowestVoltage",
+            "columnName": "lowestVoltage",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "wasEmergencyShutdown",
+            "columnName": "wasEmergencyShutdown",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "abuseType",
+            "columnName": "abuseType",
+            "affinity": "TEXT",
+            "notNull": false
+          },
+          {
+            "fieldPath": "abuseCount",
+            "columnName": "abuseCount",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "abuseSeverity",
+            "columnName": "abuseSeverity",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "voltageAnomaly",
+            "columnName": "voltageAnomaly",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "capacityAnomaly",
+            "columnName": "capacityAnomaly",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "resistanceAnomaly",
+            "columnName": "resistanceAnomaly",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "swellingRiskScore",
+            "columnName": "swellingRiskScore",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "protectionAction",
+            "columnName": "protectionAction",
+            "affinity": "TEXT",
+            "notNull": false
+          },
+          {
+            "fieldPath": "resolutionTime",
+            "columnName": "resolutionTime",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "wasResolved",
+            "columnName": "wasResolved",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "exceedsRegulatory",
+            "columnName": "exceedsRegulatory",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "regulatoryStandard",
+            "columnName": "regulatoryStandard",
+            "affinity": "TEXT",
+            "notNull": false
+          },
+          {
+            "fieldPath": "requiresReport",
+            "columnName": "requiresReport",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "deviceModel",
+            "columnName": "deviceModel",
+            "affinity": "TEXT",
+            "notNull": false
+          },
+          {
+            "fieldPath": "firmwareVersion",
+            "columnName": "firmwareVersion",
+            "affinity": "TEXT",
+            "notNull": false
+          },
+          {
+            "fieldPath": "batteryPartNumber",
+            "columnName": "batteryPartNumber",
+            "affinity": "TEXT",
+            "notNull": false
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": true,
+          "columnNames": [
+            "id"
+          ]
+        },
+        "indices": [],
+        "foreignKeys": []
+      },
+      {
+        "tableName": "calibration_data",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `timestamp` INTEGER NOT NULL, `reportedLevel` INTEGER NOT NULL, `estimatedActualLevel` REAL NOT NULL, `levelDrift` REAL NOT NULL, `driftExceeded` INTEGER NOT NULL, `socMismatch` INTEGER NOT NULL, `socAccuracy` REAL NOT NULL, `avgDrift` REAL NOT NULL, `maxDrift` REAL NOT NULL, `driftDirection` TEXT, `hasSuddenDrops` INTEGER NOT NULL, `suddenDropCount` INTEGER NOT NULL, `suddenDrops` TEXT, `avgDropSize` REAL NOT NULL, `worstDrop` INTEGER NOT NULL, `lastFullCharge` INTEGER NOT NULL, `lastLowBattery` INTEGER NOT NULL, `lastDeepDischarge` INTEGER NOT NULL, `fullChargeCount` INTEGER NOT NULL, `deepDischargeCount` INTEGER NOT NULL, `isCalibrated` INTEGER NOT NULL, `calibrationQuality` REAL NOT NULL, `lastCalibration` INTEGER NOT NULL, `daysSinceCalibration` INTEGER NOT NULL, `chargingCurve` TEXT, `dischargeCurve` TEXT, `curveDeviation` REAL NOT NULL, `voltageAt100` REAL NOT NULL, `voltageAt50` REAL NOT NULL, `voltageAt20` REAL NOT NULL, `voltageAt5` REAL NOT NULL, `voltageCorrelation` REAL NOT NULL, `aiCorrectionEnabled` INTEGER NOT NULL, `aiCorrectedLevel` REAL NOT NULL, `aiConfidence` REAL NOT NULL, `correctedSoc` REAL NOT NULL, `correctionConfidence` REAL NOT NULL, `needsCalibration` INTEGER NOT NULL, `calibrationRecommendation` TEXT, `calibrationSchedule` TEXT, `recommendationReason` TEXT, `healthImpactScore` REAL NOT NULL)",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "timestamp",
+            "columnName": "timestamp",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "reportedLevel",
+            "columnName": "reportedLevel",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "estimatedActualLevel",
+            "columnName": "estimatedActualLevel",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "levelDrift",
+            "columnName": "levelDrift",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "driftExceeded",
+            "columnName": "driftExceeded",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "socMismatch",
+            "columnName": "socMismatch",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "socAccuracy",
+            "columnName": "socAccuracy",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "avgDrift",
+            "columnName": "avgDrift",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "maxDrift",
+            "columnName": "maxDrift",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "driftDirection",
+            "columnName": "driftDirection",
+            "affinity": "TEXT",
+            "notNull": false
+          },
+          {
+            "fieldPath": "hasSuddenDrops",
+            "columnName": "hasSuddenDrops",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "suddenDropCount",
+            "columnName": "suddenDropCount",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "suddenDrops",
+            "columnName": "suddenDrops",
+            "affinity": "TEXT",
+            "notNull": false
+          },
+          {
+            "fieldPath": "avgDropSize",
+            "columnName": "avgDropSize",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "worstDrop",
+            "columnName": "worstDrop",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "lastFullCharge",
+            "columnName": "lastFullCharge",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "lastLowBattery",
+            "columnName": "lastLowBattery",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "lastDeepDischarge",
+            "columnName": "lastDeepDischarge",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "fullChargeCount",
+            "columnName": "fullChargeCount",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "deepDischargeCount",
+            "columnName": "deepDischargeCount",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "isCalibrated",
+            "columnName": "isCalibrated",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "calibrationQuality",
+            "columnName": "calibrationQuality",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "lastCalibration",
+            "columnName": "lastCalibration",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "daysSinceCalibration",
+            "columnName": "daysSinceCalibration",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "chargingCurve",
+            "columnName": "chargingCurve",
+            "affinity": "TEXT",
+            "notNull": false
+          },
+          {
+            "fieldPath": "dischargeCurve",
+            "columnName": "dischargeCurve",
+            "affinity": "TEXT",
+            "notNull": false
+          },
+          {
+            "fieldPath": "curveDeviation",
+            "columnName": "curveDeviation",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "voltageAt100",
+            "columnName": "voltageAt100",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "voltageAt50",
+            "columnName": "voltageAt50",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "voltageAt20",
+            "columnName": "voltageAt20",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "voltageAt5",
+            "columnName": "voltageAt5",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "voltageCorrelation",
+            "columnName": "voltageCorrelation",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "aiCorrectionEnabled",
+            "columnName": "aiCorrectionEnabled",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "aiCorrectedLevel",
+            "columnName": "aiCorrectedLevel",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "aiConfidence",
+            "columnName": "aiConfidence",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "correctedSoc",
+            "columnName": "correctedSoc",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "correctionConfidence",
+            "columnName": "correctionConfidence",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "needsCalibration",
+            "columnName": "needsCalibration",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "calibrationRecommendation",
+            "columnName": "calibrationRecommendation",
+            "affinity": "TEXT",
+            "notNull": false
+          },
+          {
+            "fieldPath": "calibrationSchedule",
+            "columnName": "calibrationSchedule",
+            "affinity": "TEXT",
+            "notNull": false
+          },
+          {
+            "fieldPath": "recommendationReason",
+            "columnName": "recommendationReason",
+            "affinity": "TEXT",
+            "notNull": false
+          },
+          {
+            "fieldPath": "healthImpactScore",
+            "columnName": "healthImpactScore",
+            "affinity": "REAL",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": true,
+          "columnNames": [
+            "id"
+          ]
+        },
+        "indices": [],
+        "foreignKeys": []
+      },
+      {
+        "tableName": "stress_test_results",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `timestamp` INTEGER NOT NULL, `testStartTime` INTEGER NOT NULL, `testEndTime` INTEGER NOT NULL, `testType` TEXT, `testName` TEXT, `testDurationMinutes` INTEGER NOT NULL, `testParameters` TEXT, `highTemperatureScenario` INTEGER NOT NULL, `startLevel` INTEGER NOT NULL, `endLevel` INTEGER NOT NULL, `drainAmount` REAL NOT NULL, `drainRate` REAL NOT NULL, `peakDrainRate` REAL NOT NULL, `startTemperature` REAL NOT NULL, `maxTemperature` REAL NOT NULL, `endTemperature` REAL NOT NULL, `avgTemperature` REAL NOT NULL, `thermalThrottleEvents` INTEGER NOT NULL, `thermalThrottleTime` INTEGER NOT NULL, `safetyTriggerCount` INTEGER NOT NULL, `safetyNotes` TEXT, `avgCpuUsage` REAL NOT NULL, `maxCpuUsage` REAL NOT NULL, `avgGpuUsage` REAL NOT NULL, `maxGpuUsage` REAL NOT NULL, `avgMemoryUsage` REAL NOT NULL, `maxMemoryUsage` REAL NOT NULL, `chargeGained` INTEGER NOT NULL, `avgChargingCurrent` REAL NOT NULL, `maxChargingCurrent` REAL NOT NULL, `chargingInterruptions` INTEGER NOT NULL, `testCompleted` INTEGER NOT NULL, `crashCount` INTEGER NOT NULL, `restartCount` INTEGER NOT NULL, `errorCount` INTEGER NOT NULL, `failureReasons` TEXT, `drainScore` REAL NOT NULL, `thermalScore` REAL NOT NULL, `stabilityScore` REAL NOT NULL, `thermalResilienceScore` REAL NOT NULL, `chargingStabilityScore` REAL NOT NULL, `overallScore` REAL NOT NULL, `baselineDrain` REAL NOT NULL, `drainVariance` REAL NOT NULL, `baselineThermal` REAL NOT NULL, `thermalVariance` REAL NOT NULL, `passed` INTEGER NOT NULL, `verdict` TEXT, `verdictDetails` TEXT, `testLogs` TEXT, `recommendations` TEXT)",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "timestamp",
+            "columnName": "timestamp",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "testStartTime",
+            "columnName": "testStartTime",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "testEndTime",
+            "columnName": "testEndTime",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "testType",
+            "columnName": "testType",
+            "affinity": "TEXT",
+            "notNull": false
+          },
+          {
+            "fieldPath": "testName",
+            "columnName": "testName",
+            "affinity": "TEXT",
+            "notNull": false
+          },
+          {
+            "fieldPath": "testDurationMinutes",
+            "columnName": "testDurationMinutes",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "testParameters",
+            "columnName": "testParameters",
+            "affinity": "TEXT",
+            "notNull": false
+          },
+          {
+            "fieldPath": "highTemperatureScenario",
+            "columnName": "highTemperatureScenario",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "startLevel",
+            "columnName": "startLevel",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "endLevel",
+            "columnName": "endLevel",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "drainAmount",
+            "columnName": "drainAmount",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "drainRate",
+            "columnName": "drainRate",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "peakDrainRate",
+            "columnName": "peakDrainRate",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "startTemperature",
+            "columnName": "startTemperature",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "maxTemperature",
+            "columnName": "maxTemperature",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "endTemperature",
+            "columnName": "endTemperature",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "avgTemperature",
+            "columnName": "avgTemperature",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "thermalThrottleEvents",
+            "columnName": "thermalThrottleEvents",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "thermalThrottleTime",
+            "columnName": "thermalThrottleTime",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "safetyTriggerCount",
+            "columnName": "safetyTriggerCount",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "safetyNotes",
+            "columnName": "safetyNotes",
+            "affinity": "TEXT",
+            "notNull": false
+          },
+          {
+            "fieldPath": "avgCpuUsage",
+            "columnName": "avgCpuUsage",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "maxCpuUsage",
+            "columnName": "maxCpuUsage",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "avgGpuUsage",
+            "columnName": "avgGpuUsage",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "maxGpuUsage",
+            "columnName": "maxGpuUsage",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "avgMemoryUsage",
+            "columnName": "avgMemoryUsage",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "maxMemoryUsage",
+            "columnName": "maxMemoryUsage",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "chargeGained",
+            "columnName": "chargeGained",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "avgChargingCurrent",
+            "columnName": "avgChargingCurrent",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "maxChargingCurrent",
+            "columnName": "maxChargingCurrent",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "chargingInterruptions",
+            "columnName": "chargingInterruptions",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "testCompleted",
+            "columnName": "testCompleted",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "crashCount",
+            "columnName": "crashCount",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "restartCount",
+            "columnName": "restartCount",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "errorCount",
+            "columnName": "errorCount",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "failureReasons",
+            "columnName": "failureReasons",
+            "affinity": "TEXT",
+            "notNull": false
+          },
+          {
+            "fieldPath": "drainScore",
+            "columnName": "drainScore",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "thermalScore",
+            "columnName": "thermalScore",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "stabilityScore",
+            "columnName": "stabilityScore",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "thermalResilienceScore",
+            "columnName": "thermalResilienceScore",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "chargingStabilityScore",
+            "columnName": "chargingStabilityScore",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "overallScore",
+            "columnName": "overallScore",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "baselineDrain",
+            "columnName": "baselineDrain",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "drainVariance",
+            "columnName": "drainVariance",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "baselineThermal",
+            "columnName": "baselineThermal",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "thermalVariance",
+            "columnName": "thermalVariance",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "passed",
+            "columnName": "passed",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "verdict",
+            "columnName": "verdict",
+            "affinity": "TEXT",
+            "notNull": false
+          },
+          {
+            "fieldPath": "verdictDetails",
+            "columnName": "verdictDetails",
+            "affinity": "TEXT",
+            "notNull": false
+          },
+          {
+            "fieldPath": "testLogs",
+            "columnName": "testLogs",
+            "affinity": "TEXT",
+            "notNull": false
+          },
+          {
+            "fieldPath": "recommendations",
+            "columnName": "recommendations",
+            "affinity": "TEXT",
+            "notNull": false
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": true,
+          "columnNames": [
+            "id"
+          ]
+        },
+        "indices": [],
+        "foreignKeys": []
+      },
+      {
+        "tableName": "update_comparisons",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `timestamp` INTEGER NOT NULL, `previousVersion` TEXT, `currentVersion` TEXT, `updateTimestamp` INTEGER NOT NULL, `updateType` TEXT, `preDrainRate` REAL NOT NULL, `preAvgDrainScreenOn` REAL NOT NULL, `preAvgDrainScreenOff` REAL NOT NULL, `preAvgChargingTime` REAL NOT NULL, `preAvgTemperature` REAL NOT NULL, `preMaxTemperature` REAL NOT NULL, `preIdleDrain` REAL NOT NULL, `preBatteryHealth` REAL NOT NULL, `postDrainRate` REAL NOT NULL, `postAvgDrainScreenOn` REAL NOT NULL, `postAvgDrainScreenOff` REAL NOT NULL, `postAvgChargingTime` REAL NOT NULL, `postAvgTemperature` REAL NOT NULL, `postMaxTemperature` REAL NOT NULL, `postIdleDrain` REAL NOT NULL, `postBatteryHealth` REAL NOT NULL, `drainRateDelta` REAL NOT NULL, `screenOnDrainDelta` REAL NOT NULL, `screenOffDrainDelta` REAL NOT NULL, `chargingTimeDelta` REAL NOT NULL, `temperatureDelta` REAL NOT NULL, `thermalPeakDelta` REAL NOT NULL, `idleDrainDelta` REAL NOT NULL, `drainRateChange` REAL NOT NULL, `screenOnDrainChange` REAL NOT NULL, `screenOffDrainChange` REAL NOT NULL, `chargingTimeChange` REAL NOT NULL, `temperatureChange` REAL NOT NULL, `thermalPeakChange` REAL NOT NULL, `idleDrainChange` REAL NOT NULL, `overallImpact` TEXT, `impactScore` REAL NOT NULL, `impactDetails` TEXT, `hasDrainRegression` INTEGER NOT NULL, `hasChargingRegression` INTEGER NOT NULL, `hasThermalRegression` INTEGER NOT NULL, `hasIdleRegression` INTEGER NOT NULL, `recommendation` TEXT, `analysisNotes` TEXT, `confidenceLevel` REAL NOT NULL, `preSeriesJson` TEXT, `postSeriesJson` TEXT)",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "timestamp",
+            "columnName": "timestamp",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "previousVersion",
+            "columnName": "previousVersion",
+            "affinity": "TEXT",
+            "notNull": false
+          },
+          {
+            "fieldPath": "currentVersion",
+            "columnName": "currentVersion",
+            "affinity": "TEXT",
+            "notNull": false
+          },
+          {
+            "fieldPath": "updateTimestamp",
+            "columnName": "updateTimestamp",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "updateType",
+            "columnName": "updateType",
+            "affinity": "TEXT",
+            "notNull": false
+          },
+          {
+            "fieldPath": "preDrainRate",
+            "columnName": "preDrainRate",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "preAvgDrainScreenOn",
+            "columnName": "preAvgDrainScreenOn",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "preAvgDrainScreenOff",
+            "columnName": "preAvgDrainScreenOff",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "preAvgChargingTime",
+            "columnName": "preAvgChargingTime",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "preAvgTemperature",
+            "columnName": "preAvgTemperature",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "preMaxTemperature",
+            "columnName": "preMaxTemperature",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "preIdleDrain",
+            "columnName": "preIdleDrain",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "preBatteryHealth",
+            "columnName": "preBatteryHealth",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "postDrainRate",
+            "columnName": "postDrainRate",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "postAvgDrainScreenOn",
+            "columnName": "postAvgDrainScreenOn",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "postAvgDrainScreenOff",
+            "columnName": "postAvgDrainScreenOff",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "postAvgChargingTime",
+            "columnName": "postAvgChargingTime",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "postAvgTemperature",
+            "columnName": "postAvgTemperature",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "postMaxTemperature",
+            "columnName": "postMaxTemperature",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "postIdleDrain",
+            "columnName": "postIdleDrain",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "postBatteryHealth",
+            "columnName": "postBatteryHealth",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "drainRateDelta",
+            "columnName": "drainRateDelta",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "screenOnDrainDelta",
+            "columnName": "screenOnDrainDelta",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "screenOffDrainDelta",
+            "columnName": "screenOffDrainDelta",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "chargingTimeDelta",
+            "columnName": "chargingTimeDelta",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "temperatureDelta",
+            "columnName": "temperatureDelta",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "thermalPeakDelta",
+            "columnName": "thermalPeakDelta",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "idleDrainDelta",
+            "columnName": "idleDrainDelta",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "drainRateChange",
+            "columnName": "drainRateChange",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "screenOnDrainChange",
+            "columnName": "screenOnDrainChange",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "screenOffDrainChange",
+            "columnName": "screenOffDrainChange",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "chargingTimeChange",
+            "columnName": "chargingTimeChange",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "temperatureChange",
+            "columnName": "temperatureChange",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "thermalPeakChange",
+            "columnName": "thermalPeakChange",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "idleDrainChange",
+            "columnName": "idleDrainChange",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "overallImpact",
+            "columnName": "overallImpact",
+            "affinity": "TEXT",
+            "notNull": false
+          },
+          {
+            "fieldPath": "impactScore",
+            "columnName": "impactScore",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "impactDetails",
+            "columnName": "impactDetails",
+            "affinity": "TEXT",
+            "notNull": false
+          },
+          {
+            "fieldPath": "hasDrainRegression",
+            "columnName": "hasDrainRegression",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "hasChargingRegression",
+            "columnName": "hasChargingRegression",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "hasThermalRegression",
+            "columnName": "hasThermalRegression",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "hasIdleRegression",
+            "columnName": "hasIdleRegression",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "recommendation",
+            "columnName": "recommendation",
+            "affinity": "TEXT",
+            "notNull": false
+          },
+          {
+            "fieldPath": "analysisNotes",
+            "columnName": "analysisNotes",
+            "affinity": "TEXT",
+            "notNull": false
+          },
+          {
+            "fieldPath": "confidenceLevel",
+            "columnName": "confidenceLevel",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "preSeriesJson",
+            "columnName": "preSeriesJson",
+            "affinity": "TEXT",
+            "notNull": false
+          },
+          {
+            "fieldPath": "postSeriesJson",
+            "columnName": "postSeriesJson",
+            "affinity": "TEXT",
+            "notNull": false
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": true,
+          "columnNames": [
+            "id"
+          ]
+        },
+        "indices": [],
+        "foreignKeys": []
+      },
+      {
+        "tableName": "thermal_heat_buckets",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `startTime` INTEGER NOT NULL, `endTime` INTEGER NOT NULL, `tempBucket` TEXT, `hourBlock` INTEGER NOT NULL, `sampleCount` INTEGER NOT NULL, `durationMs` INTEGER NOT NULL, `chargingCount` INTEGER NOT NULL, `topForegroundApp` TEXT, `maxTemp` REAL NOT NULL, `avgTemp` REAL NOT NULL)",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "startTime",
+            "columnName": "startTime",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "endTime",
+            "columnName": "endTime",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "tempBucket",
+            "columnName": "tempBucket",
+            "affinity": "TEXT",
+            "notNull": false
+          },
+          {
+            "fieldPath": "hourBlock",
+            "columnName": "hourBlock",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "sampleCount",
+            "columnName": "sampleCount",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "durationMs",
+            "columnName": "durationMs",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "chargingCount",
+            "columnName": "chargingCount",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "topForegroundApp",
+            "columnName": "topForegroundApp",
+            "affinity": "TEXT",
+            "notNull": false
+          },
+          {
+            "fieldPath": "maxTemp",
+            "columnName": "maxTemp",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "avgTemp",
+            "columnName": "avgTemp",
+            "affinity": "REAL",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": true,
+          "columnNames": [
+            "id"
+          ]
+        },
+        "indices": [],
+        "foreignKeys": []
+      },
+      {
+        "tableName": "ai_analysis_results",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `timestamp` INTEGER NOT NULL, `analysisStartTime` INTEGER NOT NULL, `analysisEndTime` INTEGER NOT NULL, `analysisType` TEXT, `analysisPeriod` TEXT, `dataPointsAnalyzed` INTEGER NOT NULL, `issuesDetected` INTEGER NOT NULL, `issueCount` INTEGER NOT NULL, `detectedIssues` TEXT, `primaryIssue` TEXT, `issueCategory` TEXT, `issueConfidence` REAL NOT NULL, `rootCause` TEXT, `rootCauseExplanation` TEXT, `contributingFactors` TEXT, `severity` TEXT, `riskScore` REAL NOT NULL, `requiresAction` INTEGER NOT NULL, `urgency` TEXT, `recommendations` TEXT, `primaryRecommendation` TEXT, `engineerActions` TEXT, `userActions` TEXT, `suggestedFixes` TEXT, `fixSuccessProbability` REAL NOT NULL, `fixComplexity` TEXT, `comparedToNormal` REAL NOT NULL, `comparedToFleet` REAL NOT NULL, `fleetPosition` TEXT, `trend` TEXT, `trendSlope` REAL NOT NULL, `trendPrediction` TEXT, `overallBatteryScore` REAL NOT NULL, `healthScore` REAL NOT NULL, `performanceScore` REAL NOT NULL, `safetyScore` REAL NOT NULL, `reliabilityScore` REAL NOT NULL, `executiveSummary` TEXT, `technicalSummary` TEXT, `oemReportData` TEXT, `hasComplianceIssues` INTEGER NOT NULL, `complianceNotes` TEXT, `feedbackReceived` INTEGER NOT NULL, `wasAccurate` INTEGER NOT NULL, `feedbackNotes` TEXT)",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "timestamp",
+            "columnName": "timestamp",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "analysisStartTime",
+            "columnName": "analysisStartTime",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "analysisEndTime",
+            "columnName": "analysisEndTime",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "analysisType",
+            "columnName": "analysisType",
+            "affinity": "TEXT",
+            "notNull": false
+          },
+          {
+            "fieldPath": "analysisPeriod",
+            "columnName": "analysisPeriod",
+            "affinity": "TEXT",
+            "notNull": false
+          },
+          {
+            "fieldPath": "dataPointsAnalyzed",
+            "columnName": "dataPointsAnalyzed",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "issuesDetected",
+            "columnName": "issuesDetected",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "issueCount",
+            "columnName": "issueCount",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "detectedIssues",
+            "columnName": "detectedIssues",
+            "affinity": "TEXT",
+            "notNull": false
+          },
+          {
+            "fieldPath": "primaryIssue",
+            "columnName": "primaryIssue",
+            "affinity": "TEXT",
+            "notNull": false
+          },
+          {
+            "fieldPath": "issueCategory",
+            "columnName": "issueCategory",
+            "affinity": "TEXT",
+            "notNull": false
+          },
+          {
+            "fieldPath": "issueConfidence",
+            "columnName": "issueConfidence",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "rootCause",
+            "columnName": "rootCause",
+            "affinity": "TEXT",
+            "notNull": false
+          },
+          {
+            "fieldPath": "rootCauseExplanation",
+            "columnName": "rootCauseExplanation",
+            "affinity": "TEXT",
+            "notNull": false
+          },
+          {
+            "fieldPath": "contributingFactors",
+            "columnName": "contributingFactors",
+            "affinity": "TEXT",
+            "notNull": false
+          },
+          {
+            "fieldPath": "severity",
+            "columnName": "severity",
+            "affinity": "TEXT",
+            "notNull": false
+          },
+          {
+            "fieldPath": "riskScore",
+            "columnName": "riskScore",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "requiresAction",
+            "columnName": "requiresAction",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "urgency",
+            "columnName": "urgency",
+            "affinity": "TEXT",
+            "notNull": false
+          },
+          {
+            "fieldPath": "recommendations",
+            "columnName": "recommendations",
+            "affinity": "TEXT",
+            "notNull": false
+          },
+          {
+            "fieldPath": "primaryRecommendation",
+            "columnName": "primaryRecommendation",
+            "affinity": "TEXT",
+            "notNull": false
+          },
+          {
+            "fieldPath": "engineerActions",
+            "columnName": "engineerActions",
+            "affinity": "TEXT",
+            "notNull": false
+          },
+          {
+            "fieldPath": "userActions",
+            "columnName": "userActions",
+            "affinity": "TEXT",
+            "notNull": false
+          },
+          {
+            "fieldPath": "suggestedFixes",
+            "columnName": "suggestedFixes",
+            "affinity": "TEXT",
+            "notNull": false
+          },
+          {
+            "fieldPath": "fixSuccessProbability",
+            "columnName": "fixSuccessProbability",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "fixComplexity",
+            "columnName": "fixComplexity",
+            "affinity": "TEXT",
+            "notNull": false
+          },
+          {
+            "fieldPath": "comparedToNormal",
+            "columnName": "comparedToNormal",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "comparedToFleet",
+            "columnName": "comparedToFleet",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "fleetPosition",
+            "columnName": "fleetPosition",
+            "affinity": "TEXT",
+            "notNull": false
+          },
+          {
+            "fieldPath": "trend",
+            "columnName": "trend",
+            "affinity": "TEXT",
+            "notNull": false
+          },
+          {
+            "fieldPath": "trendSlope",
+            "columnName": "trendSlope",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "trendPrediction",
+            "columnName": "trendPrediction",
+            "affinity": "TEXT",
+            "notNull": false
+          },
+          {
+            "fieldPath": "overallBatteryScore",
+            "columnName": "overallBatteryScore",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "healthScore",
+            "columnName": "healthScore",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "performanceScore",
+            "columnName": "performanceScore",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "safetyScore",
+            "columnName": "safetyScore",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "reliabilityScore",
+            "columnName": "reliabilityScore",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "executiveSummary",
+            "columnName": "executiveSummary",
+            "affinity": "TEXT",
+            "notNull": false
+          },
+          {
+            "fieldPath": "technicalSummary",
+            "columnName": "technicalSummary",
+            "affinity": "TEXT",
+            "notNull": false
+          },
+          {
+            "fieldPath": "oemReportData",
+            "columnName": "oemReportData",
+            "affinity": "TEXT",
+            "notNull": false
+          },
+          {
+            "fieldPath": "hasComplianceIssues",
+            "columnName": "hasComplianceIssues",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "complianceNotes",
+            "columnName": "complianceNotes",
+            "affinity": "TEXT",
+            "notNull": false
+          },
+          {
+            "fieldPath": "feedbackReceived",
+            "columnName": "feedbackReceived",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "wasAccurate",
+            "columnName": "wasAccurate",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "feedbackNotes",
+            "columnName": "feedbackNotes",
+            "affinity": "TEXT",
+            "notNull": false
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": true,
+          "columnNames": [
+            "id"
+          ]
+        },
+        "indices": [],
+        "foreignKeys": []
+      },
+      {
+        "tableName": "device_info",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `timestamp` INTEGER NOT NULL, `firstRecorded` INTEGER NOT NULL, `deviceId` TEXT, `manufacturer` TEXT, `model` TEXT, `product` TEXT, `brand` TEXT, `device` TEXT, `board` TEXT, `hardware` TEXT, `androidVersion` TEXT, `sdkVersion` INTEGER NOT NULL, `buildNumber` TEXT, `securityPatch` TEXT, `kernelVersion` TEXT, `firmwareVersion` TEXT, `batteryTechnology` TEXT, `designCapacityMah` REAL NOT NULL, `batteryPartNumber` TEXT, `batteryManufacturer` TEXT, `batteryBatchId` TEXT, `processor` TEXT, `cpuCores` INTEGER NOT NULL, `ramSize` INTEGER NOT NULL, `storageSize` INTEGER NOT NULL, `screenWidth` INTEGER NOT NULL, `screenHeight` INTEGER NOT NULL, `screenDensity` REAL NOT NULL, `oemSku` TEXT, `regionCode` TEXT, `carrierCode` TEXT, `productionDate` TEXT, `warrantyStatus` TEXT, `hexnilInstallDate` INTEGER NOT NULL, `hexnilVersion` TEXT, `totalSnapshots` INTEGER NOT NULL, `totalAnalyses` INTEGER NOT NULL)",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "timestamp",
+            "columnName": "timestamp",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "firstRecorded",
+            "columnName": "firstRecorded",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "deviceId",
+            "columnName": "deviceId",
+            "affinity": "TEXT",
+            "notNull": false
+          },
+          {
+            "fieldPath": "manufacturer",
+            "columnName": "manufacturer",
+            "affinity": "TEXT",
+            "notNull": false
+          },
+          {
+            "fieldPath": "model",
+            "columnName": "model",
+            "affinity": "TEXT",
+            "notNull": false
+          },
+          {
+            "fieldPath": "product",
+            "columnName": "product",
+            "affinity": "TEXT",
+            "notNull": false
+          },
+          {
+            "fieldPath": "brand",
+            "columnName": "brand",
+            "affinity": "TEXT",
+            "notNull": false
+          },
+          {
+            "fieldPath": "device",
+            "columnName": "device",
+            "affinity": "TEXT",
+            "notNull": false
+          },
+          {
+            "fieldPath": "board",
+            "columnName": "board",
+            "affinity": "TEXT",
+            "notNull": false
+          },
+          {
+            "fieldPath": "hardware",
+            "columnName": "hardware",
+            "affinity": "TEXT",
+            "notNull": false
+          },
+          {
+            "fieldPath": "androidVersion",
+            "columnName": "androidVersion",
+            "affinity": "TEXT",
+            "notNull": false
+          },
+          {
+            "fieldPath": "sdkVersion",
+            "columnName": "sdkVersion",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "buildNumber",
+            "columnName": "buildNumber",
+            "affinity": "TEXT",
+            "notNull": false
+          },
+          {
+            "fieldPath": "securityPatch",
+            "columnName": "securityPatch",
+            "affinity": "TEXT",
+            "notNull": false
+          },
+          {
+            "fieldPath": "kernelVersion",
+            "columnName": "kernelVersion",
+            "affinity": "TEXT",
+            "notNull": false
+          },
+          {
+            "fieldPath": "firmwareVersion",
+            "columnName": "firmwareVersion",
+            "affinity": "TEXT",
+            "notNull": false
+          },
+          {
+            "fieldPath": "batteryTechnology",
+            "columnName": "batteryTechnology",
+            "affinity": "TEXT",
+            "notNull": false
+          },
+          {
+            "fieldPath": "designCapacityMah",
+            "columnName": "designCapacityMah",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "batteryPartNumber",
+            "columnName": "batteryPartNumber",
+            "affinity": "TEXT",
+            "notNull": false
+          },
+          {
+            "fieldPath": "batteryManufacturer",
+            "columnName": "batteryManufacturer",
+            "affinity": "TEXT",
+            "notNull": false
+          },
+          {
+            "fieldPath": "batteryBatchId",
+            "columnName": "batteryBatchId",
+            "affinity": "TEXT",
+            "notNull": false
+          },
+          {
+            "fieldPath": "processor",
+            "columnName": "processor",
+            "affinity": "TEXT",
+            "notNull": false
+          },
+          {
+            "fieldPath": "cpuCores",
+            "columnName": "cpuCores",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "ramSize",
+            "columnName": "ramSize",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "storageSize",
+            "columnName": "storageSize",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "screenWidth",
+            "columnName": "screenWidth",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "screenHeight",
+            "columnName": "screenHeight",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "screenDensity",
+            "columnName": "screenDensity",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "oemSku",
+            "columnName": "oemSku",
+            "affinity": "TEXT",
+            "notNull": false
+          },
+          {
+            "fieldPath": "regionCode",
+            "columnName": "regionCode",
+            "affinity": "TEXT",
+            "notNull": false
+          },
+          {
+            "fieldPath": "carrierCode",
+            "columnName": "carrierCode",
+            "affinity": "TEXT",
+            "notNull": false
+          },
+          {
+            "fieldPath": "productionDate",
+            "columnName": "productionDate",
+            "affinity": "TEXT",
+            "notNull": false
+          },
+          {
+            "fieldPath": "warrantyStatus",
+            "columnName": "warrantyStatus",
+            "affinity": "TEXT",
+            "notNull": false
+          },
+          {
+            "fieldPath": "hexnilInstallDate",
+            "columnName": "hexnilInstallDate",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "hexnilVersion",
+            "columnName": "hexnilVersion",
+            "affinity": "TEXT",
+            "notNull": false
+          },
+          {
+            "fieldPath": "totalSnapshots",
+            "columnName": "totalSnapshots",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "totalAnalyses",
+            "columnName": "totalAnalyses",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": true,
+          "columnNames": [
+            "id"
+          ]
+        },
+        "indices": [],
+        "foreignKeys": []
+      },
+      {
+        "tableName": "compliance_reports",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `timestamp` INTEGER NOT NULL, `periodStart` INTEGER NOT NULL, `periodEnd` INTEGER NOT NULL, `reportType` TEXT, `reportVersion` TEXT, `generatedBy` TEXT, `deviceModel` TEXT, `deviceSerial` TEXT, `firmwareVersion` TEXT, `batteryPartNumber` TEXT, `safetyCompliant` INTEGER NOT NULL, `safetyViolationCount` INTEGER NOT NULL, `safetyViolations` TEXT, `safetyScore` REAL NOT NULL, `maxOperatingTemp` REAL NOT NULL, `maxChargingTemp` REAL NOT NULL, `tempCompliant` INTEGER NOT NULL, `tempViolationCount` INTEGER NOT NULL, `tempViolationDetails` TEXT, `minVoltage` REAL NOT NULL, `maxVoltage` REAL NOT NULL, `voltageCompliant` INTEGER NOT NULL, `voltageViolationCount` INTEGER NOT NULL, `voltageViolationDetails` TEXT, `maxChargingCurrent` REAL NOT NULL, `maxDischargeCurrent` REAL NOT NULL, `currentCompliant` INTEGER NOT NULL, `currentViolationCount` INTEGER NOT NULL, `currentViolationDetails` TEXT, `lowestVoltage` REAL NOT NULL, `overDischargeProtectionWorking` INTEGER NOT NULL, `overDischargeEvents` INTEGER NOT NULL, `highestVoltage` REAL NOT NULL, `overchargeProtectionWorking` INTEGER NOT NULL, `overchargeEvents` INTEGER NOT NULL, `thermalProtectionWorking` INTEGER NOT NULL, `thermalShutdownEvents` INTEGER NOT NULL, `thermalThrottleEvents` INTEGER NOT NULL, `iecCompliant` INTEGER NOT NULL, `ulCompliant` INTEGER NOT NULL, `unCompliant` INTEGER NOT NULL, `standardsNotes` TEXT, `certificationReadiness` REAL NOT NULL, `certificationGaps` TEXT, `certificationRecommendations` TEXT, `evidenceSummary` TEXT, `evidenceIds` TEXT, `evidenceCount` INTEGER NOT NULL, `auditTrail` TEXT, `dataPointsAnalyzed` INTEGER NOT NULL, `dataQuality` REAL NOT NULL, `executiveSummary` TEXT, `technicalDetails` TEXT, `complianceMatrix` TEXT, `attachments` TEXT, `reviewStatus` TEXT, `reviewNotes` TEXT, `reviewTimestamp` INTEGER NOT NULL)",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "timestamp",
+            "columnName": "timestamp",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "periodStart",
+            "columnName": "periodStart",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "periodEnd",
+            "columnName": "periodEnd",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "reportType",
+            "columnName": "reportType",
+            "affinity": "TEXT",
+            "notNull": false
+          },
+          {
+            "fieldPath": "reportVersion",
+            "columnName": "reportVersion",
+            "affinity": "TEXT",
+            "notNull": false
+          },
+          {
+            "fieldPath": "generatedBy",
+            "columnName": "generatedBy",
+            "affinity": "TEXT",
+            "notNull": false
+          },
+          {
+            "fieldPath": "deviceModel",
+            "columnName": "deviceModel",
+            "affinity": "TEXT",
+            "notNull": false
+          },
+          {
+            "fieldPath": "deviceSerial",
+            "columnName": "deviceSerial",
+            "affinity": "TEXT",
+            "notNull": false
+          },
+          {
+            "fieldPath": "firmwareVersion",
+            "columnName": "firmwareVersion",
+            "affinity": "TEXT",
+            "notNull": false
+          },
+          {
+            "fieldPath": "batteryPartNumber",
+            "columnName": "batteryPartNumber",
+            "affinity": "TEXT",
+            "notNull": false
+          },
+          {
+            "fieldPath": "safetyCompliant",
+            "columnName": "safetyCompliant",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "safetyViolationCount",
+            "columnName": "safetyViolationCount",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "safetyViolations",
+            "columnName": "safetyViolations",
+            "affinity": "TEXT",
+            "notNull": false
+          },
+          {
+            "fieldPath": "safetyScore",
+            "columnName": "safetyScore",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "maxOperatingTemp",
+            "columnName": "maxOperatingTemp",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "maxChargingTemp",
+            "columnName": "maxChargingTemp",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "tempCompliant",
+            "columnName": "tempCompliant",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "tempViolationCount",
+            "columnName": "tempViolationCount",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "tempViolationDetails",
+            "columnName": "tempViolationDetails",
+            "affinity": "TEXT",
+            "notNull": false
+          },
+          {
+            "fieldPath": "minVoltage",
+            "columnName": "minVoltage",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "maxVoltage",
+            "columnName": "maxVoltage",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "voltageCompliant",
+            "columnName": "voltageCompliant",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "voltageViolationCount",
+            "columnName": "voltageViolationCount",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "voltageViolationDetails",
+            "columnName": "voltageViolationDetails",
+            "affinity": "TEXT",
+            "notNull": false
+          },
+          {
+            "fieldPath": "maxChargingCurrent",
+            "columnName": "maxChargingCurrent",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "maxDischargeCurrent",
+            "columnName": "maxDischargeCurrent",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "currentCompliant",
+            "columnName": "currentCompliant",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "currentViolationCount",
+            "columnName": "currentViolationCount",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "currentViolationDetails",
+            "columnName": "currentViolationDetails",
+            "affinity": "TEXT",
+            "notNull": false
+          },
+          {
+            "fieldPath": "lowestVoltage",
+            "columnName": "lowestVoltage",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "overDischargeProtectionWorking",
+            "columnName": "overDischargeProtectionWorking",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "overDischargeEvents",
+            "columnName": "overDischargeEvents",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "highestVoltage",
+            "columnName": "highestVoltage",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "overchargeProtectionWorking",
+            "columnName": "overchargeProtectionWorking",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "overchargeEvents",
+            "columnName": "overchargeEvents",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "thermalProtectionWorking",
+            "columnName": "thermalProtectionWorking",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "thermalShutdownEvents",
+            "columnName": "thermalShutdownEvents",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "thermalThrottleEvents",
+            "columnName": "thermalThrottleEvents",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "iecCompliant",
+            "columnName": "iecCompliant",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "ulCompliant",
+            "columnName": "ulCompliant",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "unCompliant",
+            "columnName": "unCompliant",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "standardsNotes",
+            "columnName": "standardsNotes",
+            "affinity": "TEXT",
+            "notNull": false
+          },
+          {
+            "fieldPath": "certificationReadiness",
+            "columnName": "certificationReadiness",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "certificationGaps",
+            "columnName": "certificationGaps",
+            "affinity": "TEXT",
+            "notNull": false
+          },
+          {
+            "fieldPath": "certificationRecommendations",
+            "columnName": "certificationRecommendations",
+            "affinity": "TEXT",
+            "notNull": false
+          },
+          {
+            "fieldPath": "evidenceSummary",
+            "columnName": "evidenceSummary",
+            "affinity": "TEXT",
+            "notNull": false
+          },
+          {
+            "fieldPath": "evidenceIds",
+            "columnName": "evidenceIds",
+            "affinity": "TEXT",
+            "notNull": false
+          },
+          {
+            "fieldPath": "evidenceCount",
+            "columnName": "evidenceCount",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "auditTrail",
+            "columnName": "auditTrail",
+            "affinity": "TEXT",
+            "notNull": false
+          },
+          {
+            "fieldPath": "dataPointsAnalyzed",
+            "columnName": "dataPointsAnalyzed",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "dataQuality",
+            "columnName": "dataQuality",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "executiveSummary",
+            "columnName": "executiveSummary",
+            "affinity": "TEXT",
+            "notNull": false
+          },
+          {
+            "fieldPath": "technicalDetails",
+            "columnName": "technicalDetails",
+            "affinity": "TEXT",
+            "notNull": false
+          },
+          {
+            "fieldPath": "complianceMatrix",
+            "columnName": "complianceMatrix",
+            "affinity": "TEXT",
+            "notNull": false
+          },
+          {
+            "fieldPath": "attachments",
+            "columnName": "attachments",
+            "affinity": "TEXT",
+            "notNull": false
+          },
+          {
+            "fieldPath": "reviewStatus",
+            "columnName": "reviewStatus",
+            "affinity": "TEXT",
+            "notNull": false
+          },
+          {
+            "fieldPath": "reviewNotes",
+            "columnName": "reviewNotes",
+            "affinity": "TEXT",
+            "notNull": false
+          },
+          {
+            "fieldPath": "reviewTimestamp",
+            "columnName": "reviewTimestamp",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": true,
+          "columnNames": [
+            "id"
+          ]
+        },
+        "indices": [],
+        "foreignKeys": []
+      },
+      {
+        "tableName": "compliance_evidence",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `timestamp` INTEGER NOT NULL, `ruleId` TEXT, `metricValue` REAL NOT NULL, `thresholdValue` REAL NOT NULL, `sourceModule` TEXT, `severity` TEXT, `category` TEXT, `sourceEventId` INTEGER NOT NULL, `notes` TEXT)",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "timestamp",
+            "columnName": "timestamp",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "ruleId",
+            "columnName": "ruleId",
+            "affinity": "TEXT",
+            "notNull": false
+          },
+          {
+            "fieldPath": "metricValue",
+            "columnName": "metricValue",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "thresholdValue",
+            "columnName": "thresholdValue",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "sourceModule",
+            "columnName": "sourceModule",
+            "affinity": "TEXT",
+            "notNull": false
+          },
+          {
+            "fieldPath": "severity",
+            "columnName": "severity",
+            "affinity": "TEXT",
+            "notNull": false
+          },
+          {
+            "fieldPath": "category",
+            "columnName": "category",
+            "affinity": "TEXT",
+            "notNull": false
+          },
+          {
+            "fieldPath": "sourceEventId",
+            "columnName": "sourceEventId",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "notes",
+            "columnName": "notes",
+            "affinity": "TEXT",
+            "notNull": false
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": true,
+          "columnNames": [
+            "id"
+          ]
+        },
+        "indices": [],
+        "foreignKeys": []
+      }
+    ],
+    "views": [],
+    "setupQueries": [
+      "CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)",
+      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '3dc17e198deee8607a7d5fc71f41ed93')"
+    ]
+  }
+}

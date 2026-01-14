@@ -27,12 +27,21 @@ public class TrendAnalyzer {
         long weekAgo = now - 7 * DAY_MS;
         long dayAgo = now - DAY_MS;
 
-        float healthWeek = database.batteryHealthDao().getAverageHealth(weekAgo);
-        float healthDay = database.batteryHealthDao().getAverageHealth(dayAgo);
-        float screenOnWeek = database.drainEventDao().getAverageScreenOnDrain(weekAgo);
-        float screenOnDay = database.drainEventDao().getAverageScreenOnDrain(dayAgo);
-        float tempWeek = database.thermalEventDao().getAveragePeakTemperature(weekAgo);
-        float tempDay = database.thermalEventDao().getAveragePeakTemperature(dayAgo);
+        // Get values with null safety
+        Float healthWeekObj = database.batteryHealthDao().getAverageHealth(weekAgo);
+        Float healthDayObj = database.batteryHealthDao().getAverageHealth(dayAgo);
+        Float screenOnWeekObj = database.drainEventDao().getAverageScreenOnDrain(weekAgo);
+        Float screenOnDayObj = database.drainEventDao().getAverageScreenOnDrain(dayAgo);
+        Float tempWeekObj = database.thermalEventDao().getAveragePeakTemperature(weekAgo);
+        Float tempDayObj = database.thermalEventDao().getAveragePeakTemperature(dayAgo);
+
+        // Convert to primitives with defaults
+        float healthWeek = healthWeekObj != null ? healthWeekObj : 100f;
+        float healthDay = healthDayObj != null ? healthDayObj : 100f;
+        float screenOnWeek = screenOnWeekObj != null ? screenOnWeekObj : 0f;
+        float screenOnDay = screenOnDayObj != null ? screenOnDayObj : 0f;
+        float tempWeek = tempWeekObj != null ? tempWeekObj : 25f;
+        float tempDay = tempDayObj != null ? tempDayObj : 25f;
 
         Trend trend = new Trend();
         trend.healthTrend = healthDay - healthWeek;

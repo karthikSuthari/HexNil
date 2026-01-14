@@ -1,9 +1,11 @@
 package com.example.hexnil.manager;
 
 import android.content.Context;
+import android.util.Log;
 
 import com.example.hexnil.database.HexNilDatabase;
 import com.example.hexnil.model.AIAnalysisResult;
+import com.example.hexnil.model.AnomalyRecord;
 import com.example.hexnil.model.RollupMetrics;
 import com.example.hexnil.model.AppDrainRank;
 import com.example.hexnil.model.CalibrationData;
@@ -16,6 +18,8 @@ import java.util.List;
  */
 public class HexNilAI {
 
+    private static final String TAG = "HexNilAI";
+    
     private final HexNilDatabase database;
     private final IssueClassifier issueClassifier;
     private final TrendAnalyzer trendAnalyzer;
@@ -23,6 +27,7 @@ public class HexNilAI {
     private final MetricsRollupManager rollupManager;
     private final RiskEvaluator riskEvaluator;
     private final AppDrainRanker drainRanker;
+    private final AnomalyDetector anomalyDetector;
 
     public HexNilAI(Context context, HexNilDatabase database) {
         this.database = database;
@@ -32,11 +37,22 @@ public class HexNilAI {
         this.rollupManager = new MetricsRollupManager(database);
         this.riskEvaluator = new RiskEvaluator();
         this.drainRanker = new AppDrainRanker(database);
+        this.anomalyDetector = new AnomalyDetector(database);
     }
 
     public AIAnalysisResult runComprehensiveAnalysis(String periodLabel, long startTime) {
         long analysisStart = System.currentTimeMillis();
         long now = System.currentTimeMillis();
+        
+        // Run anomaly detection and store findings
+        try {
+            List<AnomalyRecord> anomalies = anomalyDetector.detectAnomalies(startTime, now);
+            if (anomalies != null && !anomalies.isEmpty()) {
+                Log.i(TAG, "AI detected " + anomalies.size() + " anomalies during analysis");
+            }
+        } catch (Exception e) {
+            Log.e(TAG, "Error during anomaly detection", e);
+        }
 
         RollupMetrics rollup = riskEvaluator.evaluate(
             rollupManager.rollup(periodLabel, startTime, now)

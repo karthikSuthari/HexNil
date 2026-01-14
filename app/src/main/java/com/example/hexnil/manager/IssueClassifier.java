@@ -28,9 +28,15 @@ public class IssueClassifier {
     public Result classify(long startTime) {
         Result result = new Result();
 
-        float avgScreenOnDrain = database.drainEventDao().getAverageScreenOnDrain(startTime);
-        float avgScreenOffDrain = database.drainEventDao().getAverageScreenOffDrain(startTime);
-        float maxPeakTemp = database.thermalEventDao().getMaxPeakTemperature(startTime);
+        Float avgScreenOnDrainObj = database.drainEventDao().getAverageScreenOnDrain(startTime);
+        Float avgScreenOffDrainObj = database.drainEventDao().getAverageScreenOffDrain(startTime);
+        Float maxPeakTempObj = database.thermalEventDao().getMaxPeakTemperature(startTime);
+        
+        // Handle null values with defaults
+        float avgScreenOnDrain = avgScreenOnDrainObj != null ? avgScreenOnDrainObj : 0f;
+        float avgScreenOffDrain = avgScreenOffDrainObj != null ? avgScreenOffDrainObj : 0f;
+        float maxPeakTemp = maxPeakTempObj != null ? maxPeakTempObj : 0f;
+        
         int criticalSafety = database.safetyEventDao().getCriticalEventCount();
         int abnormalWear = database.batteryHealthDao().getAbnormalWearRecords().size();
 

@@ -77,4 +77,24 @@ public class SafetyMonitor {
         event.batteryLevel = 15;
         database.safetyEventDao().insert(event);
     }
+
+    /**
+     * Check for high temperature safety event when critical temperature is detected.
+     * @param tempTenths Temperature in tenths of degrees Celsius
+     */
+    public void checkHighTemperatureSafety(int tempTenths) {
+        float tempC = tempTenths / 10.0f;
+        if (tempC < OVER_TEMP_C) return;
+
+        SafetyEvent event = new SafetyEvent();
+        event.timestamp = System.currentTimeMillis();
+        event.eventType = "over_temp";
+        event.severity = tempC >= OVER_TEMP_C + 5 ? "critical" : (tempC >= OVER_TEMP_C + 3 ? "high" : "warning");
+        event.batteryTemperature = tempC;
+        event.thresholdValue = OVER_TEMP_C;
+        event.measurementUnit = "°C";
+        event.triggerValue = tempC;
+        event.wasCharging = false; // Unknown at this point, will be updated if available
+        database.safetyEventDao().insert(event);
+    }
 }

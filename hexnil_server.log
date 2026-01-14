@@ -1,0 +1,10 @@
+2026-01-14 06:29:41,444 - hexnil.server - INFO - Starting HexNil Backend Server...
+2026-01-14 06:29:41,534 - hexnil.server - INFO - Database pool initialized: 10 connections
+2026-01-14 06:29:41,535 - hexnil.server - INFO - Ingestion spool worker started
+2026-01-14 06:29:52,772 - hexnil.server - INFO - Shutting down HexNil Backend Server...
+2026-01-14 06:29:53,030 - hexnil.server - INFO - Ingestion spool worker stopped
+2026-01-14 06:30:00,314 - hexnil.server - INFO - Starting HexNil Backend Server...
+2026-01-14 06:30:00,391 - hexnil.server - INFO - Database pool initialized: 10 connections
+2026-01-14 06:30:00,395 - hexnil.server - INFO - Ingestion spool worker started
+2026-01-14 06:42:08,870 - hexnil.server - INFO - Sync request accepted from device: 10BE38254U0003T
+2026-01-14 06:43:30,081 - hexnil.server - INFO - Sync request accepted from device: a6a9f331d869db9e

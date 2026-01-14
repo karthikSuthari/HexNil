@@ -6,6 +6,8 @@ import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.fragment.app.Fragment;
 
+import com.example.hexnil.service.BatteryMonitorService;
+import com.example.hexnil.service.RemoteMonitorServer;
 import com.example.hexnil.ui.AiAnalysisFragment;
 import com.example.hexnil.ui.CalibrationFragment;
 import com.example.hexnil.ui.ChargingFragment;
@@ -19,7 +21,6 @@ import com.example.hexnil.ui.ReportsFragment;
 import com.example.hexnil.ui.SafetyFragment;
 import com.example.hexnil.ui.SettingsFragment;
 import com.example.hexnil.ui.ThermalFragment;
-import com.example.hexnil.service.BatteryMonitorService;
 import com.google.android.material.bottomnavigation.BottomNavigationView;
 
 import java.util.HashMap;
@@ -49,9 +50,11 @@ public class MainActivity extends AppCompatActivity implements ModuleNavigator {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        // Ensure monitoring service is running when UI opens
+        // Start monitoring services when UI opens
         BatteryMonitorService.start(this);
+        RemoteMonitorServer.start(this);
 
+        // Bottom navigation mapping
         navMap.put(R.id.nav_dashboard, TAG_DASHBOARD);
         navMap.put(R.id.nav_charging, TAG_CHARGING);
         navMap.put(R.id.nav_thermal, TAG_THERMAL);
@@ -68,10 +71,22 @@ public class MainActivity extends AppCompatActivity implements ModuleNavigator {
             return false;
         });
 
+        // Default screen
         if (savedInstanceState == null) {
             bottomNav.setSelectedItemId(R.id.nav_dashboard);
             showFragment(TAG_DASHBOARD);
         }
+    }
+
+    /**
+     * Fallback cleanup when activity is destroyed
+     * (Services also handle their own lifecycle)
+     */
+    @Override
+    protected void onDestroy() {
+        BatteryMonitorService.stop(this);
+        RemoteMonitorServer.stop(this);
+        super.onDestroy();
     }
 
     @Override
@@ -85,6 +100,7 @@ public class MainActivity extends AppCompatActivity implements ModuleNavigator {
             fragment = createFragment(tag);
             fragmentCache.put(tag, fragment);
         }
+
         getSupportFragmentManager()
                 .beginTransaction()
                 .replace(R.id.fragment_container, fragment, tag)

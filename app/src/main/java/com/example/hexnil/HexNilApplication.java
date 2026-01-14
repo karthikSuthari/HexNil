@@ -3,40 +3,96 @@ package com.example.hexnil;
 import android.app.Application;
 import android.app.NotificationChannel;
 import android.app.NotificationManager;
+import android.content.SharedPreferences;
 import android.os.Build;
+import android.util.Log;
 
 import com.example.hexnil.database.HexNilDatabase;
 import com.example.hexnil.network.AppwriteClientProvider;
 import com.example.hexnil.service.BatteryMonitorService;
+import com.example.hexnil.service.RemoteMonitorServer;
 
 /**
- * Initializes core services and database on app start.
+ * HexNil Application - OEM-Grade Battery Diagnostics Platform
+ * 
+ * Initializes core services and ensures autonomous operation:
+ * - Database initialization
+ * - Notification channels
+ * - Battery monitoring service (always running)
+ * - Remote server (optional, user-controlled)
  */
 public class HexNilApplication extends Application {
 
-    private static final String CHANNEL_ID = "hexnil_battery_monitor";
+    private static final String TAG = "HexNilApplication";
+    private static final String CHANNEL_ID_MONITOR = "hexnil_battery_monitor";
+    private static final String CHANNEL_ID_REMOTE = "hexnil_remote_server";
+    private static final String PREFS_NAME = "hexnil_prefs";
+    private static final String KEY_REMOTE_ENABLED = "remote_server_enabled";
 
     @Override
     public void onCreate() {
         super.onCreate();
+        Log.i(TAG, "HexNil Application starting...");
+        
+        // Initialize database
         HexNilDatabase.getInstance(this);
+        Log.d(TAG, "Database initialized");
+        
+        // Initialize Appwrite client
         AppwriteClientProvider.get(this);
-        createNotificationChannel();
+        Log.d(TAG, "Appwrite client initialized");
+        
+        // Create notification channels
+        createNotificationChannels();
+        Log.d(TAG, "Notification channels created");
+        
+        // Start battery monitoring service (always)
         BatteryMonitorService.start(this);
+        Log.i(TAG, "Battery monitoring service started");
+        
+        // Start remote server if it was enabled before
+        if (isRemoteServerEnabled()) {
+            RemoteMonitorServer.start(this);
+            Log.i(TAG, "Remote server started (was previously enabled)");
+        }
+        
+        Log.i(TAG, "HexNil Application started successfully");
     }
 
-    private void createNotificationChannel() {
+    private void createNotificationChannels() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            NotificationChannel channel = new NotificationChannel(
-                    CHANNEL_ID,
+            NotificationManager manager = getSystemService(NotificationManager.class);
+            if (manager == null) return;
+            
+            // Battery Monitor Channel
+            NotificationChannel monitorChannel = new NotificationChannel(
+                    CHANNEL_ID_MONITOR,
                     "Battery Monitor",
                     NotificationManager.IMPORTANCE_LOW
             );
-            channel.setDescription("HexNil battery monitoring service");
-            NotificationManager manager = getSystemService(NotificationManager.class);
-            if (manager != null) {
-                manager.createNotificationChannel(channel);
-            }
+            monitorChannel.setDescription("HexNil battery monitoring service");
+            monitorChannel.setShowBadge(false);
+            manager.createNotificationChannel(monitorChannel);
+            
+            // Remote Server Channel
+            NotificationChannel remoteChannel = new NotificationChannel(
+                    CHANNEL_ID_REMOTE,
+                    "Remote Server",
+                    NotificationManager.IMPORTANCE_LOW
+            );
+            remoteChannel.setDescription("HexNil remote monitoring server");
+            remoteChannel.setShowBadge(false);
+            manager.createNotificationChannel(remoteChannel);
         }
+    }
+    
+    public boolean isRemoteServerEnabled() {
+        SharedPreferences prefs = getSharedPreferences(PREFS_NAME, MODE_PRIVATE);
+        return prefs.getBoolean(KEY_REMOTE_ENABLED, false);
+    }
+    
+    public void setRemoteServerEnabled(boolean enabled) {
+        SharedPreferences prefs = getSharedPreferences(PREFS_NAME, MODE_PRIVATE);
+        prefs.edit().putBoolean(KEY_REMOTE_ENABLED, enabled).apply();
     }
 }
