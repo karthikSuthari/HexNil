@@ -119,3 +119,86 @@ Auto-sync stopped by user
 2026-01-14 06:44:46,542 [INFO] 
 Auto-sync stopped by user
 2026-01-14 06:56:41,225 [INFO] Device disconnected
+2026-01-15 12:06:22,666 [INFO] ADB path: C:\Users\sutha\AppData\Local\Android\Sdk\platform-tools\adb.exe
+2026-01-15 12:06:22,667 [INFO] Backend URL: http://127.0.0.1:8000
+2026-01-15 12:06:22,668 [INFO] Check interval: 5s
+2026-01-15 12:06:22,797 [INFO] ========================================
+2026-01-15 12:06:22,798 [INFO] DEVICE CONNECTED - Starting auto-sync...
+2026-01-15 12:06:22,800 [INFO] ========================================
+2026-01-15 12:06:23,109 [INFO] Device ID: a6a9f331d869db9e
+2026-01-15 12:06:23,111 [INFO] Device Model: I2302
+2026-01-15 12:06:25,113 [INFO] Pulling database from device...
+2026-01-15 12:06:25,256 [INFO] Database pulled successfully: 372736 bytes -> sync_data\hexnil_battery_db
+2026-01-15 12:06:25,282 [INFO] Found 2 new records in charging_sessions
+2026-01-15 12:06:25,287 [INFO] Found 27 new records in battery_health
+2026-01-15 12:06:25,292 [INFO] Syncing 29 records to backend...
+2026-01-15 12:06:27,367 [ERROR] Backend server not running. Start it with: python run_hexnil_backend.py
+2026-01-15 12:06:27,368 [ERROR] Auto-sync failed!
+2026-01-15 12:06:40,739 [INFO] 
+Auto-sync stopped by user
+2026-01-15 12:08:55,894 [INFO] ADB path: C:\Users\sutha\AppData\Local\Android\Sdk\platform-tools\adb.exe
+2026-01-15 12:08:55,894 [INFO] Backend URL: http://127.0.0.1:8000
+2026-01-15 12:08:55,894 [INFO] Check interval: 5s
+2026-01-15 12:08:55,932 [INFO] ========================================
+2026-01-15 12:08:55,932 [INFO] DEVICE CONNECTED - Starting auto-sync...
+2026-01-15 12:08:55,932 [INFO] ========================================
+2026-01-15 12:08:56,162 [INFO] Device ID: a6a9f331d869db9e
+2026-01-15 12:08:56,163 [INFO] Device Model: I2302
+2026-01-15 12:08:58,164 [INFO] Pulling database from device...
+2026-01-15 12:08:58,357 [INFO] Database pulled successfully: 380928 bytes -> sync_data\hexnil_battery_db
+2026-01-15 12:08:58,383 [INFO] Found 2 new records in charging_sessions
+2026-01-15 12:08:58,390 [INFO] Found 27 new records in battery_health
+2026-01-15 12:08:58,397 [INFO] Syncing 29 records to backend...
+2026-01-15 12:08:58,473 [INFO] Sync successful: {'success': True, 'message': 'Accepted for processing', 'device_id': 'a6a9f331d869db9e', 'records_received': {'battery_snapshots': 0, 'charging_sessions': 2, 'thermal_events': 0, 'drain_events': 0, 'idle_drain_sessions': 0, 'battery_health': 27, 'safety_events': 0, 'calibration_data': 0, 'ai_analysis_results': 0}, 'records_stored': {'battery_snapshots': 0, 'charging_sessions': 0, 'thermal_events': 0, 'drain_events': 0, 'idle_drain_sessions': 0, 'battery_health': 0, 'safety_events': 0, 'calibration_data': 0, 'ai_analysis_results': 0}, 'errors': [], 'sync_id': 32}
+2026-01-15 12:08:58,478 [INFO] Sync state saved
+2026-01-15 12:08:58,479 [INFO] Auto-sync completed successfully!
+2026-01-15 12:09:04,767 [INFO] 
+Auto-sync stopped by user
+2026-01-15 12:13:32,413 [INFO] ADB path: C:\Users\sutha\AppData\Local\Android\Sdk\platform-tools\adb.exe
+2026-01-15 12:13:32,414 [INFO] Backend URL: http://127.0.0.1:8000
+2026-01-15 12:13:32,414 [INFO] Check interval: 5s
+2026-01-15 12:13:32,452 [INFO] ========================================
+2026-01-15 12:13:32,452 [INFO] DEVICE CONNECTED - Starting auto-sync...
+2026-01-15 12:13:32,452 [INFO] ========================================
+2026-01-15 12:13:32,695 [INFO] Device ID: a6a9f331d869db9e
+2026-01-15 12:13:32,697 [INFO] Device Model: I2302
+2026-01-15 12:13:34,699 [INFO] Pulling database from device...
+2026-01-15 12:13:34,917 [INFO] Database pulled successfully: 401408 bytes -> sync_data\hexnil_battery_db
+2026-01-15 12:13:34,944 [INFO] No new data to sync
+2026-01-15 12:13:34,951 [INFO] Sync state saved
+2026-01-15 12:13:34,952 [INFO] Auto-sync completed successfully!
+2026-01-15 12:20:15,500 [INFO] Device disconnected
+2026-01-15 12:26:00,278 [INFO] ========================================
+2026-01-15 12:26:00,285 [INFO] DEVICE CONNECTED - Starting auto-sync...
+2026-01-15 12:26:00,285 [INFO] ========================================
+2026-01-15 12:26:00,585 [INFO] Device ID: a6a9f331d869db9e
+2026-01-15 12:26:00,585 [INFO] Device Model: I2302
+2026-01-15 12:26:02,587 [INFO] Pulling database from device...
+2026-01-15 12:26:02,824 [INFO] Database pulled successfully: 409600 bytes -> sync_data\hexnil_battery_db
+2026-01-15 12:26:02,896 [INFO] No new data to sync
+2026-01-15 12:26:02,912 [INFO] Sync state saved
+2026-01-15 12:26:02,914 [INFO] Auto-sync completed successfully!
+2026-01-15 12:30:49,052 [INFO] Device disconnected
+2026-01-15 12:32:00,581 [INFO] ========================================
+2026-01-15 12:32:00,616 [INFO] DEVICE CONNECTED - Starting auto-sync...
+2026-01-15 12:32:00,641 [INFO] ========================================
+2026-01-15 12:32:01,777 [INFO] Device ID: a6a9f331d869db9e
+2026-01-15 12:32:01,778 [INFO] Device Model: I2302
+2026-01-15 12:32:03,826 [INFO] Pulling database from device...
+2026-01-15 12:32:03,967 [INFO] Database pulled successfully: 417792 bytes -> sync_data\hexnil_battery_db
+2026-01-15 12:32:04,029 [INFO] Found 1 new records in charging_sessions
+2026-01-15 12:32:04,038 [INFO] Syncing 1 records to backend...
+2026-01-15 12:32:06,140 [ERROR] Backend server not running. Start it with: python run_hexnil_backend.py
+2026-01-15 12:32:06,140 [ERROR] Auto-sync failed!
+2026-01-15 12:47:35,916 [INFO] Device disconnected
+2026-01-15 12:57:02,214 [INFO] ========================================
+2026-01-15 12:57:02,215 [INFO] DEVICE CONNECTED - Starting auto-sync...
+2026-01-15 12:57:02,216 [INFO] ========================================
+2026-01-15 12:57:02,531 [INFO] Device ID: a6a9f331d869db9e
+2026-01-15 12:57:02,533 [INFO] Device Model: I2302
+2026-01-15 12:57:04,534 [INFO] Pulling database from device...
+2026-01-15 12:57:04,801 [INFO] Database pulled successfully: 458752 bytes -> sync_data\hexnil_battery_db
+2026-01-15 12:57:04,842 [INFO] Found 3 new records in charging_sessions
+2026-01-15 12:57:04,860 [INFO] Syncing 3 records to backend...
+2026-01-15 12:57:06,936 [ERROR] Backend server not running. Start it with: python run_hexnil_backend.py
+2026-01-15 12:57:06,937 [ERROR] Auto-sync failed!

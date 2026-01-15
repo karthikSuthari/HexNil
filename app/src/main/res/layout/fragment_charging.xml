@@ -1,38 +1,212 @@
 <?xml version="1.0" encoding="utf-8"?>
 <ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:padding="16dp"
-    android:background="?attr/colorSurface">
+    android:background="@color/oem_bg_primary"
+    android:fillViewport="true">
 
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:orientation="vertical">
+        android:orientation="vertical"
+        android:padding="@dimen/oem_padding_medium">
 
-        <TextView
-            android:layout_width="wrap_content"
+        <!-- Current Session Status Card -->
+        <com.google.android.material.card.MaterialCardView
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="Charging Overview"
-            android:textAppearance="@style/TextAppearance.Material3.TitleLarge" />
+            android:layout_marginBottom="@dimen/oem_margin_medium"
+            style="@style/Widget.HexNil.Card">
 
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Active session: placeholder"
-            android:textAppearance="@style/TextAppearance.Material3.BodyLarge" />
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="@dimen/oem_card_padding">
 
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Speed: -- %/hr"
-            android:textAppearance="@style/TextAppearance.Material3.BodyLarge" />
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="CHARGING SESSION STATUS"
+                    android:textAppearance="@style/TextAppearance_HexNil_Headline3" />
 
-        <TextView
-            android:layout_width="wrap_content"
+                <View
+                    android:layout_width="match_parent"
+                    android:layout_height="@dimen/oem_divider_height"
+                    android:layout_marginTop="@dimen/oem_margin_medium"
+                    android:layout_marginBottom="@dimen/oem_margin_medium"
+                    android:background="@color/oem_divider" />
+
+                <TextView
+                    android:id="@+id/tv_session_status"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="No active session"
+                    android:textAppearance="@style/TextAppearance_HexNil_Body"
+                    tools:text="ACTIVE: Fast Charging" />
+            </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
+
+        <!-- Key Metrics Card -->
+        <com.google.android.material.card.MaterialCardView
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="Temperature: -- °C"
-            android:textAppearance="@style/TextAppearance.Material3.BodyLarge" />
+            android:layout_marginBottom="@dimen/oem_margin_medium"
+            style="@style/Widget.HexNil.Card">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="@dimen/oem_card_padding">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="KEY METRICS"
+                    android:textAppearance="@style/TextAppearance_HexNil_Headline3" />
+
+                <View
+                    android:layout_width="match_parent"
+                    android:layout_height="@dimen/oem_divider_height"
+                    android:layout_marginTop="@dimen/oem_margin_medium"
+                    android:layout_marginBottom="@dimen/oem_margin_medium"
+                    android:background="@color/oem_divider" />
+
+                <!-- Charging Speed -->
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginBottom="@dimen/oem_margin_medium"
+                    android:orientation="horizontal">
+
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="Charging Speed"
+                        android:textAppearance="@style/TextAppearance_HexNil_Body" />
+
+                    <TextView
+                        android:id="@+id/tv_charging_speed"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="-- %/hr"
+                        android:textAppearance="@style/TextAppearance_HexNil_Body"
+                        android:textStyle="bold"
+                        tools:text="25.5 %/hr" />
+                </LinearLayout>
+
+                <!-- Average Current -->
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginBottom="@dimen/oem_margin_medium"
+                    android:orientation="horizontal">
+
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="Average Current"
+                        android:textAppearance="@style/TextAppearance_HexNil_Body" />
+
+                    <TextView
+                        android:id="@+id/tv_avg_current"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="-- mA"
+                        android:textAppearance="@style/TextAppearance_HexNil_Body"
+                        android:textStyle="bold"
+                        tools:text="2500 mA" />
+                </LinearLayout>
+
+                <!-- Temperature -->
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginBottom="@dimen/oem_margin_medium"
+                    android:orientation="horizontal">
+
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="Temperature"
+                        android:textAppearance="@style/TextAppearance_HexNil_Body" />
+
+                    <TextView
+                        android:id="@+id/tv_charging_temp"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="--°C"
+                        android:textAppearance="@style/TextAppearance_HexNil_Body"
+                        android:textStyle="bold"
+                        tools:text="36.2°C" />
+                </LinearLayout>
+
+                <!-- Efficiency -->
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal">
+
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="Charging Efficiency"
+                        android:textAppearance="@style/TextAppearance_HexNil_Body" />
+
+                    <TextView
+                        android:id="@+id/tv_efficiency"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="--%"
+                        android:textAppearance="@style/TextAppearance_HexNil_Body"
+                        android:textStyle="bold"
+                        tools:text="92%" />
+                </LinearLayout>
+            </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
+
+        <!-- Safety Assessment Card -->
+        <com.google.android.material.card.MaterialCardView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="@dimen/oem_margin_medium"
+            style="@style/Widget.HexNil.Card">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="@dimen/oem_card_padding">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="SAFETY ASSESSMENT"
+                    android:textAppearance="@style/TextAppearance_HexNil_Headline3" />
+
+                <View
+                    android:layout_width="match_parent"
+                    android:layout_height="@dimen/oem_divider_height"
+                    android:layout_marginTop="@dimen/oem_margin_medium"
+                    android:layout_marginBottom="@dimen/oem_margin_medium"
+                    android:background="@color/oem_divider" />
+
+                <TextView
+                    android:id="@+id/tv_safety_status"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="No recent session data"
+                    android:textAppearance="@style/TextAppearance_HexNil_Body"
+                    tools:text="Status: SAFE. All parameters within normal range." />
+            </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
 
     </LinearLayout>
 </ScrollView>

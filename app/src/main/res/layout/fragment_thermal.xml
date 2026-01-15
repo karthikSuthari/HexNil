@@ -1,32 +1,232 @@
 <?xml version="1.0" encoding="utf-8"?>
 <ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:padding="16dp"
-    android:background="?attr/colorSurface">
+    android:background="@color/oem_bg_primary"
+    android:fillViewport="true">
 
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:orientation="vertical">
+        android:orientation="vertical"
+        android:padding="@dimen/oem_padding_medium">
 
-        <TextView
-            android:layout_width="wrap_content"
+        <!-- Current Temperature Status Card -->
+        <com.google.android.material.card.MaterialCardView
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="Thermal Events"
-            android:textAppearance="@style/TextAppearance.Material3.TitleLarge" />
+            android:layout_marginBottom="@dimen/oem_margin_medium"
+            style="@style/Widget.HexNil.Card">
 
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Peak temperature: -- °C"
-            android:textAppearance="@style/TextAppearance.Material3.BodyLarge" />
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="@dimen/oem_card_padding">
 
-        <TextView
-            android:layout_width="wrap_content"
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="THERMAL STATUS"
+                    android:textAppearance="@style/TextAppearance_HexNil_Headline3" />
+
+                <View
+                    android:layout_width="match_parent"
+                    android:layout_height="@dimen/oem_divider_height"
+                    android:layout_marginTop="@dimen/oem_margin_medium"
+                    android:layout_marginBottom="@dimen/oem_margin_medium"
+                    android:background="@color/oem_divider" />
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal">
+
+                    <LinearLayout
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:orientation="vertical">
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="CURRENT TEMP"
+                            android:textAppearance="@style/TextAppearance_HexNil_Label" />
+
+                        <TextView
+                            android:id="@+id/tv_current_temp"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="@dimen/oem_padding_tiny"
+                            android:text="--°C"
+                            android:textAppearance="@style/TextAppearance_HexNil_Metric"
+                            android:textSize="32sp"
+                            tools:text="32.5°C" />
+                    </LinearLayout>
+
+                    <LinearLayout
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:orientation="vertical">
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="PEAK TEMP"
+                            android:textAppearance="@style/TextAppearance_HexNil_Label" />
+
+                        <TextView
+                            android:id="@+id/tv_peak_temp"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="@dimen/oem_padding_tiny"
+                            android:text="--°C"
+                            android:textAppearance="@style/TextAppearance_HexNil_Metric"
+                            android:textSize="32sp"
+                            tools:text="41.2°C" />
+                    </LinearLayout>
+                </LinearLayout>
+            </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
+
+        <!-- Key Metrics Card -->
+        <com.google.android.material.card.MaterialCardView
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="Recent severity: --"
-            android:textAppearance="@style/TextAppearance.Material3.BodyLarge" />
+            android:layout_marginBottom="@dimen/oem_margin_medium"
+            style="@style/Widget.HexNil.Card">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="@dimen/oem_card_padding">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="KEY METRICS"
+                    android:textAppearance="@style/TextAppearance_HexNil_Headline3" />
+
+                <View
+                    android:layout_width="match_parent"
+                    android:layout_height="@dimen/oem_divider_height"
+                    android:layout_marginTop="@dimen/oem_margin_medium"
+                    android:layout_marginBottom="@dimen/oem_margin_medium"
+                    android:background="@color/oem_divider" />
+
+                <!-- Event Count -->
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginBottom="@dimen/oem_margin_medium"
+                    android:orientation="horizontal">
+
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="Thermal Events"
+                        android:textAppearance="@style/TextAppearance_HexNil_Body" />
+
+                    <TextView
+                        android:id="@+id/tv_event_count"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="--"
+                        android:textAppearance="@style/TextAppearance_HexNil_Body"
+                        android:textStyle="bold"
+                        tools:text="12" />
+                </LinearLayout>
+
+                <!-- Average Temperature -->
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginBottom="@dimen/oem_margin_medium"
+                    android:orientation="horizontal">
+
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="Average Temperature"
+                        android:textAppearance="@style/TextAppearance_HexNil_Body" />
+
+                    <TextView
+                        android:id="@+id/tv_avg_temp"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="--°C"
+                        android:textAppearance="@style/TextAppearance_HexNil_Body"
+                        android:textStyle="bold"
+                        tools:text="34.8°C" />
+                </LinearLayout>
+
+                <!-- Severity -->
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal">
+
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="Recent Severity"
+                        android:textAppearance="@style/TextAppearance_HexNil_Body" />
+
+                    <TextView
+                        android:id="@+id/tv_severity"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="--"
+                        android:textAppearance="@style/TextAppearance_HexNil_Body"
+                        android:textStyle="bold"
+                        tools:text="NORMAL" />
+                </LinearLayout>
+            </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
+
+        <!-- Assessment Card -->
+        <com.google.android.material.card.MaterialCardView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="@dimen/oem_margin_medium"
+            style="@style/Widget.HexNil.Card">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="@dimen/oem_card_padding">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="ASSESSMENT"
+                    android:textAppearance="@style/TextAppearance_HexNil_Headline3" />
+
+                <View
+                    android:layout_width="match_parent"
+                    android:layout_height="@dimen/oem_divider_height"
+                    android:layout_marginTop="@dimen/oem_margin_medium"
+                    android:layout_marginBottom="@dimen/oem_margin_medium"
+                    android:background="@color/oem_divider" />
+
+                <TextView
+                    android:id="@+id/tv_thermal_assessment"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="No thermal events recorded"
+                    android:textAppearance="@style/TextAppearance_HexNil_Body"
+                    tools:text="Thermal behavior: Normal. No threshold violations detected." />
+            </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
 
     </LinearLayout>
 </ScrollView>

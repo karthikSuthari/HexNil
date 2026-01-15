@@ -1,9 +1,9 @@
 {
-  "last_sync": "2026-01-14T06:43:30.094607",
+  "last_sync": "2026-01-15T12:26:02.906055",
   "last_snapshot_id": 292,
-  "last_charging_id": 4,
+  "last_charging_id": 6,
   "last_thermal_id": 0,
   "last_drain_id": 0,
-  "last_health_id": 0,
+  "last_health_id": 27,
   "last_safety_id": 61
 }

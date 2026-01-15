@@ -1,6 +1,43 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <color name="black">#FF000000</color>
-    <color name="white">#FFFFFFFF</color>
-    <color name="dimgray">#FF696969</color>
+    <!-- OEM Diagnostic Dark Theme Colors -->
+    
+    <!-- Background Colors -->
+    <color name="oem_bg_primary">#0F1115</color>        <!-- Near-black primary background -->
+    <color name="oem_bg_secondary">#161A20</color>       <!-- Dark gray secondary -->
+    <color name="oem_bg_card">#1C2128</color>            <!-- Card background -->
+    <color name="oem_bg_elevated">#22272E</color>        <!-- Elevated card -->
+    
+    <!-- Surface Colors -->
+    <color name="oem_surface">#0F1115</color>
+    <color name="oem_surface_variant">#161A20</color>
+    
+    <!-- Text Colors -->
+    <color name="oem_text_primary">#FFFFFF</color>       <!-- Primary text -->
+    <color name="oem_text_secondary">#8B949E</color>     <!-- Secondary text -->
+    <color name="oem_text_tertiary">#6E7681</color>      <!-- Tertiary text -->
+    <color name="oem_text_disabled">#484F58</color>      <!-- Disabled text -->
+    
+    <!-- Accent Color (Single - Cyan/Blue) -->
+    <color name="oem_accent">#58A6FF</color>             <!-- Primary accent -->
+    <color name="oem_accent_variant">#79C0FF</color>     <!-- Light accent -->
+    <color name="oem_accent_dim">#1F6FEB</color>         <!-- Dark accent -->
+    
+    <!-- Status Colors (Subtle) -->
+    <color name="oem_status_safe">#238636</color>        <!-- Green (safe) -->
+    <color name="oem_status_warning">#D29922</color>     <!-- Yellow (warning) -->
+    <color name="oem_status_critical">#DA3633</color>    <!-- Red (critical) -->
+    <color name="oem_status_info">#58A6FF</color>        <!-- Blue (info) -->
+    
+    <!-- Border/Divider -->
+    <color name="oem_divider">#21262D</color>            <!-- Divider line -->
+    <color name="oem_border">#30363D</color>             <!-- Border -->
+    
+    <!-- Overlay -->
+    <color name="oem_overlay">#00000080</color>          <!-- 50% black overlay -->
+    
+    <!-- Legacy Support (maintain compatibility) -->
+    <color name="black">#000000</color>
+    <color name="white">#FFFFFF</color>
+    <color name="dimgray">#696969</color>
 </resources>

@@ -2,7 +2,7 @@
   "formatVersion": 1,
   "database": {
     "version": 19,
-    "identityHash": "cdbeddd1af1d844277d9d4a553e9dcf3",
+    "identityHash": "568d78bb250fa052aa078b2d9e998756",
     "entities": [
       {
         "tableName": "battery_snapshots",
@@ -2190,7 +2190,7 @@
       },
       {
         "tableName": "battery_health",
-        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `timestamp` INTEGER NOT NULL, `designCapacityMah` REAL NOT NULL, `currentCapacityMah` REAL NOT NULL, `measuredCapacityMah` REAL NOT NULL, `estimatedCapacityMah` REAL NOT NULL, `capacityLossMah` REAL NOT NULL, `capacityFade` REAL NOT NULL, `healthPercentage` REAL NOT NULL, `capacityFadePercent` REAL NOT NULL, `stateOfHealth` REAL NOT NULL, `cycleCount` REAL NOT NULL, `fullCycleCount` INTEGER NOT NULL, `partialCycleAccumulator` REAL NOT NULL, `totalChargeAccumulated` INTEGER NOT NULL, `totalDischargeAccumulated` INTEGER NOT NULL, `deepCycleCount` INTEGER NOT NULL, `topOffCycleCount` INTEGER NOT NULL, `trackingDays` INTEGER NOT NULL, `firstRecordTimestamp` INTEGER NOT NULL, `fadePerCycle` REAL NOT NULL, `fadePer100Cycles` REAL NOT NULL, `fadePerMonth` REAL NOT NULL, `degradationRate` REAL NOT NULL, `smoothedDegradationRate` REAL NOT NULL, `degradationAcceleration` REAL NOT NULL, `degradationTrend` TEXT, `predictedEOL` REAL NOT NULL, `predictedReplacementDate` REAL NOT NULL, `eolConfidence` REAL NOT NULL, `internalResistance` REAL NOT NULL, `resistance25C` REAL NOT NULL, `resistanceIncrease` REAL NOT NULL, `voltageDropUnderLoad` REAL NOT NULL, `selfDischargeRate` REAL NOT NULL, `chargingEfficiency` REAL NOT NULL, `dischargeEfficiency` REAL NOT NULL, `hasAbnormalWear` INTEGER NOT NULL, `hasAbnormalAging` INTEGER NOT NULL, `hasSwellingRisk` INTEGER NOT NULL, `hasCalibrationIssue` INTEGER NOT NULL, `hasHighResistance` INTEGER NOT NULL, `hasCapacityInstability` INTEGER NOT NULL, `abnormalityDetails` TEXT, `agingNotes` TEXT, `wearDeviation` REAL NOT NULL, `wearSeverity` INTEGER NOT NULL, `capacityScore` REAL NOT NULL, `resistanceScore` REAL NOT NULL, `cycleScore` REAL NOT NULL, `degradationScore` REAL NOT NULL, `thermalScore` REAL NOT NULL, `overallScore` REAL NOT NULL, `batteryModel` TEXT, `manufacturer` TEXT, `manufactureDate` TEXT, `batchId` TEXT, `supplierAverageHealth` REAL NOT NULL, `batchAverageHealth` REAL NOT NULL, `supplierDeviation` REAL NOT NULL, `batchDeviation` REAL NOT NULL, `supplierQualityTier` TEXT, `batchQualityAlert` INTEGER NOT NULL, `lastFullCharge` INTEGER NOT NULL, `lastFullDischarge` INTEGER NOT NULL, `hasCalibrationCycle` INTEGER NOT NULL, `needsCalibration` INTEGER NOT NULL, `dataPointCount` INTEGER NOT NULL, `overallConfidence` REAL NOT NULL, `capacityConfidence` REAL NOT NULL, `cycleConfidence` REAL NOT NULL, `degradationConfidence` REAL NOT NULL, `meetsMinimumDataRequirement` INTEGER NOT NULL)",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `timestamp` INTEGER NOT NULL, `designCapacityMah` REAL NOT NULL, `currentCapacityMah` REAL NOT NULL, `measuredCapacityMah` REAL NOT NULL, `estimatedCapacityMah` REAL NOT NULL, `capacityLossMah` REAL NOT NULL, `capacityFade` REAL NOT NULL, `healthPercentage` REAL NOT NULL, `capacityFadePercent` REAL NOT NULL, `stateOfHealth` REAL NOT NULL, `cycleCount` REAL NOT NULL, `fullCycleCount` INTEGER NOT NULL, `partialCycleAccumulator` REAL NOT NULL, `totalChargeAccumulated` INTEGER NOT NULL, `totalDischargeAccumulated` INTEGER NOT NULL, `deepCycleCount` INTEGER NOT NULL, `topOffCycleCount` INTEGER NOT NULL, `trackingDays` INTEGER NOT NULL, `firstRecordTimestamp` INTEGER NOT NULL, `fadePerCycle` REAL NOT NULL, `fadePer100Cycles` REAL NOT NULL, `fadePerMonth` REAL NOT NULL, `degradationRate` REAL NOT NULL, `smoothedDegradationRate` REAL NOT NULL, `degradationAcceleration` REAL NOT NULL, `degradationTrend` TEXT, `predictedEOL` REAL NOT NULL, `predictedReplacementDate` REAL NOT NULL, `eolConfidence` REAL NOT NULL DEFAULT 0, `internalResistance` REAL NOT NULL, `resistance25C` REAL NOT NULL, `resistanceIncrease` REAL NOT NULL, `voltageDropUnderLoad` REAL NOT NULL, `selfDischargeRate` REAL NOT NULL, `chargingEfficiency` REAL NOT NULL, `dischargeEfficiency` REAL NOT NULL, `hasAbnormalWear` INTEGER NOT NULL, `hasAbnormalAging` INTEGER NOT NULL, `hasSwellingRisk` INTEGER NOT NULL, `hasCalibrationIssue` INTEGER NOT NULL, `hasHighResistance` INTEGER NOT NULL, `hasCapacityInstability` INTEGER NOT NULL, `abnormalityDetails` TEXT, `agingNotes` TEXT, `wearDeviation` REAL NOT NULL, `wearSeverity` INTEGER NOT NULL, `capacityScore` REAL NOT NULL, `resistanceScore` REAL NOT NULL, `cycleScore` REAL NOT NULL, `degradationScore` REAL NOT NULL, `thermalScore` REAL NOT NULL, `overallScore` REAL NOT NULL, `batteryModel` TEXT, `manufacturer` TEXT, `manufactureDate` TEXT, `batchId` TEXT, `supplierAverageHealth` REAL NOT NULL, `batchAverageHealth` REAL NOT NULL, `supplierDeviation` REAL NOT NULL, `batchDeviation` REAL NOT NULL, `supplierQualityTier` TEXT, `batchQualityAlert` INTEGER NOT NULL, `lastFullCharge` INTEGER NOT NULL, `lastFullDischarge` INTEGER NOT NULL, `hasCalibrationCycle` INTEGER NOT NULL, `needsCalibration` INTEGER NOT NULL, `dataPointCount` INTEGER NOT NULL, `overallConfidence` REAL NOT NULL, `capacityConfidence` REAL NOT NULL, `cycleConfidence` REAL NOT NULL, `degradationConfidence` REAL NOT NULL, `meetsMinimumDataRequirement` INTEGER NOT NULL)",
         "fields": [
           {
             "fieldPath": "id",
@@ -2370,7 +2370,8 @@
             "fieldPath": "eolConfidence",
             "columnName": "eolConfidence",
             "affinity": "REAL",
-            "notNull": true
+            "notNull": true,
+            "defaultValue": "0"
           },
           {
             "fieldPath": "internalResistance",
@@ -6304,7 +6305,7 @@
     "views": [],
     "setupQueries": [
       "CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)",
-      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, 'cdbeddd1af1d844277d9d4a553e9dcf3')"
+      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '568d78bb250fa052aa078b2d9e998756')"
     ]
   }
 }

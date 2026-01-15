@@ -1,32 +1,31 @@
 <?xml version="1.0" encoding="utf-8"?>
 <ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="#0d1117"
+    android:background="@color/oem_bg_primary"
     android:fillViewport="true">
 
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="vertical"
-        android:padding="16dp">
+        android:padding="@dimen/oem_padding_medium">
 
-        <!-- Header Card with Service Status -->
+        <!-- System Status Card -->
         <com.google.android.material.card.MaterialCardView
             android:id="@+id/card_status"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginBottom="12dp"
-            app:cardBackgroundColor="#161b22"
-            app:cardCornerRadius="16dp"
-            app:cardElevation="4dp">
+            android:layout_marginBottom="@dimen/oem_margin_medium"
+            style="@style/Widget.HexNil.Card">
 
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="vertical"
-                android:padding="16dp">
+                android:padding="@dimen/oem_card_padding">
 
                 <LinearLayout
                     android:layout_width="match_parent"
@@ -36,20 +35,18 @@
 
                     <View
                         android:id="@+id/status_indicator"
-                        android:layout_width="12dp"
-                        android:layout_height="12dp"
+                        android:layout_width="@dimen/oem_status_indicator_size"
+                        android:layout_height="@dimen/oem_status_indicator_size"
                         android:background="@drawable/status_indicator_green" />
 
                     <TextView
                         android:id="@+id/tv_service_status"
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
-                        android:layout_marginStart="12dp"
+                        android:layout_marginStart="@dimen/oem_margin_small"
                         android:layout_weight="1"
-                        android:text="Monitoring Active"
-                        android:textColor="#ffffff"
-                        android:textSize="18sp"
-                        android:textStyle="bold" />
+                        android:text="MONITORING ACTIVE"
+                        android:textAppearance="@style/TextAppearance_HexNil_Headline3" />
 
                     <ImageButton
                         android:id="@+id/btn_refresh"
@@ -58,229 +55,219 @@
                         android:background="?attr/selectableItemBackgroundBorderless"
                         android:contentDescription="Refresh"
                         android:src="@drawable/ic_refresh"
-                        app:tint="#8b949e" />
+                        app:tint="@color/oem_text_tertiary" />
                 </LinearLayout>
 
                 <TextView
                     android:id="@+id/tv_uptime"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="4dp"
+                    android:layout_marginTop="@dimen/oem_padding_tiny"
                     android:text="Uptime: --"
-                    android:textColor="#8b949e"
-                    android:textSize="12sp" />
+                    android:textAppearance="@style/TextAppearance_HexNil_Caption" />
 
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
 
-        <!-- Battery Level Card (Large) -->
+        <!-- Primary Metrics Card -->
         <com.google.android.material.card.MaterialCardView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginBottom="12dp"
-            app:cardBackgroundColor="#161b22"
-            app:cardCornerRadius="16dp"
-            app:cardElevation="2dp">
+            android:layout_marginBottom="@dimen/oem_margin_medium"
+            style="@style/Widget.HexNil.Card">
 
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:gravity="center"
                 android:orientation="vertical"
-                android:padding="24dp">
+                android:padding="@dimen/oem_padding_large">
 
-                <TextView
-                    android:id="@+id/tv_battery_level"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="--"
-                    android:textColor="#3fb950"
-                    android:textSize="72sp"
-                    android:textStyle="bold" />
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="BATTERY LEVEL"
-                    android:textColor="#8b949e"
-                    android:textSize="12sp"
-                    android:letterSpacing="0.1" />
-
-                <TextView
-                    android:id="@+id/tv_charging_status"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="8dp"
-                    android:drawablePadding="6dp"
-                    android:gravity="center"
-                    android:text="Discharging"
-                    android:textColor="#ffffff"
-                    android:textSize="14sp" />
-
-                <ProgressBar
-                    android:id="@+id/progress_battery"
-                    style="@style/Widget.AppCompat.ProgressBar.Horizontal"
+                <!-- Battery Level -->
+                <LinearLayout
                     android:layout_width="match_parent"
-                    android:layout_height="8dp"
-                    android:layout_marginTop="12dp"
-                    android:max="100"
-                    android:progress="0" />
+                    android:layout_height="wrap_content"
+                    android:gravity="center"
+                    android:orientation="vertical">
+
+                    <TextView
+                        android:id="@+id/tv_battery_level"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="--"
+                        android:textAppearance="@style/TextAppearance_HexNil_Metric"
+                        android:textSize="56sp"
+                        tools:text="85" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="@dimen/oem_padding_small"
+                        android:text="BATTERY LEVEL"
+                        android:textAppearance="@style/TextAppearance_HexNil_Label" />
+
+                    <TextView
+                        android:id="@+id/tv_charging_status"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="@dimen/oem_margin_small"
+                        android:text="DISCHARGING"
+                        android:textAppearance="@style/TextAppearance_HexNil_Body"
+                        tools:text="CHARGING" />
+
+                    <ProgressBar
+                        android:id="@+id/progress_battery"
+                        style="@style/Widget.AppCompat.ProgressBar.Horizontal"
+                        android:layout_width="match_parent"
+                        android:layout_height="6dp"
+                        android:layout_marginTop="@dimen/oem_margin_medium"
+                        android:max="100"
+                        android:progress="0"
+                        android:progressTint="@color/oem_accent" />
+                </LinearLayout>
 
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
 
-        <!-- Stats Grid Row 1 -->
+        <!-- Secondary Metrics Grid -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginBottom="12dp"
+            android:layout_marginBottom="@dimen/oem_margin_medium"
             android:orientation="horizontal">
 
-            <!-- Temperature Card -->
+            <!-- Temperature -->
             <com.google.android.material.card.MaterialCardView
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
-                android:layout_marginEnd="6dp"
+                android:layout_marginEnd="@dimen/oem_margin_small"
                 android:layout_weight="1"
-                app:cardBackgroundColor="#161b22"
-                app:cardCornerRadius="12dp"
-                app:cardElevation="2dp">
+                style="@style/Widget.HexNil.Card">
 
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:orientation="vertical"
-                    android:padding="16dp">
+                    android:padding="@dimen/oem_card_padding">
 
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="🌡️ TEMP"
-                        android:textColor="#8b949e"
-                        android:textSize="11sp" />
+                        android:text="TEMPERATURE"
+                        android:textAppearance="@style/TextAppearance_HexNil_Label" />
 
                     <TextView
                         android:id="@+id/tv_temperature"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
+                        android:layout_marginTop="@dimen/oem_padding_tiny"
                         android:text="--°C"
-                        android:textColor="#ffffff"
+                        android:textAppearance="@style/TextAppearance_HexNil_Metric"
                         android:textSize="24sp"
-                        android:textStyle="bold" />
-
+                        tools:text="32.5°C" />
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
 
-            <!-- Voltage Card -->
+            <!-- Voltage -->
             <com.google.android.material.card.MaterialCardView
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
-                android:layout_marginStart="6dp"
+                android:layout_marginStart="@dimen/oem_margin_small"
                 android:layout_weight="1"
-                app:cardBackgroundColor="#161b22"
-                app:cardCornerRadius="12dp"
-                app:cardElevation="2dp">
+                style="@style/Widget.HexNil.Card">
 
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:orientation="vertical"
-                    android:padding="16dp">
+                    android:padding="@dimen/oem_card_padding">
 
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="⚡ VOLTAGE"
-                        android:textColor="#8b949e"
-                        android:textSize="11sp" />
+                        android:text="VOLTAGE"
+                        android:textAppearance="@style/TextAppearance_HexNil_Label" />
 
                     <TextView
                         android:id="@+id/tv_voltage"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
+                        android:layout_marginTop="@dimen/oem_padding_tiny"
                         android:text="-- mV"
-                        android:textColor="#ffffff"
+                        android:textAppearance="@style/TextAppearance_HexNil_Metric"
                         android:textSize="24sp"
-                        android:textStyle="bold" />
-
+                        tools:text="3950 mV" />
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
         </LinearLayout>
 
-        <!-- Stats Grid Row 2 -->
+        <!-- Tertiary Metrics Grid -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginBottom="12dp"
+            android:layout_marginBottom="@dimen/oem_margin_medium"
             android:orientation="horizontal">
 
-            <!-- Current Card -->
+            <!-- Current -->
             <com.google.android.material.card.MaterialCardView
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
-                android:layout_marginEnd="6dp"
+                android:layout_marginEnd="@dimen/oem_margin_small"
                 android:layout_weight="1"
-                app:cardBackgroundColor="#161b22"
-                app:cardCornerRadius="12dp"
-                app:cardElevation="2dp">
+                style="@style/Widget.HexNil.Card">
 
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:orientation="vertical"
-                    android:padding="16dp">
+                    android:padding="@dimen/oem_card_padding">
 
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="📊 CURRENT"
-                        android:textColor="#8b949e"
-                        android:textSize="11sp" />
+                        android:text="CURRENT"
+                        android:textAppearance="@style/TextAppearance_HexNil_Label" />
 
                     <TextView
                         android:id="@+id/tv_current"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
+                        android:layout_marginTop="@dimen/oem_padding_tiny"
                         android:text="-- mA"
-                        android:textColor="#ffffff"
+                        android:textAppearance="@style/TextAppearance_HexNil_Metric"
                         android:textSize="24sp"
-                        android:textStyle="bold" />
-
+                        tools:text="350 mA" />
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
 
-            <!-- Health Card -->
+            <!-- Health -->
             <com.google.android.material.card.MaterialCardView
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
-                android:layout_marginStart="6dp"
+                android:layout_marginStart="@dimen/oem_margin_small"
                 android:layout_weight="1"
-                app:cardBackgroundColor="#161b22"
-                app:cardCornerRadius="12dp"
-                app:cardElevation="2dp">
+                style="@style/Widget.HexNil.Card">
 
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:orientation="vertical"
-                    android:padding="16dp">
+                    android:padding="@dimen/oem_card_padding">
 
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="❤️ HEALTH"
-                        android:textColor="#8b949e"
-                        android:textSize="11sp" />
+                        android:text="HEALTH"
+                        android:textAppearance="@style/TextAppearance_HexNil_Label" />
 
                     <TextView
                         android:id="@+id/tv_health"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
+                        android:layout_marginTop="@dimen/oem_padding_tiny"
                         android:text="--%"
-                        android:textColor="#3fb950"
+                        android:textAppearance="@style/TextAppearance_HexNil_Metric"
                         android:textSize="24sp"
-                        android:textStyle="bold" />
-
+                        tools:text="94%" />
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
         </LinearLayout>
@@ -290,16 +277,15 @@
             android:id="@+id/card_remote"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginBottom="12dp"
-            app:cardBackgroundColor="#21262d"
-            app:cardCornerRadius="12dp"
-            app:cardElevation="2dp">
+            android:layout_marginBottom="@dimen/oem_margin_medium"
+            style="@style/Widget.HexNil.Card"
+            app:cardBackgroundColor="@color/oem_bg_elevated">
 
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="vertical"
-                android:padding="16dp">
+                android:padding="@dimen/oem_card_padding">
 
                 <LinearLayout
                     android:layout_width="match_parent"
@@ -309,19 +295,17 @@
 
                     <View
                         android:id="@+id/remote_status_indicator"
-                        android:layout_width="10dp"
-                        android:layout_height="10dp"
+                        android:layout_width="@dimen/oem_status_indicator_size"
+                        android:layout_height="@dimen/oem_status_indicator_size"
                         android:background="@drawable/status_indicator_off" />
 
                     <TextView
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
-                        android:layout_marginStart="8dp"
+                        android:layout_marginStart="@dimen/oem_margin_small"
                         android:layout_weight="1"
-                        android:text="🌐 Remote Access"
-                        android:textColor="#ffffff"
-                        android:textSize="14sp"
-                        android:textStyle="bold" />
+                        android:text="REMOTE ACCESS"
+                        android:textAppearance="@style/TextAppearance_HexNil_Headline3" />
 
                     <com.google.android.material.switchmaterial.SwitchMaterial
                         android:id="@+id/switch_remote"
@@ -333,42 +317,41 @@
                     android:id="@+id/tv_remote_url"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="8dp"
-                    android:fontFamily="monospace"
+                    android:layout_marginTop="@dimen/oem_margin_small"
                     android:text="Enable to access from laptop"
-                    android:textColor="#8b949e"
-                    android:textSize="13sp" />
-
+                    android:textAppearance="@style/TextAppearance_HexNil_Monospace" />
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
 
-        <!-- Database Stats Card -->
+        <!-- Database Statistics Card -->
         <com.google.android.material.card.MaterialCardView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginBottom="12dp"
-            app:cardBackgroundColor="#161b22"
-            app:cardCornerRadius="12dp"
-            app:cardElevation="2dp">
+            android:layout_marginBottom="@dimen/oem_margin_medium"
+            style="@style/Widget.HexNil.Card">
 
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="vertical"
-                android:padding="16dp">
+                android:padding="@dimen/oem_card_padding">
 
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="📈 Database Statistics"
-                    android:textColor="#ffffff"
-                    android:textSize="14sp"
-                    android:textStyle="bold" />
+                    android:text="DATABASE STATISTICS"
+                    android:textAppearance="@style/TextAppearance_HexNil_Headline3" />
+
+                <View
+                    android:layout_width="match_parent"
+                    android:layout_height="@dimen/oem_divider_height"
+                    android:layout_marginTop="@dimen/oem_margin_medium"
+                    android:layout_marginBottom="@dimen/oem_margin_medium"
+                    android:background="@color/oem_divider" />
 
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="12dp"
                     android:orientation="horizontal">
 
                     <LinearLayout
@@ -382,16 +365,17 @@
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:text="--"
-                            android:textColor="#58a6ff"
+                            android:textAppearance="@style/TextAppearance_HexNil_Metric"
                             android:textSize="20sp"
-                            android:textStyle="bold" />
+                            android:textColor="@color/oem_accent"
+                            tools:text="12.5K" />
 
                         <TextView
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
+                            android:layout_marginTop="@dimen/oem_padding_tiny"
                             android:text="Snapshots"
-                            android:textColor="#8b949e"
-                            android:textSize="11sp" />
+                            android:textAppearance="@style/TextAppearance_HexNil_Caption" />
                     </LinearLayout>
 
                     <LinearLayout
@@ -405,16 +389,17 @@
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:text="--"
-                            android:textColor="#58a6ff"
+                            android:textAppearance="@style/TextAppearance_HexNil_Metric"
                             android:textSize="20sp"
-                            android:textStyle="bold" />
+                            android:textColor="@color/oem_accent"
+                            tools:text="234" />
 
                         <TextView
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
+                            android:layout_marginTop="@dimen/oem_padding_tiny"
                             android:text="Sessions"
-                            android:textColor="#8b949e"
-                            android:textSize="11sp" />
+                            android:textAppearance="@style/TextAppearance_HexNil_Caption" />
                     </LinearLayout>
 
                     <LinearLayout
@@ -428,19 +413,19 @@
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:text="--"
-                            android:textColor="#58a6ff"
+                            android:textAppearance="@style/TextAppearance_HexNil_Metric"
                             android:textSize="20sp"
-                            android:textStyle="bold" />
+                            android:textColor="@color/oem_accent"
+                            tools:text="89" />
 
                         <TextView
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
+                            android:layout_marginTop="@dimen/oem_padding_tiny"
                             android:text="Events"
-                            android:textColor="#8b949e"
-                            android:textSize="11sp" />
+                            android:textAppearance="@style/TextAppearance_HexNil_Caption" />
                     </LinearLayout>
                 </LinearLayout>
-
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
 
@@ -448,35 +433,35 @@
         <com.google.android.material.card.MaterialCardView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginBottom="12dp"
-            app:cardBackgroundColor="#161b22"
-            app:cardCornerRadius="12dp"
-            app:cardElevation="2dp">
+            android:layout_marginBottom="@dimen/oem_margin_medium"
+            style="@style/Widget.HexNil.Card">
 
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="vertical"
-                android:padding="16dp">
+                android:padding="@dimen/oem_card_padding">
 
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="⚙️ Active Monitors"
-                    android:textColor="#ffffff"
-                    android:textSize="14sp"
-                    android:textStyle="bold" />
+                    android:text="ACTIVE MONITORS"
+                    android:textAppearance="@style/TextAppearance_HexNil_Headline3" />
+
+                <View
+                    android:layout_width="match_parent"
+                    android:layout_height="@dimen/oem_divider_height"
+                    android:layout_marginTop="@dimen/oem_margin_medium"
+                    android:layout_marginBottom="@dimen/oem_margin_medium"
+                    android:background="@color/oem_divider" />
 
                 <TextView
                     android:id="@+id/tv_monitors"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="8dp"
-                    android:lineSpacingExtra="4dp"
                     android:text="Loading..."
-                    android:textColor="#8b949e"
-                    android:textSize="12sp" />
-
+                    android:textAppearance="@style/TextAppearance_HexNil_Body"
+                    android:lineSpacingExtra="2dp" />
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
 
@@ -484,12 +469,10 @@
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginTop="8dp"
-            android:layout_marginBottom="8dp"
-            android:text="Quick Actions"
-            android:textColor="#8b949e"
-            android:textSize="12sp"
-            android:textStyle="bold" />
+            android:layout_marginTop="@dimen/oem_margin_small"
+            android:layout_marginBottom="@dimen/oem_margin_small"
+            android:text="QUICK ACTIONS"
+            android:textAppearance="@style/TextAppearance_HexNil_Label" />
 
         <LinearLayout
             android:layout_width="match_parent"
@@ -501,37 +484,37 @@
                 style="@style/Widget.Material3.Button.TonalButton"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
-                android:layout_marginEnd="4dp"
+                android:layout_marginEnd="@dimen/oem_padding_tiny"
                 android:layout_weight="1"
                 android:text="Health"
-                android:textSize="11sp" />
+                android:textSize="12sp" />
 
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/btn_idle"
                 style="@style/Widget.Material3.Button.TonalButton"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
-                android:layout_marginStart="4dp"
-                android:layout_marginEnd="4dp"
+                android:layout_marginStart="@dimen/oem_padding_tiny"
+                android:layout_marginEnd="@dimen/oem_padding_tiny"
                 android:layout_weight="1"
                 android:text="Idle"
-                android:textSize="11sp" />
+                android:textSize="12sp" />
 
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/btn_calibration"
                 style="@style/Widget.Material3.Button.TonalButton"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
-                android:layout_marginStart="4dp"
+                android:layout_marginStart="@dimen/oem_padding_tiny"
                 android:layout_weight="1"
                 android:text="Calibration"
-                android:textSize="11sp" />
+                android:textSize="12sp" />
         </LinearLayout>
 
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="4dp"
+            android:layout_marginTop="@dimen/oem_padding_tiny"
             android:orientation="horizontal">
 
             <com.google.android.material.button.MaterialButton
@@ -539,38 +522,38 @@
                 style="@style/Widget.Material3.Button.TonalButton"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
-                android:layout_marginEnd="4dp"
+                android:layout_marginEnd="@dimen/oem_padding_tiny"
                 android:layout_weight="1"
                 android:text="AI Analysis"
-                android:textSize="11sp" />
+                android:textSize="12sp" />
 
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/btn_reports"
                 style="@style/Widget.Material3.Button.TonalButton"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
-                android:layout_marginStart="4dp"
-                android:layout_marginEnd="4dp"
+                android:layout_marginStart="@dimen/oem_padding_tiny"
+                android:layout_marginEnd="@dimen/oem_padding_tiny"
                 android:layout_weight="1"
                 android:text="Reports"
-                android:textSize="11sp" />
+                android:textSize="12sp" />
 
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/btn_compliance"
                 style="@style/Widget.Material3.Button.TonalButton"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
-                android:layout_marginStart="4dp"
+                android:layout_marginStart="@dimen/oem_padding_tiny"
                 android:layout_weight="1"
                 android:text="Compliance"
-                android:textSize="11sp" />
+                android:textSize="12sp" />
         </LinearLayout>
 
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="4dp"
-            android:layout_marginBottom="16dp"
+            android:layout_marginTop="@dimen/oem_padding_tiny"
+            android:layout_marginBottom="@dimen/oem_padding_large"
             android:orientation="horizontal">
 
             <com.google.android.material.button.MaterialButton
@@ -578,20 +561,20 @@
                 style="@style/Widget.Material3.Button.OutlinedButton"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
-                android:layout_marginEnd="4dp"
+                android:layout_marginEnd="@dimen/oem_padding_tiny"
                 android:layout_weight="1"
                 android:text="Device"
-                android:textSize="11sp" />
+                android:textSize="12sp" />
 
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/btn_settings"
                 style="@style/Widget.Material3.Button.OutlinedButton"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
-                android:layout_marginStart="4dp"
+                android:layout_marginStart="@dimen/oem_padding_tiny"
                 android:layout_weight="1"
                 android:text="Settings"
-                android:textSize="11sp" />
+                android:textSize="12sp" />
         </LinearLayout>
 
     </LinearLayout>

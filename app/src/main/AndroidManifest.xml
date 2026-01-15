@@ -54,20 +54,7 @@
             </intent-filter>
         </activity>
         
-        <!-- Feature Activities -->
-        <activity android:name=".ui.BatteryHealthActivity" android:exported="false"/>
-        <activity android:name=".ui.ChargingAnalysisActivity" android:exported="false"/>
-        <activity android:name=".ui.ThermalMonitorActivity" android:exported="false"/>
-        <activity android:name=".ui.DrainAnalysisActivity" android:exported="false"/>
-        <activity android:name=".ui.IdleDrainActivity" android:exported="false"/>
-        <activity android:name=".ui.UpdateComparisonActivity" android:exported="false"/>
-        <activity android:name=".ui.StressTestActivity" android:exported="false"/>
-        <activity android:name=".ui.BatteryProtectionActivity" android:exported="false"/>
-        <activity android:name=".ui.CalibrationActivity" android:exported="false"/>
-        <activity android:name=".ui.AIAdvisorActivity" android:exported="false"/>
-        <activity android:name=".ui.ReportsActivity" android:exported="false"/>
-        <activity android:name=".ui.ComplianceActivity" android:exported="false"/>
-        <activity android:name=".ui.SettingsActivity" android:exported="false"/>
+        <!-- Feature screens are implemented as Fragments, not Activities -->
         
         <!-- Battery Monitoring Service -->
         <service

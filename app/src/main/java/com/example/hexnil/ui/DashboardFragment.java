@@ -13,6 +13,7 @@ import android.widget.TextView;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.core.content.ContextCompat;
 import androidx.fragment.app.Fragment;
 
 import com.example.hexnil.ModuleNavigator;
@@ -197,7 +198,7 @@ public class DashboardFragment extends Fragment {
         if (!isAdded()) return;
         
         // Service status
-        tvServiceStatus.setText("Monitoring Active");
+        tvServiceStatus.setText("MONITORING ACTIVE");
         statusIndicator.setBackgroundResource(R.drawable.status_indicator_green);
         
         // Uptime
@@ -211,23 +212,23 @@ public class DashboardFragment extends Fragment {
             
             // Charging status
             if (snapshot.isCharging) {
-                String chargeType = snapshot.isFastCharging ? "⚡ Fast Charging" : "🔌 Charging";
+                String chargeType = snapshot.isFastCharging ? "FAST CHARGING" : "CHARGING";
                 tvChargingStatus.setText(chargeType);
-                tvChargingStatus.setTextColor(0xFF3FB950); // Green
+                tvChargingStatus.setTextColor(ContextCompat.getColor(requireContext(), R.color.oem_status_safe));
             } else {
-                tvChargingStatus.setText("📉 Discharging");
-                tvChargingStatus.setTextColor(0xFFF0883E); // Orange
+                tvChargingStatus.setText("DISCHARGING");
+                tvChargingStatus.setTextColor(ContextCompat.getColor(requireContext(), R.color.oem_text_secondary));
             }
             
             // Temperature
             float tempC = snapshot.temperature / 10.0f;
             tvTemperature.setText(String.format(Locale.US, "%.1f°C", tempC));
             if (tempC > 40) {
-                tvTemperature.setTextColor(0xFFF85149); // Red
+                tvTemperature.setTextColor(ContextCompat.getColor(requireContext(), R.color.oem_status_critical));
             } else if (tempC > 35) {
-                tvTemperature.setTextColor(0xFFD29922); // Yellow
+                tvTemperature.setTextColor(ContextCompat.getColor(requireContext(), R.color.oem_status_warning));
             } else {
-                tvTemperature.setTextColor(0xFFFFFFFF); // White
+                tvTemperature.setTextColor(ContextCompat.getColor(requireContext(), R.color.oem_text_primary));
             }
             
             // Voltage
@@ -242,11 +243,11 @@ public class DashboardFragment extends Fragment {
         if (health != null) {
             tvHealth.setText(String.format(Locale.US, "%.0f%%", health.healthPercentage));
             if (health.healthPercentage < 80) {
-                tvHealth.setTextColor(0xFFF85149); // Red
+                tvHealth.setTextColor(ContextCompat.getColor(requireContext(), R.color.oem_status_critical));
             } else if (health.healthPercentage < 90) {
-                tvHealth.setTextColor(0xFFD29922); // Yellow
+                tvHealth.setTextColor(ContextCompat.getColor(requireContext(), R.color.oem_status_warning));
             } else {
-                tvHealth.setTextColor(0xFF3FB950); // Green
+                tvHealth.setTextColor(ContextCompat.getColor(requireContext(), R.color.oem_status_safe));
             }
         }
         
@@ -291,15 +292,15 @@ public class DashboardFragment extends Fragment {
     
     private String getMonitorsStatus() {
         StringBuilder sb = new StringBuilder();
-        sb.append("✅ Battery Snapshots (adaptive intervals)\n");
-        sb.append("✅ Charging Analysis (session tracking)\n");
-        sb.append("✅ Thermal Monitoring (heat detection)\n");
-        sb.append("✅ Drain Analysis (usage tracking)\n");
-        sb.append("✅ Idle Drain Detection (doze monitoring)\n");
-        sb.append("✅ Safety Monitoring (anomaly detection)\n");
-        sb.append("✅ Calibration Tracking (drift analysis)\n");
-        sb.append("✅ Health Estimation (degradation tracking)\n");
-        sb.append("✅ AI Analysis Engine (comprehensive)");
+        sb.append("• Battery Snapshots (adaptive intervals)\n");
+        sb.append("• Charging Analysis (session tracking)\n");
+        sb.append("• Thermal Monitoring (heat detection)\n");
+        sb.append("• Drain Analysis (usage tracking)\n");
+        sb.append("• Idle Drain Detection (doze monitoring)\n");
+        sb.append("• Safety Monitoring (anomaly detection)\n");
+        sb.append("• Calibration Tracking (drift analysis)\n");
+        sb.append("• Health Estimation (degradation tracking)\n");
+        sb.append("• AI Analysis Engine (comprehensive)");
         return sb.toString();
     }
 

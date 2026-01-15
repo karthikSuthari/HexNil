@@ -1,9 +1,116 @@
+<?xml version="1.0" encoding="utf-8"?>
 <resources xmlns:tools="http://schemas.android.com/tools">
-    <!-- Base application theme. -->
+    <!-- OEM Diagnostic Dark Theme -->
     <style name="Base.Theme.HexNil" parent="Theme.Material3.DayNight.NoActionBar">
-        <!-- Customize your light theme here. -->
-        <!-- <item name="colorPrimary">@color/my_light_primary</item> -->
+        <!-- Dark theme as default -->
+        <item name="colorPrimary">@color/oem_accent</item>
+        <item name="colorPrimaryVariant">@color/oem_accent_dim</item>
+        <item name="colorOnPrimary">@color/oem_text_primary</item>
+        
+        <item name="colorSecondary">@color/oem_accent_variant</item>
+        <item name="colorOnSecondary">@color/oem_text_primary</item>
+        
+        <!-- Surface colors -->
+        <item name="colorSurface">@color/oem_bg_primary</item>
+        <item name="colorSurfaceVariant">@color/oem_bg_secondary</item>
+        <item name="colorOnSurface">@color/oem_text_primary</item>
+        <item name="colorOnSurfaceVariant">@color/oem_text_secondary</item>
+        
+        <!-- Background -->
+        <item name="android:colorBackground">@color/oem_bg_primary</item>
+        <item name="android:textColorPrimary">@color/oem_text_primary</item>
+        <item name="android:textColorSecondary">@color/oem_text_secondary</item>
+        
+        <!-- Window background -->
+        <item name="android:windowBackground">@color/oem_bg_primary</item>
+        <item name="android:statusBarColor">@color/oem_bg_primary</item>
+        <item name="android:navigationBarColor">@color/oem_bg_primary</item>
+        
+        <!-- Material 3 components -->
+        <item name="materialCardViewStyle">@style/Widget.HexNil.Card</item>
+        <item name="materialButtonStyle">@style/Widget.HexNil.Button</item>
+        
+        <!-- Typography -->
+        <item name="android:textAppearance">@style/TextAppearance_HexNil_Body</item>
     </style>
 
     <style name="Theme.HexNil" parent="Base.Theme.HexNil" />
+
+    <!-- Custom Card Style -->
+    <style name="Widget.HexNil.Card" parent="Widget.Material3.CardView.Elevated">
+        <item name="cardBackgroundColor">@color/oem_bg_card</item>
+        <item name="cardCornerRadius">8dp</item>
+        <item name="cardElevation">0dp</item>
+        <item name="strokeWidth">0dp</item>
+    </style>
+
+    <!-- Custom Button Style -->
+    <style name="Widget.HexNil.Button" parent="Widget.Material3.Button">
+        <item name="backgroundTint">@color/oem_accent_dim</item>
+        <item name="android:textColor">@color/oem_text_primary</item>
+        <item name="cornerRadius">6dp</item>
+    </style>
+
+    <!-- Typography Styles -->
+    <style name="TextAppearance_HexNil_Headline1">
+        <item name="android:textSize">32sp</item>
+        <item name="android:textStyle">bold</item>
+        <item name="android:textColor">@color/oem_text_primary</item>
+        <item name="android:letterSpacing">-0.02</item>
+        <item name="fontFamily">sans-serif-medium</item>
+    </style>
+
+    <style name="TextAppearance_HexNil_Headline2">
+        <item name="android:textSize">24sp</item>
+        <item name="android:textStyle">bold</item>
+        <item name="android:textColor">@color/oem_text_primary</item>
+        <item name="android:letterSpacing">-0.01</item>
+        <item name="fontFamily">sans-serif-medium</item>
+    </style>
+
+    <style name="TextAppearance_HexNil_Headline3">
+        <item name="android:textSize">20sp</item>
+        <item name="android:textStyle">bold</item>
+        <item name="android:textColor">@color/oem_text_primary</item>
+        <item name="fontFamily">sans-serif-medium</item>
+    </style>
+
+    <style name="TextAppearance_HexNil_BodyLarge">
+        <item name="android:textSize">16sp</item>
+        <item name="android:textColor">@color/oem_text_primary</item>
+        <item name="fontFamily">sans-serif</item>
+    </style>
+
+    <style name="TextAppearance_HexNil_Body">
+        <item name="android:textSize">14sp</item>
+        <item name="android:textColor">@color/oem_text_secondary</item>
+        <item name="fontFamily">sans-serif</item>
+    </style>
+
+    <style name="TextAppearance_HexNil_Caption">
+        <item name="android:textSize">12sp</item>
+        <item name="android:textColor">@color/oem_text_tertiary</item>
+        <item name="fontFamily">sans-serif</item>
+    </style>
+
+    <style name="TextAppearance_HexNil_Label">
+        <item name="android:textSize">11sp</item>
+        <item name="android:textColor">@color/oem_text_tertiary</item>
+        <item name="android:textStyle">bold</item>
+        <item name="android:letterSpacing">0.05</item>
+        <item name="fontFamily">sans-serif-medium</item>
+    </style>
+
+    <style name="TextAppearance_HexNil_Metric">
+        <item name="android:textSize">28sp</item>
+        <item name="android:textStyle">bold</item>
+        <item name="android:textColor">@color/oem_text_primary</item>
+        <item name="fontFamily">sans-serif-condensed</item>
+    </style>
+
+    <style name="TextAppearance_HexNil_Monospace">
+        <item name="android:textSize">13sp</item>
+        <item name="android:textColor">@color/oem_text_secondary</item>
+        <item name="fontFamily">monospace</item>
+    </style>
 </resources>

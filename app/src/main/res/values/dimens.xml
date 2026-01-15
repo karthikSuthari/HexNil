@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- OEM Diagnostic Design System - Spacing -->
+    
+    <!-- Padding -->
+    <dimen name="oem_padding_tiny">4dp</dimen>
+    <dimen name="oem_padding_small">8dp</dimen>
+    <dimen name="oem_padding_medium">16dp</dimen>
+    <dimen name="oem_padding_large">24dp</dimen>
+    <dimen name="oem_padding_xlarge">32dp</dimen>
+    
+    <!-- Margins -->
+    <dimen name="oem_margin_tiny">4dp</dimen>
+    <dimen name="oem_margin_small">8dp</dimen>
+    <dimen name="oem_margin_medium">12dp</dimen>
+    <dimen name="oem_margin_large">16dp</dimen>
+    <dimen name="oem_margin_xlarge">24dp</dimen>
+    
+    <!-- Card -->
+    <dimen name="oem_card_corner_radius">8dp</dimen>
+    <dimen name="oem_card_padding">16dp</dimen>
+    <dimen name="oem_card_elevation">0dp</dimen>
+    
+    <!-- Divider -->
+    <dimen name="oem_divider_height">1dp</dimen>
+    <dimen name="oem_divider_margin">16dp</dimen>
+    
+    <!-- Status Indicator -->
+    <dimen name="oem_status_indicator_size">10dp</dimen>
+    
+    <!-- Icon Sizes -->
+    <dimen name="oem_icon_small">16dp</dimen>
+    <dimen name="oem_icon_medium">24dp</dimen>
+    <dimen name="oem_icon_large">32dp</dimen>
+</resources>

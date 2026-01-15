@@ -25,23 +25,60 @@ public class AiAnalysisFragment extends Fragment {
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
         View root = inflater.inflate(R.layout.fragment_ai_analysis, container, false);
-        TextView primary = root.findViewById(R.id.ai_primary_issue);
-        TextView risk = root.findViewById(R.id.ai_risk);
-        TextView recs = root.findViewById(R.id.ai_recommendations);
+        TextView tvExecutiveSummary = root.findViewById(R.id.tv_executive_summary);
+        TextView tvRiskScore = root.findViewById(R.id.tv_risk_score);
+        TextView tvSeverity = root.findViewById(R.id.tv_severity);
+        TextView tvRootCause = root.findViewById(R.id.tv_root_cause);
+        TextView tvRecommendations = root.findViewById(R.id.tv_recommendations);
+        TextView tvTechnicalDetails = root.findViewById(R.id.tv_technical_details);
 
         executor.execute(() -> {
             HexNilDatabase db = HexNilDatabase.getInstance(requireContext());
             AIAnalysisResult result = db.miscDao().getLatestAIAnalysis();
             requireActivity().runOnUiThread(() -> {
                 if (result == null) {
-                    primary.setText("Primary issue: no data");
-                    risk.setText("Risk: n/a");
-                    recs.setText("Recommendations: n/a");
+                    tvExecutiveSummary.setText("No analysis data available");
+                    tvRiskScore.setText("--");
+                    tvSeverity.setText("--");
+                    tvRootCause.setText("No issues detected");
+                    tvRecommendations.setText("No recommendations at this time");
+                    tvTechnicalDetails.setText("Analysis period: --\nData points analyzed: --\nConfidence: --");
                     return;
                 }
-                primary.setText("Primary issue: " + result.primaryIssue + " (" + result.severity + ")");
-                risk.setText("Risk: " + result.riskScore + " | Trend: " + result.trend);
-                recs.setText("Recommendations: " + result.primaryRecommendation);
+                
+                // Executive Summary
+                if (result.executiveSummary != null && !result.executiveSummary.isEmpty()) {
+                    tvExecutiveSummary.setText(result.executiveSummary);
+                } else {
+                    tvExecutiveSummary.setText("Battery system operating within normal parameters.");
+                }
+                
+                // Risk Score
+                tvRiskScore.setText(String.valueOf((int)result.riskScore));
+                
+                // Severity
+                tvSeverity.setText(result.severity != null ? result.severity.toUpperCase() : "LOW");
+                
+                // Root Cause
+                if (result.rootCause != null && !result.rootCause.isEmpty()) {
+                    tvRootCause.setText(result.rootCause);
+                } else {
+                    tvRootCause.setText("Primary issue: " + (result.primaryIssue != null ? result.primaryIssue : "None"));
+                }
+                
+                // Recommendations
+                if (result.primaryRecommendation != null && !result.primaryRecommendation.isEmpty()) {
+                    tvRecommendations.setText(result.primaryRecommendation);
+                } else {
+                    tvRecommendations.setText("Continue monitoring. System operating within expected parameters.");
+                }
+                
+                // Technical Details
+                StringBuilder techDetails = new StringBuilder();
+                techDetails.append("Analysis period: ").append(result.analysisPeriod != null ? result.analysisPeriod : "Last 24 hours").append("\n");
+                techDetails.append("Data points analyzed: ").append(result.dataPointsAnalyzed > 0 ? result.dataPointsAnalyzed : "--").append("\n");
+                techDetails.append("Confidence: ").append(result.issueConfidence > 0 ? String.format("%.0f%%", result.issueConfidence * 100) : "--");
+                tvTechnicalDetails.setText(techDetails.toString());
             });
         });
 

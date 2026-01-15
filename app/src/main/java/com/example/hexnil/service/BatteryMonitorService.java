@@ -883,4 +883,4 @@ public class BatteryMonitorService extends Service {
         Intent intent = new Intent(context, BatteryMonitorService.class);
         context.stopService(intent);
     }
-}
+}  
