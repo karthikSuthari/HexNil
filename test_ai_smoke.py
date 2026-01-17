@@ -28,7 +28,20 @@ from typing import Dict, Any, List, Optional, Tuple
 from dataclasses import dataclass
 from datetime import datetime, timezone
 
-import pytest
+try:
+    import pytest
+    RUNNING_UNDER_PYTEST = True
+except ImportError:
+    # When running standalone without pytest, create dummy decorator
+    RUNNING_UNDER_PYTEST = False
+    class _DummyPytest:
+        @staticmethod
+        def fixture(*args, **kwargs):
+            def decorator(func):
+                return func
+            return decorator
+    pytest = _DummyPytest()
+
 import mysql.connector as mysql
 
 
@@ -306,28 +319,20 @@ def set_watermark(conn, device_id: str, source_table: str, last_id: int, last_ts
 
 @pytest.fixture(scope="module", autouse=True)
 def ensure_device_exists():
-    """Ensure test device is registered before any tests run.
+    """Ensure test device is registered and has test data before any tests run.
     
-    This fixture runs automatically for the entire module and ensures
-    the ai_smoke_device exists in the devices table before tests that
-    depend on FK constraints (like ai_watermarks) can run.
+    This fixture runs automatically for the entire module and ensures:
+    1. The ai_smoke_device exists in the devices table (for FK constraints)
+    2. Test data exists in raw tables for AI pipeline processing
     """
-    conn = get_backend_conn()
-    cur = conn.cursor()
-    
+    # Clean up old test data first
     try:
-        # Register the device if it doesn't exist
-        cur.execute("""
-            INSERT INTO devices (device_id, device_model, android_version, app_version, status)
-            VALUES (%s, %s, %s, %s, %s)
-            ON DUPLICATE KEY UPDATE device_model=VALUES(device_model), last_seen=CURRENT_TIMESTAMP
-        """, (DEVICE_ID, "AISmokeTest", "14", "1.0.0", "ACTIVE"))
-        conn.commit()
+        cleanup_test_data()
     except Exception:
-        conn.rollback()
-    finally:
-        cur.close()
-        conn.close()
+        pass
+    
+    # Set up fresh test data (this also registers the device)
+    setup_test_data()
     
     yield  # Tests run here
     
