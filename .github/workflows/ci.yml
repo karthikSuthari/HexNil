@@ -10,6 +10,16 @@ jobs:
   test:
     runs-on: ubuntu-latest
 
+    env:
+      HEXNIL_DB_HOST: 127.0.0.1
+      HEXNIL_DB_PORT: 3306
+
+      HEXNIL_BACKEND_DB_USER: hexnil_backend
+      HEXNIL_BACKEND_DB_PASSWORD: hexnil_backend
+
+      HEXNIL_AI_DB_USER: hexnil_ai
+      HEXNIL_AI_DB_PASSWORD: hexnil_ai
+
     services:
       mysql:
         image: mysql:8.0
