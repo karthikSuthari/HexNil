@@ -1,4 +1,4 @@
-"""Backend Smoke Tests for HexNil FastAPI Server
+r"""Backend Smoke Tests for HexNil FastAPI Server
 
 Tests:
 1. Health endpoint

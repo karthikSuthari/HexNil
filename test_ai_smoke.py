@@ -1,4 +1,4 @@
-"""AI Pipeline Smoke Tests for HexNil
+r"""AI Pipeline Smoke Tests for HexNil
 
 Tests:
 1. Database connectivity with AI user
@@ -28,6 +28,7 @@ from typing import Dict, Any, List, Optional, Tuple
 from dataclasses import dataclass
 from datetime import datetime, timezone
 
+import pytest
 import mysql.connector as mysql
 
 
@@ -297,6 +298,40 @@ def set_watermark(conn, device_id: str, source_table: str, last_id: int, last_ts
         UPDATE ai_watermarks SET last_processed_id=%s, last_processed_ts=%s
         WHERE device_id=%s AND source_table=%s
     """, (last_id, last_ts, device_id, source_table))
+
+
+# ============================================================================
+# PYTEST FIXTURES
+# ============================================================================
+
+@pytest.fixture(scope="module", autouse=True)
+def ensure_device_exists():
+    """Ensure test device is registered before any tests run.
+    
+    This fixture runs automatically for the entire module and ensures
+    the ai_smoke_device exists in the devices table before tests that
+    depend on FK constraints (like ai_watermarks) can run.
+    """
+    conn = get_backend_conn()
+    cur = conn.cursor()
+    
+    try:
+        # Register the device if it doesn't exist
+        cur.execute("""
+            INSERT INTO devices (device_id, device_model, android_version, app_version, status)
+            VALUES (%s, %s, %s, %s, %s)
+            ON DUPLICATE KEY UPDATE device_model=VALUES(device_model), last_seen=CURRENT_TIMESTAMP
+        """, (DEVICE_ID, "AISmokeTest", "14", "1.0.0", "ACTIVE"))
+        conn.commit()
+    except Exception:
+        conn.rollback()
+    finally:
+        cur.close()
+        conn.close()
+    
+    yield  # Tests run here
+    
+    # Optional: cleanup after all tests (keeping data for debugging)
 
 
 # ============================================================================
