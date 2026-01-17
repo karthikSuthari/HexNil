@@ -183,7 +183,7 @@ public class BatteryHealth {
      * Improves with more data points and calibration cycles
      */
     @androidx.room.ColumnInfo(defaultValue = "0")
-    public float eolConfidence;
+    public float eolConfidence = 0f;
 
     // =========================================================================
     // INTERNAL RESISTANCE & IMPEDANCE (Advanced Health Indicators)

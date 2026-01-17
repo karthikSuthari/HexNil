@@ -235,6 +235,365 @@ class AIAnalysisResult(BaseDataRecord):
     model_version: Optional[str] = None
     execution_time_ms: Optional[int] = None
 
+# ============================================================================
+# APP DATA MODELS (From Room DB)
+# ============================================================================
+
+class AppBatteryUsageRecord(BaseModel):
+    """App battery usage data from Room DB app_battery_usage table."""
+    device_id: str = Field(..., min_length=1, max_length=64)
+    timestamp: int = Field(..., gt=0)
+    period_start: int = Field(..., gt=0)
+    period_end: int = Field(..., gt=0)
+    package_name: Optional[str] = None
+    app_name: Optional[str] = None
+    is_system_app: bool = False
+    is_preinstalled: bool = False
+    app_category: Optional[str] = None
+    foreground_time: int = 0
+    background_time: int = 0
+    battery_percent_used: float = 0
+    drain_per_hour: float = 0
+    cpu_time_ms: float = 0
+    network_bytes: int = 0
+    wakelock_count: int = 0
+    wakelock_time: int = 0
+    partial_wakelock_time: int = 0
+    alarm_wake_count: int = 0
+    network_wake_count: int = 0
+    wakelock_drain_score: float = 0
+    alarm_count: int = 0
+    gps_requests: int = 0
+    background_wakes: int = 0
+    push_notifications: int = 0
+    background_services: int = 0
+    has_excessive_background: bool = False
+    category_average: float = 0
+    deviation_from_average: float = 0
+    efficiency_rating: Optional[str] = None
+    drain_reasons: Optional[str] = None
+    optimization_tips: Optional[str] = None
+    needs_restriction: bool = False
+
+class AppDrainRankRecord(BaseModel):
+    """App drain rank data from Room DB app_drain_ranks table."""
+    device_id: str = Field(..., min_length=1, max_length=64)
+    window_label: Optional[str] = None
+    window_start: int = Field(..., gt=0)
+    window_end: int = Field(..., gt=0)
+    rank_position: int = Field(..., ge=0)
+    package_name: Optional[str] = None
+    drain_score: float = 0
+    contribution_pct: float = 0
+    screen_time_ms: int = 0
+    foreground_time_ms: int = 0
+    background_time_ms: int = 0
+
+# ============================================================================
+# ADDITIONAL ROOM DB MODELS (Complete Sync)
+# ============================================================================
+
+class ThermalHeatBucketRecord(BaseModel):
+    """Thermal heat bucket data from Room DB."""
+    device_id: str = Field(..., min_length=1, max_length=64)
+    start_time: int = Field(..., gt=0)
+    end_time: int = Field(..., gt=0)
+    temp_bucket: Optional[str] = None
+    hour_block: int = 0
+    sample_count: int = 0
+    duration_ms: int = 0
+    max_temp: Optional[float] = None
+    avg_temp: Optional[float] = None
+    min_temp: Optional[float] = None
+    temp_variance: Optional[float] = None
+    charging_count: int = 0
+    charging_percent: float = 0
+    avg_temp_charging: Optional[float] = None
+    avg_temp_not_charging: Optional[float] = None
+    avg_charge_current: Optional[float] = None
+    fast_charging_count: int = 0
+    high_cpu_count: int = 0
+    high_gpu_count: int = 0
+    avg_cpu_load: Optional[float] = None
+    avg_gpu_load: Optional[float] = None
+    avg_temp_high_cpu: Optional[float] = None
+    avg_temp_high_gpu: Optional[float] = None
+    top_foreground_app: Optional[str] = None
+    screen_on_count: int = 0
+    screen_on_percent: float = 0
+    app_temp_contribution_json: Optional[str] = None
+    gaming_count: int = 0
+    camera_count: int = 0
+    navigation_count: int = 0
+    network_type: Optional[str] = None
+    spike_count: int = 0
+    sustained_heat_count: int = 0
+    warning_event_count: int = 0
+    critical_event_count: int = 0
+    avg_battery_level: Optional[float] = None
+    battery_drain: Optional[float] = None
+    degradation_risk: Optional[float] = None
+    thermal_score: Optional[float] = None
+    exceeds_oem_limit: bool = False
+    oem_compliance_status: Optional[str] = None
+
+class StressTestResultRecord(BaseModel):
+    """Stress test result data from Room DB."""
+    device_id: str = Field(..., min_length=1, max_length=64)
+    timestamp: int = Field(..., gt=0)
+    test_start_time: int = Field(..., gt=0)
+    test_end_time: Optional[int] = None
+    test_type: Optional[str] = None
+    test_name: Optional[str] = None
+    test_duration_minutes: Optional[int] = None
+    test_parameters: Optional[str] = None
+    high_temperature_scenario: bool = False
+    start_level: Optional[int] = None
+    end_level: Optional[int] = None
+    drain_amount: Optional[float] = None
+    drain_rate: Optional[float] = None
+    peak_drain_rate: Optional[float] = None
+    start_temperature: Optional[float] = None
+    max_temperature: Optional[float] = None
+    end_temperature: Optional[float] = None
+    avg_temperature: Optional[float] = None
+    thermal_throttle_events: int = 0
+    thermal_throttle_time: int = 0
+    safety_trigger_count: int = 0
+    safety_notes: Optional[str] = None
+    avg_cpu_usage: Optional[float] = None
+    max_cpu_usage: Optional[float] = None
+    avg_gpu_usage: Optional[float] = None
+    max_gpu_usage: Optional[float] = None
+    avg_memory_usage: Optional[float] = None
+    max_memory_usage: Optional[float] = None
+    charge_gained: int = 0
+    avg_charging_current: Optional[float] = None
+    max_charging_current: Optional[float] = None
+    charging_interruptions: int = 0
+    test_completed: bool = False
+    crash_count: int = 0
+    restart_count: int = 0
+    error_count: int = 0
+    failure_reasons: Optional[str] = None
+    drain_score: Optional[float] = None
+    thermal_score: Optional[float] = None
+    stability_score: Optional[float] = None
+    thermal_resilience_score: Optional[float] = None
+    charging_stability_score: Optional[float] = None
+    overall_score: Optional[float] = None
+    baseline_drain: Optional[float] = None
+    drain_variance: Optional[float] = None
+    baseline_thermal: Optional[float] = None
+    thermal_variance: Optional[float] = None
+    passed: bool = False
+    verdict: Optional[str] = None
+    verdict_details: Optional[str] = None
+    test_logs: Optional[str] = None
+    recommendations: Optional[str] = None
+
+class UpdateComparisonRecord(BaseModel):
+    """Update comparison data from Room DB."""
+    device_id: str = Field(..., min_length=1, max_length=64)
+    timestamp: int = Field(..., gt=0)
+    previous_version: Optional[str] = None
+    current_version: Optional[str] = None
+    update_timestamp: Optional[int] = None
+    update_type: Optional[str] = None
+    pre_drain_rate: Optional[float] = None
+    pre_avg_drain_screen_on: Optional[float] = None
+    pre_avg_drain_screen_off: Optional[float] = None
+    pre_avg_charging_time: Optional[float] = None
+    pre_avg_temperature: Optional[float] = None
+    pre_max_temperature: Optional[float] = None
+    pre_idle_drain: Optional[float] = None
+    pre_battery_health: Optional[float] = None
+    post_drain_rate: Optional[float] = None
+    post_avg_drain_screen_on: Optional[float] = None
+    post_avg_drain_screen_off: Optional[float] = None
+    post_avg_charging_time: Optional[float] = None
+    post_avg_temperature: Optional[float] = None
+    post_max_temperature: Optional[float] = None
+    post_idle_drain: Optional[float] = None
+    post_battery_health: Optional[float] = None
+    drain_rate_delta: Optional[float] = None
+    screen_on_drain_delta: Optional[float] = None
+    screen_off_drain_delta: Optional[float] = None
+    charging_time_delta: Optional[float] = None
+    temperature_delta: Optional[float] = None
+    thermal_peak_delta: Optional[float] = None
+    idle_drain_delta: Optional[float] = None
+    drain_rate_change: Optional[float] = None
+    screen_on_drain_change: Optional[float] = None
+    screen_off_drain_change: Optional[float] = None
+    charging_time_change: Optional[float] = None
+    temperature_change: Optional[float] = None
+    thermal_peak_change: Optional[float] = None
+    idle_drain_change: Optional[float] = None
+    overall_impact: Optional[str] = None
+    impact_score: Optional[float] = None
+    impact_details: Optional[str] = None
+    has_drain_regression: bool = False
+    has_charging_regression: bool = False
+    has_thermal_regression: bool = False
+    has_idle_regression: bool = False
+    recommendation: Optional[str] = None
+    analysis_notes: Optional[str] = None
+    confidence_level: Optional[float] = None
+    pre_series_json: Optional[str] = None
+    post_series_json: Optional[str] = None
+
+class ComplianceReportRecord(BaseModel):
+    """Compliance report data from Room DB."""
+    device_id: str = Field(..., min_length=1, max_length=64)
+    timestamp: int = Field(..., gt=0)
+    period_start: Optional[int] = None
+    period_end: Optional[int] = None
+    report_type: Optional[str] = None
+    report_version: Optional[str] = None
+    generated_by: Optional[str] = None
+    device_model: Optional[str] = None
+    device_serial: Optional[str] = None
+    firmware_version: Optional[str] = None
+    battery_part_number: Optional[str] = None
+    safety_compliant: bool = True
+    safety_violation_count: int = 0
+    safety_violations: Optional[str] = None
+    safety_score: Optional[float] = None
+    max_operating_temp: Optional[float] = None
+    max_charging_temp: Optional[float] = None
+    temp_compliant: bool = True
+    temp_violation_count: int = 0
+    temp_violation_details: Optional[str] = None
+    min_voltage: Optional[float] = None
+    max_voltage: Optional[float] = None
+    voltage_compliant: bool = True
+    voltage_violation_count: int = 0
+    voltage_violation_details: Optional[str] = None
+    max_charging_current: Optional[float] = None
+    max_discharge_current: Optional[float] = None
+    current_compliant: bool = True
+    current_violation_count: int = 0
+    current_violation_details: Optional[str] = None
+    lowest_voltage: Optional[float] = None
+    over_discharge_protection_working: bool = True
+    over_discharge_events: int = 0
+    highest_voltage: Optional[float] = None
+    overcharge_protection_working: bool = True
+    overcharge_events: int = 0
+    thermal_protection_working: bool = True
+    thermal_shutdown_events: int = 0
+    thermal_throttle_events: int = 0
+    iec_compliant: bool = True
+    ul_compliant: bool = True
+    un_compliant: bool = True
+    standards_notes: Optional[str] = None
+    certification_readiness: Optional[float] = None
+    certification_gaps: Optional[str] = None
+    certification_recommendations: Optional[str] = None
+    evidence_summary: Optional[str] = None
+    evidence_ids: Optional[str] = None
+    evidence_count: int = 0
+    audit_trail: Optional[str] = None
+    data_points_analyzed: int = 0
+    data_quality: Optional[float] = None
+    executive_summary: Optional[str] = None
+    technical_details: Optional[str] = None
+    compliance_matrix: Optional[str] = None
+    attachments: Optional[str] = None
+    review_status: Optional[str] = None
+    review_notes: Optional[str] = None
+    review_timestamp: Optional[int] = None
+
+class ComplianceEvidenceRecord(BaseModel):
+    """Compliance evidence data from Room DB."""
+    device_id: str = Field(..., min_length=1, max_length=64)
+    timestamp: int = Field(..., gt=0)
+    rule_id: Optional[str] = None
+    metric_value: Optional[float] = None
+    threshold_value: Optional[float] = None
+    source_module: Optional[str] = None
+    severity: Optional[str] = None
+    category: Optional[str] = None
+    source_event_id: int = 0
+    notes: Optional[str] = None
+
+class DeviceInfoSyncRecord(BaseModel):
+    """Device info data from Room DB."""
+    device_id: str = Field(..., min_length=1, max_length=64)
+    timestamp: int = Field(..., gt=0)
+    first_recorded: Optional[int] = None
+    manufacturer: Optional[str] = None
+    model: Optional[str] = None
+    product: Optional[str] = None
+    brand: Optional[str] = None
+    device: Optional[str] = None
+    board: Optional[str] = None
+    hardware: Optional[str] = None
+    android_version: Optional[str] = None
+    sdk_version: Optional[int] = None
+    build_number: Optional[str] = None
+    security_patch: Optional[str] = None
+    kernel_version: Optional[str] = None
+    firmware_version: Optional[str] = None
+    battery_technology: Optional[str] = None
+    design_capacity_mah: Optional[float] = None
+    battery_part_number: Optional[str] = None
+    battery_manufacturer: Optional[str] = None
+    battery_batch_id: Optional[str] = None
+    processor: Optional[str] = None
+    cpu_cores: Optional[int] = None
+    ram_size: Optional[int] = None
+    storage_size: Optional[int] = None
+    screen_width: Optional[int] = None
+    screen_height: Optional[int] = None
+    screen_density: Optional[float] = None
+    oem_sku: Optional[str] = None
+    region_code: Optional[str] = None
+    carrier_code: Optional[str] = None
+    production_date: Optional[str] = None
+    warranty_status: Optional[str] = None
+    hexnil_install_date: Optional[int] = None
+    hexnil_version: Optional[str] = None
+    total_snapshots: int = 0
+    total_analyses: int = 0
+
+class AnomalyRecordRecord(BaseModel):
+    """Anomaly record data from Room DB."""
+    device_id: str = Field(..., min_length=1, max_length=64)
+    detected_at: int = Field(..., gt=0)
+    anomaly_type: Optional[str] = None
+    severity: Optional[str] = None
+    confidence_score: Optional[float] = None
+    source_app: Optional[str] = None
+    source_app_name: Optional[str] = None
+    source_component: Optional[str] = None
+    title: Optional[str] = None
+    description: Optional[str] = None
+    technical_details: Optional[str] = None
+    expected_value: Optional[float] = None
+    actual_value: Optional[float] = None
+    deviation_percent: Optional[float] = None
+    metric_name: Optional[str] = None
+    metric_unit: Optional[str] = None
+    battery_level: Optional[int] = None
+    was_charging: bool = False
+    screen_on: bool = False
+    device_state: Optional[str] = None
+    period_start: Optional[int] = None
+    period_end: Optional[int] = None
+    data_points_analyzed: int = 0
+    recommendation: Optional[str] = None
+    root_cause: Optional[str] = None
+    impact: Optional[str] = None
+    acknowledged: bool = False
+    resolved: bool = False
+    resolved_at: Optional[int] = None
+    resolution: Optional[str] = None
+    related_anomaly_id: Optional[int] = None
+    occurrence_count: int = 1
+    is_recurring: bool = False
+
 class BatchSyncRequest(BaseModel):
     """Batch sync request containing multiple data types."""
     device_info: DeviceInfo
@@ -247,6 +606,17 @@ class BatchSyncRequest(BaseModel):
     safety_events: Optional[List[SafetyEvent]] = []
     calibration_data: Optional[List[CalibrationData]] = []
     ai_analysis_results: Optional[List[AIAnalysisResult]] = []
+    # App data (from Room DB)
+    app_battery_usage: Optional[List[AppBatteryUsageRecord]] = []
+    app_drain_ranks: Optional[List[AppDrainRankRecord]] = []
+    # Additional Room DB tables (complete sync)
+    thermal_heat_buckets: Optional[List[ThermalHeatBucketRecord]] = []
+    stress_test_results: Optional[List[StressTestResultRecord]] = []
+    update_comparisons: Optional[List[UpdateComparisonRecord]] = []
+    compliance_reports: Optional[List[ComplianceReportRecord]] = []
+    compliance_evidence: Optional[List[ComplianceEvidenceRecord]] = []
+    device_info_sync: Optional[List[DeviceInfoSyncRecord]] = []
+    anomaly_records: Optional[List[AnomalyRecordRecord]] = []
 
 class SyncResponse(BaseModel):
     """Response for sync operations."""
@@ -560,6 +930,381 @@ def insert_ai_analysis_results(conn, records: List[AIAnalysisResult]) -> int:
     finally:
         cursor.close()
 
+# ============================================================================
+# APP DATA INSERT FUNCTIONS (From Room DB)
+# ============================================================================
+
+def insert_app_battery_usage(conn, records: List['AppBatteryUsageRecord']) -> int:
+    """Insert app battery usage records."""
+    if not records:
+        return 0
+    
+    cursor = conn.cursor()
+    try:
+        sql = """
+            INSERT IGNORE INTO app_battery_usage 
+            (device_id, timestamp, period_start, period_end, package_name, app_name,
+             is_system_app, is_preinstalled, app_category, foreground_time, background_time,
+             battery_percent_used, drain_per_hour, cpu_time_ms, network_bytes, wakelock_count,
+             wakelock_time, partial_wakelock_time, alarm_wake_count, network_wake_count,
+             wakelock_drain_score, alarm_count, gps_requests, background_wakes, push_notifications,
+             background_services, has_excessive_background, category_average, deviation_from_average,
+             efficiency_rating, drain_reasons, optimization_tips, needs_restriction)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+        """
+        data = [
+            (r.device_id, r.timestamp, r.period_start, r.period_end, r.package_name, r.app_name,
+             r.is_system_app, r.is_preinstalled, r.app_category, r.foreground_time, r.background_time,
+             r.battery_percent_used, r.drain_per_hour, r.cpu_time_ms, r.network_bytes, r.wakelock_count,
+             r.wakelock_time, r.partial_wakelock_time, r.alarm_wake_count, r.network_wake_count,
+             r.wakelock_drain_score, r.alarm_count, r.gps_requests, r.background_wakes, r.push_notifications,
+             r.background_services, r.has_excessive_background, r.category_average, r.deviation_from_average,
+             r.efficiency_rating, r.drain_reasons, r.optimization_tips, r.needs_restriction)
+            for r in records
+        ]
+        cursor.executemany(sql, data)
+        conn.commit()
+        return cursor.rowcount
+    except Exception as e:
+        logger.error(f"Error inserting app battery usage: {e}")
+        conn.rollback()
+        raise
+    finally:
+        cursor.close()
+
+def insert_app_drain_ranks(conn, records: List['AppDrainRankRecord']) -> int:
+    """Insert app drain rank records."""
+    if not records:
+        return 0
+    
+    cursor = conn.cursor()
+    try:
+        sql = """
+            INSERT IGNORE INTO app_drain_ranks 
+            (device_id, window_label, window_start, window_end, rank_position, package_name,
+             drain_score, contribution_pct, screen_time_ms, foreground_time_ms, background_time_ms)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+        """
+        data = [
+            (r.device_id, r.window_label, r.window_start, r.window_end, r.rank_position, r.package_name,
+             r.drain_score, r.contribution_pct, r.screen_time_ms, r.foreground_time_ms, r.background_time_ms)
+            for r in records
+        ]
+        cursor.executemany(sql, data)
+        conn.commit()
+        return cursor.rowcount
+    except Exception as e:
+        logger.error(f"Error inserting app drain ranks: {e}")
+        conn.rollback()
+        raise
+    finally:
+        cursor.close()
+
+# ============================================================================
+# INSERT FUNCTIONS FOR ADDITIONAL ROOM DB TABLES (Complete Sync)
+# ============================================================================
+
+def insert_thermal_heat_buckets(conn, records: List['ThermalHeatBucketRecord']) -> int:
+    """Insert thermal heat bucket records."""
+    if not records:
+        return 0
+    
+    cursor = conn.cursor()
+    try:
+        sql = """
+            INSERT IGNORE INTO thermal_heat_buckets 
+            (device_id, start_time, end_time, temp_bucket, hour_block, sample_count, duration_ms,
+             max_temp, avg_temp, min_temp, temp_variance, charging_count, charging_percent,
+             avg_temp_charging, avg_temp_not_charging, avg_charge_current, fast_charging_count,
+             high_cpu_count, high_gpu_count, avg_cpu_load, avg_gpu_load, avg_temp_high_cpu,
+             avg_temp_high_gpu, top_foreground_app, screen_on_count, screen_on_percent,
+             app_temp_contribution_json, gaming_count, camera_count, navigation_count, network_type,
+             spike_count, sustained_heat_count, warning_event_count, critical_event_count,
+             avg_battery_level, battery_drain, degradation_risk, thermal_score, exceeds_oem_limit,
+             oem_compliance_status)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+        """
+        data = [
+            (r.device_id, r.start_time, r.end_time, r.temp_bucket, r.hour_block, r.sample_count,
+             r.duration_ms, r.max_temp, r.avg_temp, r.min_temp, r.temp_variance, r.charging_count,
+             r.charging_percent, r.avg_temp_charging, r.avg_temp_not_charging, r.avg_charge_current,
+             r.fast_charging_count, r.high_cpu_count, r.high_gpu_count, r.avg_cpu_load, r.avg_gpu_load,
+             r.avg_temp_high_cpu, r.avg_temp_high_gpu, r.top_foreground_app, r.screen_on_count,
+             r.screen_on_percent, r.app_temp_contribution_json, r.gaming_count, r.camera_count,
+             r.navigation_count, r.network_type, r.spike_count, r.sustained_heat_count,
+             r.warning_event_count, r.critical_event_count, r.avg_battery_level, r.battery_drain,
+             r.degradation_risk, r.thermal_score, r.exceeds_oem_limit, r.oem_compliance_status)
+            for r in records
+        ]
+        cursor.executemany(sql, data)
+        conn.commit()
+        return cursor.rowcount
+    except Exception as e:
+        logger.error(f"Error inserting thermal heat buckets: {e}")
+        conn.rollback()
+        raise
+    finally:
+        cursor.close()
+
+def insert_stress_test_results(conn, records: List['StressTestResultRecord']) -> int:
+    """Insert stress test result records."""
+    if not records:
+        return 0
+    
+    cursor = conn.cursor()
+    try:
+        sql = """
+            INSERT IGNORE INTO stress_test_results 
+            (device_id, timestamp, test_start_time, test_end_time, test_type, test_name,
+             test_duration_minutes, test_parameters, high_temperature_scenario, start_level, end_level,
+             drain_amount, drain_rate, peak_drain_rate, start_temperature, max_temperature,
+             end_temperature, avg_temperature, thermal_throttle_events, thermal_throttle_time,
+             safety_trigger_count, safety_notes, avg_cpu_usage, max_cpu_usage, avg_gpu_usage,
+             max_gpu_usage, avg_memory_usage, max_memory_usage, charge_gained, avg_charging_current,
+             max_charging_current, charging_interruptions, test_completed, crash_count, restart_count,
+             error_count, failure_reasons, drain_score, thermal_score, stability_score,
+             thermal_resilience_score, charging_stability_score, overall_score, baseline_drain,
+             drain_variance, baseline_thermal, thermal_variance, passed, verdict, verdict_details,
+             test_logs, recommendations)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+        """
+        data = [
+            (r.device_id, r.timestamp, r.test_start_time, r.test_end_time, r.test_type, r.test_name,
+             r.test_duration_minutes, r.test_parameters, r.high_temperature_scenario, r.start_level,
+             r.end_level, r.drain_amount, r.drain_rate, r.peak_drain_rate, r.start_temperature,
+             r.max_temperature, r.end_temperature, r.avg_temperature, r.thermal_throttle_events,
+             r.thermal_throttle_time, r.safety_trigger_count, r.safety_notes, r.avg_cpu_usage,
+             r.max_cpu_usage, r.avg_gpu_usage, r.max_gpu_usage, r.avg_memory_usage, r.max_memory_usage,
+             r.charge_gained, r.avg_charging_current, r.max_charging_current, r.charging_interruptions,
+             r.test_completed, r.crash_count, r.restart_count, r.error_count, r.failure_reasons,
+             r.drain_score, r.thermal_score, r.stability_score, r.thermal_resilience_score,
+             r.charging_stability_score, r.overall_score, r.baseline_drain, r.drain_variance,
+             r.baseline_thermal, r.thermal_variance, r.passed, r.verdict, r.verdict_details,
+             r.test_logs, r.recommendations)
+            for r in records
+        ]
+        cursor.executemany(sql, data)
+        conn.commit()
+        return cursor.rowcount
+    except Exception as e:
+        logger.error(f"Error inserting stress test results: {e}")
+        conn.rollback()
+        raise
+    finally:
+        cursor.close()
+
+def insert_update_comparisons(conn, records: List['UpdateComparisonRecord']) -> int:
+    """Insert update comparison records."""
+    if not records:
+        return 0
+    
+    cursor = conn.cursor()
+    try:
+        sql = """
+            INSERT IGNORE INTO update_comparisons 
+            (device_id, timestamp, previous_version, current_version, update_timestamp, update_type,
+             pre_drain_rate, pre_avg_drain_screen_on, pre_avg_drain_screen_off, pre_avg_charging_time,
+             pre_avg_temperature, pre_max_temperature, pre_idle_drain, pre_battery_health,
+             post_drain_rate, post_avg_drain_screen_on, post_avg_drain_screen_off, post_avg_charging_time,
+             post_avg_temperature, post_max_temperature, post_idle_drain, post_battery_health,
+             drain_rate_delta, screen_on_drain_delta, screen_off_drain_delta, charging_time_delta,
+             temperature_delta, thermal_peak_delta, idle_drain_delta, drain_rate_change,
+             screen_on_drain_change, screen_off_drain_change, charging_time_change, temperature_change,
+             thermal_peak_change, idle_drain_change, overall_impact, impact_score, impact_details,
+             has_drain_regression, has_charging_regression, has_thermal_regression, has_idle_regression,
+             recommendation, analysis_notes, confidence_level, pre_series_json, post_series_json)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+        """
+        data = [
+            (r.device_id, r.timestamp, r.previous_version, r.current_version, r.update_timestamp,
+             r.update_type, r.pre_drain_rate, r.pre_avg_drain_screen_on, r.pre_avg_drain_screen_off,
+             r.pre_avg_charging_time, r.pre_avg_temperature, r.pre_max_temperature, r.pre_idle_drain,
+             r.pre_battery_health, r.post_drain_rate, r.post_avg_drain_screen_on, r.post_avg_drain_screen_off,
+             r.post_avg_charging_time, r.post_avg_temperature, r.post_max_temperature, r.post_idle_drain,
+             r.post_battery_health, r.drain_rate_delta, r.screen_on_drain_delta, r.screen_off_drain_delta,
+             r.charging_time_delta, r.temperature_delta, r.thermal_peak_delta, r.idle_drain_delta,
+             r.drain_rate_change, r.screen_on_drain_change, r.screen_off_drain_change, r.charging_time_change,
+             r.temperature_change, r.thermal_peak_change, r.idle_drain_change, r.overall_impact,
+             r.impact_score, r.impact_details, r.has_drain_regression, r.has_charging_regression,
+             r.has_thermal_regression, r.has_idle_regression, r.recommendation, r.analysis_notes,
+             r.confidence_level, r.pre_series_json, r.post_series_json)
+            for r in records
+        ]
+        cursor.executemany(sql, data)
+        conn.commit()
+        return cursor.rowcount
+    except Exception as e:
+        logger.error(f"Error inserting update comparisons: {e}")
+        conn.rollback()
+        raise
+    finally:
+        cursor.close()
+
+def insert_compliance_reports(conn, records: List['ComplianceReportRecord']) -> int:
+    """Insert compliance report records."""
+    if not records:
+        return 0
+    
+    cursor = conn.cursor()
+    try:
+        sql = """
+            INSERT IGNORE INTO compliance_reports 
+            (device_id, timestamp, period_start, period_end, report_type, report_version, generated_by,
+             device_model, device_serial, firmware_version, battery_part_number, safety_compliant,
+             safety_violation_count, safety_violations, safety_score, max_operating_temp, max_charging_temp,
+             temp_compliant, temp_violation_count, temp_violation_details, min_voltage, max_voltage,
+             voltage_compliant, voltage_violation_count, voltage_violation_details, max_charging_current,
+             max_discharge_current, current_compliant, current_violation_count, current_violation_details,
+             lowest_voltage, over_discharge_protection_working, over_discharge_events, highest_voltage,
+             overcharge_protection_working, overcharge_events, thermal_protection_working,
+             thermal_shutdown_events, thermal_throttle_events, iec_compliant, ul_compliant, un_compliant,
+             standards_notes, certification_readiness, certification_gaps, certification_recommendations,
+             evidence_summary, evidence_ids, evidence_count, audit_trail, data_points_analyzed,
+             data_quality, executive_summary, technical_details, compliance_matrix, attachments,
+             review_status, review_notes, review_timestamp)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+        """
+        data = [
+            (r.device_id, r.timestamp, r.period_start, r.period_end, r.report_type, r.report_version,
+             r.generated_by, r.device_model, r.device_serial, r.firmware_version, r.battery_part_number,
+             r.safety_compliant, r.safety_violation_count, r.safety_violations, r.safety_score,
+             r.max_operating_temp, r.max_charging_temp, r.temp_compliant, r.temp_violation_count,
+             r.temp_violation_details, r.min_voltage, r.max_voltage, r.voltage_compliant,
+             r.voltage_violation_count, r.voltage_violation_details, r.max_charging_current,
+             r.max_discharge_current, r.current_compliant, r.current_violation_count,
+             r.current_violation_details, r.lowest_voltage, r.over_discharge_protection_working,
+             r.over_discharge_events, r.highest_voltage, r.overcharge_protection_working,
+             r.overcharge_events, r.thermal_protection_working, r.thermal_shutdown_events,
+             r.thermal_throttle_events, r.iec_compliant, r.ul_compliant, r.un_compliant,
+             r.standards_notes, r.certification_readiness, r.certification_gaps,
+             r.certification_recommendations, r.evidence_summary, r.evidence_ids, r.evidence_count,
+             r.audit_trail, r.data_points_analyzed, r.data_quality, r.executive_summary,
+             r.technical_details, r.compliance_matrix, r.attachments, r.review_status,
+             r.review_notes, r.review_timestamp)
+            for r in records
+        ]
+        cursor.executemany(sql, data)
+        conn.commit()
+        return cursor.rowcount
+    except Exception as e:
+        logger.error(f"Error inserting compliance reports: {e}")
+        conn.rollback()
+        raise
+    finally:
+        cursor.close()
+
+def insert_compliance_evidence(conn, records: List['ComplianceEvidenceRecord']) -> int:
+    """Insert compliance evidence records."""
+    if not records:
+        return 0
+    
+    cursor = conn.cursor()
+    try:
+        sql = """
+            INSERT IGNORE INTO compliance_evidence 
+            (device_id, timestamp, rule_id, metric_value, threshold_value, source_module,
+             severity, category, source_event_id, notes)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+        """
+        data = [
+            (r.device_id, r.timestamp, r.rule_id, r.metric_value, r.threshold_value,
+             r.source_module, r.severity, r.category, r.source_event_id, r.notes)
+            for r in records
+        ]
+        cursor.executemany(sql, data)
+        conn.commit()
+        return cursor.rowcount
+    except Exception as e:
+        logger.error(f"Error inserting compliance evidence: {e}")
+        conn.rollback()
+        raise
+    finally:
+        cursor.close()
+
+def insert_device_info_sync(conn, records: List['DeviceInfoSyncRecord']) -> int:
+    """Insert device info sync records."""
+    if not records:
+        return 0
+    
+    cursor = conn.cursor()
+    try:
+        sql = """
+            INSERT INTO device_info_sync 
+            (device_id, timestamp, first_recorded, manufacturer, model, product, brand, device, board,
+             hardware, android_version, sdk_version, build_number, security_patch, kernel_version,
+             firmware_version, battery_technology, design_capacity_mah, battery_part_number,
+             battery_manufacturer, battery_batch_id, processor, cpu_cores, ram_size, storage_size,
+             screen_width, screen_height, screen_density, oem_sku, region_code, carrier_code,
+             production_date, warranty_status, hexnil_install_date, hexnil_version, total_snapshots,
+             total_analyses)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+            ON DUPLICATE KEY UPDATE
+                timestamp = VALUES(timestamp),
+                manufacturer = VALUES(manufacturer),
+                model = VALUES(model),
+                android_version = VALUES(android_version),
+                hexnil_version = VALUES(hexnil_version),
+                total_snapshots = VALUES(total_snapshots),
+                total_analyses = VALUES(total_analyses)
+        """
+        data = [
+            (r.device_id, r.timestamp, r.first_recorded, r.manufacturer, r.model, r.product, r.brand,
+             r.device, r.board, r.hardware, r.android_version, r.sdk_version, r.build_number,
+             r.security_patch, r.kernel_version, r.firmware_version, r.battery_technology,
+             r.design_capacity_mah, r.battery_part_number, r.battery_manufacturer, r.battery_batch_id,
+             r.processor, r.cpu_cores, r.ram_size, r.storage_size, r.screen_width, r.screen_height,
+             r.screen_density, r.oem_sku, r.region_code, r.carrier_code, r.production_date,
+             r.warranty_status, r.hexnil_install_date, r.hexnil_version, r.total_snapshots,
+             r.total_analyses)
+            for r in records
+        ]
+        cursor.executemany(sql, data)
+        conn.commit()
+        return cursor.rowcount
+    except Exception as e:
+        logger.error(f"Error inserting device info sync: {e}")
+        conn.rollback()
+        raise
+    finally:
+        cursor.close()
+
+def insert_anomaly_records(conn, records: List['AnomalyRecordRecord']) -> int:
+    """Insert anomaly record records."""
+    if not records:
+        return 0
+    
+    cursor = conn.cursor()
+    try:
+        sql = """
+            INSERT IGNORE INTO anomaly_records 
+            (device_id, detected_at, anomaly_type, severity, confidence_score, source_app,
+             source_app_name, source_component, title, description, technical_details,
+             expected_value, actual_value, deviation_percent, metric_name, metric_unit,
+             battery_level, was_charging, screen_on, device_state, period_start, period_end,
+             data_points_analyzed, recommendation, root_cause, impact, acknowledged, resolved,
+             resolved_at, resolution, related_anomaly_id, occurrence_count, is_recurring)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+        """
+        data = [
+            (r.device_id, r.detected_at, r.anomaly_type, r.severity, r.confidence_score,
+             r.source_app, r.source_app_name, r.source_component, r.title, r.description,
+             r.technical_details, r.expected_value, r.actual_value, r.deviation_percent,
+             r.metric_name, r.metric_unit, r.battery_level, r.was_charging, r.screen_on,
+             r.device_state, r.period_start, r.period_end, r.data_points_analyzed,
+             r.recommendation, r.root_cause, r.impact, r.acknowledged, r.resolved,
+             r.resolved_at, r.resolution, r.related_anomaly_id, r.occurrence_count, r.is_recurring)
+            for r in records
+        ]
+        cursor.executemany(sql, data)
+        conn.commit()
+        return cursor.rowcount
+    except Exception as e:
+        logger.error(f"Error inserting anomaly records: {e}")
+        conn.rollback()
+        raise
+    finally:
+        cursor.close()
+
 def log_sync(conn, device_id: str, data_type: str, records_synced: int, 
              status: str, error_message: Optional[str] = None) -> Optional[int]:
     """Log sync operation to database."""
@@ -623,6 +1368,17 @@ async def lifespan(app: FastAPI):
                             ("safety_events", batch.safety_events, insert_safety_events),
                             ("calibration_data", batch.calibration_data, insert_calibration_data),
                             ("ai_analysis_results", batch.ai_analysis_results, insert_ai_analysis_results),
+                            # App data (from Room DB)
+                            ("app_battery_usage", batch.app_battery_usage, insert_app_battery_usage),
+                            ("app_drain_ranks", batch.app_drain_ranks, insert_app_drain_ranks),
+                            # Additional Room DB tables (complete sync)
+                            ("thermal_heat_buckets", batch.thermal_heat_buckets, insert_thermal_heat_buckets),
+                            ("stress_test_results", batch.stress_test_results, insert_stress_test_results),
+                            ("update_comparisons", batch.update_comparisons, insert_update_comparisons),
+                            ("compliance_reports", batch.compliance_reports, insert_compliance_reports),
+                            ("compliance_evidence", batch.compliance_evidence, insert_compliance_evidence),
+                            ("device_info_sync", batch.device_info_sync, insert_device_info_sync),
+                            ("anomaly_records", batch.anomaly_records, insert_anomaly_records),
                         ]
 
                         total_received = 0
@@ -751,6 +1507,9 @@ async def sync_data(request: BatchSyncRequest):
             "safety_events",
             "calibration_data",
             "ai_analysis_results",
+            # App data (from Room DB)
+            "app_battery_usage",
+            "app_drain_ranks",
         ]:
             val = getattr(request, key)
             records_received[key] = len(val) if val else 0

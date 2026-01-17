@@ -123,7 +123,9 @@ def load_sync_state() -> Dict[str, Any]:
         'last_thermal_id': 0,
         'last_drain_id': 0,
         'last_health_id': 0,
-        'last_safety_id': 0
+        'last_safety_id': 0,
+        'last_app_battery_usage_id': 0,
+        'last_app_drain_ranks_id': 0
     }
 
 
@@ -238,13 +240,19 @@ def transform_drain(row: Dict, device_id: str) -> Dict:
 
 def transform_health(row: Dict, device_id: str) -> Dict:
     """Transform battery health for API - matches BatteryHealth Pydantic model."""
+    # Helper to safely convert to int
+    def safe_int(val):
+        if val is None:
+            return None
+        return int(val) if isinstance(val, (int, float)) else None
+    
     return {
         'device_id': device_id,
         'timestamp': row.get('timestamp'),
         'health_percentage': row.get('healthPercentage', row.get('health_percentage')),
-        'cycle_count': row.get('cycleCount', row.get('cycle_count')),
-        'design_capacity_mah': row.get('designCapacityMah', row.get('design_capacity_mah')),
-        'current_capacity_mah': row.get('capacityMah', row.get('capacity_mah')),
+        'cycle_count': safe_int(row.get('cycleCount', row.get('cycle_count'))),
+        'design_capacity_mah': safe_int(row.get('designCapacityMah', row.get('design_capacity_mah'))),
+        'current_capacity_mah': safe_int(row.get('capacityMah', row.get('capacity_mah'))),
         'charge_full_design': None,
         'charge_full': None,
         'technology': None,
@@ -268,6 +276,62 @@ def transform_safety(row: Dict, device_id: str) -> Dict:
     }
 
 
+def transform_app_battery_usage(row: Dict, device_id: str) -> Dict:
+    """Transform app battery usage for API."""
+    return {
+        'device_id': device_id,
+        'timestamp': row.get('timestamp', 0),
+        'period_start': row.get('periodStart', row.get('period_start', 0)),
+        'period_end': row.get('periodEnd', row.get('period_end', 0)),
+        'package_name': row.get('packageName', row.get('package_name')),
+        'app_name': row.get('appName', row.get('app_name')),
+        'is_system_app': bool(row.get('isSystemApp', row.get('is_system_app', 0))),
+        'is_preinstalled': bool(row.get('isPreInstalled', row.get('is_preinstalled', 0))),
+        'app_category': row.get('appCategory', row.get('app_category')),
+        'foreground_time': int(row.get('foregroundTime', row.get('foreground_time', 0))),
+        'background_time': int(row.get('backgroundTime', row.get('background_time', 0))),
+        'battery_percent_used': float(row.get('batteryPercentUsed', row.get('battery_percent_used', 0))),
+        'drain_per_hour': float(row.get('drainPerHour', row.get('drain_per_hour', 0))),
+        'cpu_time_ms': float(row.get('cpuTimeMs', row.get('cpu_time_ms', 0))),
+        'network_bytes': int(row.get('networkBytes', row.get('network_bytes', 0))),
+        'wakelock_count': int(row.get('wakelockCount', row.get('wakelock_count', 0))),
+        'wakelock_time': int(row.get('wakelockTime', row.get('wakelock_time', 0))),
+        'partial_wakelock_time': int(row.get('partialWakelockTime', row.get('partial_wakelock_time', 0))),
+        'alarm_wake_count': int(row.get('alarmWakeCount', row.get('alarm_wake_count', 0))),
+        'network_wake_count': int(row.get('networkWakeCount', row.get('network_wake_count', 0))),
+        'wakelock_drain_score': float(row.get('wakelockDrainScore', row.get('wakelock_drain_score', 0))),
+        'alarm_count': int(row.get('alarmCount', row.get('alarm_count', 0))),
+        'gps_requests': int(row.get('gpsRequests', row.get('gps_requests', 0))),
+        'background_wakes': int(row.get('backgroundWakes', row.get('background_wakes', 0))),
+        'push_notifications': int(row.get('pushNotifications', row.get('push_notifications', 0))),
+        'background_services': int(row.get('backgroundServices', row.get('background_services', 0))),
+        'has_excessive_background': bool(row.get('hasExcessiveBackground', row.get('has_excessive_background', 0))),
+        'category_average': float(row.get('categoryAverage', row.get('category_average', 0))),
+        'deviation_from_average': float(row.get('deviationFromAverage', row.get('deviation_from_average', 0))),
+        'efficiency_rating': row.get('efficiencyRating', row.get('efficiency_rating')),
+        'drain_reasons': row.get('drainReasons', row.get('drain_reasons')),
+        'optimization_tips': row.get('optimizationTips', row.get('optimization_tips')),
+        'needs_restriction': bool(row.get('needsRestriction', row.get('needs_restriction', 0)))
+    }
+
+
+def transform_app_drain_ranks(row: Dict, device_id: str) -> Dict:
+    """Transform app drain ranks for API."""
+    return {
+        'device_id': device_id,
+        'window_label': row.get('windowLabel', row.get('window_label')),
+        'window_start': row.get('windowStart', row.get('window_start', 0)),
+        'window_end': row.get('windowEnd', row.get('window_end', 0)),
+        'rank_position': int(row.get('rank', row.get('rank_position', 0))),
+        'package_name': row.get('packageName', row.get('package_name')),
+        'drain_score': float(row.get('drainScore', row.get('drain_score', 0))),
+        'contribution_pct': float(row.get('contributionPct', row.get('contribution_pct', 0))),
+        'screen_time_ms': int(row.get('screenTimeMs', row.get('screen_time_ms', 0))),
+        'foreground_time_ms': int(row.get('foregroundTimeMs', row.get('foreground_time_ms', 0))),
+        'background_time_ms': int(row.get('backgroundTimeMs', row.get('background_time_ms', 0)))
+    }
+
+
 def sync_to_backend(device_id: str, data: Dict[str, List], device_model: str = None) -> bool:
     """Sync collected data to the backend server."""
     payload = {
@@ -282,7 +346,9 @@ def sync_to_backend(device_id: str, data: Dict[str, List], device_model: str = N
         'thermal_events': data.get('thermal', []),
         'drain_events': data.get('drain', []),
         'battery_health': data.get('health', []),
-        'safety_events': data.get('safety', [])
+        'safety_events': data.get('safety', []),
+        'app_battery_usage': data.get('app_battery_usage', []),
+        'app_drain_ranks': data.get('app_drain_ranks', [])
     }
     
     total_records = sum(len(v) for v in data.values())
@@ -335,6 +401,8 @@ def process_sync(device_id: str, device_model: str = None) -> bool:
         ('drain_events', 'last_drain_id', transform_drain),
         ('battery_health', 'last_health_id', transform_health),
         ('safety_events', 'last_safety_id', transform_safety),
+        ('app_battery_usage', 'last_app_battery_usage_id', transform_app_battery_usage),
+        ('app_drain_ranks', 'last_app_drain_ranks_id', transform_app_drain_ranks),
     ]
     
     # Read new data from each table
@@ -354,19 +422,19 @@ def process_sync(device_id: str, device_model: str = None) -> bool:
             if not transformed:
                 continue
                 
-            key = table_name.replace('battery_', '').replace('_recs', '').replace('_sessions', '').replace('_events', '')
-            if key == 'snapshots':
-                new_data['snapshots'] = transformed
-            elif key == 'charging':
-                new_data['charging'] = transformed
-            elif key == 'thermal':
-                new_data['thermal'] = transformed
-            elif key == 'drain':
-                new_data['drain'] = transformed
-            elif key == 'health':
-                new_data['health'] = transformed
-            elif key == 'safety':
-                new_data['safety'] = transformed
+            # Map table names to payload keys
+            key_map = {
+                'battery_snapshots': 'snapshots',
+                'charging_sessions': 'charging',
+                'thermal_events': 'thermal',
+                'drain_events': 'drain',
+                'battery_health': 'health',
+                'safety_events': 'safety',
+                'app_battery_usage': 'app_battery_usage',
+                'app_drain_ranks': 'app_drain_ranks'
+            }
+            key = key_map.get(table_name, table_name)
+            new_data[key] = transformed
             
             # Track max ID
             max_ids[state_key] = max(row.get('id', 0) for row in rows)

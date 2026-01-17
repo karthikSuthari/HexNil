@@ -1,0 +1,919 @@
+{
+  "formatVersion": 1,
+  "database": {
+    "version": 1,
+    "identityHash": "297eea505daebb317cc7b81e1fb34829",
+    "entities": [
+      {
+        "tableName": "ai_app_registry",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `package_name` TEXT, `app_name` TEXT, `app_category` TEXT, `is_system_app` INTEGER NOT NULL, `is_preinstalled` INTEGER NOT NULL, `first_seen_at` INTEGER NOT NULL, `last_seen_at` INTEGER NOT NULL, `total_sessions` INTEGER NOT NULL, `total_battery_used_pct` REAL NOT NULL, `avg_drain_per_hour` REAL NOT NULL, `total_foreground_ms` INTEGER NOT NULL, `total_background_ms` INTEGER NOT NULL, `anomaly_count` INTEGER NOT NULL, `tracking_enabled` INTEGER NOT NULL, `created_at` INTEGER NOT NULL, `updated_at` INTEGER NOT NULL)",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "packageName",
+            "columnName": "package_name",
+            "affinity": "TEXT",
+            "notNull": false
+          },
+          {
+            "fieldPath": "appName",
+            "columnName": "app_name",
+            "affinity": "TEXT",
+            "notNull": false
+          },
+          {
+            "fieldPath": "appCategory",
+            "columnName": "app_category",
+            "affinity": "TEXT",
+            "notNull": false
+          },
+          {
+            "fieldPath": "isSystemApp",
+            "columnName": "is_system_app",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "isPreinstalled",
+            "columnName": "is_preinstalled",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "firstSeenAt",
+            "columnName": "first_seen_at",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "lastSeenAt",
+            "columnName": "last_seen_at",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "totalSessions",
+            "columnName": "total_sessions",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "totalBatteryUsedPct",
+            "columnName": "total_battery_used_pct",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "avgDrainPerHour",
+            "columnName": "avg_drain_per_hour",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "totalForegroundMs",
+            "columnName": "total_foreground_ms",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "totalBackgroundMs",
+            "columnName": "total_background_ms",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "anomalyCount",
+            "columnName": "anomaly_count",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "trackingEnabled",
+            "columnName": "tracking_enabled",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "createdAt",
+            "columnName": "created_at",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "updatedAt",
+            "columnName": "updated_at",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": true,
+          "columnNames": [
+            "id"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_ai_app_registry_package_name",
+            "unique": true,
+            "columnNames": [
+              "package_name"
+            ],
+            "orders": [],
+            "createSql": "CREATE UNIQUE INDEX IF NOT EXISTS `index_ai_app_registry_package_name` ON `${TABLE_NAME}` (`package_name`)"
+          },
+          {
+            "name": "index_ai_app_registry_app_category",
+            "unique": false,
+            "columnNames": [
+              "app_category"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_ai_app_registry_app_category` ON `${TABLE_NAME}` (`app_category`)"
+          },
+          {
+            "name": "index_ai_app_registry_last_seen_at",
+            "unique": false,
+            "columnNames": [
+              "last_seen_at"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_ai_app_registry_last_seen_at` ON `${TABLE_NAME}` (`last_seen_at`)"
+          }
+        ],
+        "foreignKeys": []
+      },
+      {
+        "tableName": "ai_app_usage_sessions",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `session_id` TEXT, `package_name` TEXT, `session_start` INTEGER NOT NULL, `session_end` INTEGER, `duration_ms` INTEGER NOT NULL, `foreground_time_ms` INTEGER NOT NULL, `background_time_ms` INTEGER NOT NULL, `screen_on_time_ms` INTEGER NOT NULL, `screen_off_time_ms` INTEGER NOT NULL, `network_type` TEXT, `charging_state` TEXT, `battery_level_start` INTEGER, `battery_level_end` INTEGER, `doze_mode_active` INTEGER NOT NULL, `power_save_mode` INTEGER NOT NULL, `created_at` INTEGER NOT NULL)",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "sessionId",
+            "columnName": "session_id",
+            "affinity": "TEXT",
+            "notNull": false
+          },
+          {
+            "fieldPath": "packageName",
+            "columnName": "package_name",
+            "affinity": "TEXT",
+            "notNull": false
+          },
+          {
+            "fieldPath": "sessionStart",
+            "columnName": "session_start",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "sessionEnd",
+            "columnName": "session_end",
+            "affinity": "INTEGER",
+            "notNull": false
+          },
+          {
+            "fieldPath": "durationMs",
+            "columnName": "duration_ms",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "foregroundTimeMs",
+            "columnName": "foreground_time_ms",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "backgroundTimeMs",
+            "columnName": "background_time_ms",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "screenOnTimeMs",
+            "columnName": "screen_on_time_ms",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "screenOffTimeMs",
+            "columnName": "screen_off_time_ms",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "networkType",
+            "columnName": "network_type",
+            "affinity": "TEXT",
+            "notNull": false
+          },
+          {
+            "fieldPath": "chargingState",
+            "columnName": "charging_state",
+            "affinity": "TEXT",
+            "notNull": false
+          },
+          {
+            "fieldPath": "batteryLevelStart",
+            "columnName": "battery_level_start",
+            "affinity": "INTEGER",
+            "notNull": false
+          },
+          {
+            "fieldPath": "batteryLevelEnd",
+            "columnName": "battery_level_end",
+            "affinity": "INTEGER",
+            "notNull": false
+          },
+          {
+            "fieldPath": "dozeModeActive",
+            "columnName": "doze_mode_active",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "powerSaveMode",
+            "columnName": "power_save_mode",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "createdAt",
+            "columnName": "created_at",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": true,
+          "columnNames": [
+            "id"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_ai_app_usage_sessions_package_name",
+            "unique": false,
+            "columnNames": [
+              "package_name"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_ai_app_usage_sessions_package_name` ON `${TABLE_NAME}` (`package_name`)"
+          },
+          {
+            "name": "index_ai_app_usage_sessions_session_start",
+            "unique": false,
+            "columnNames": [
+              "session_start"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_ai_app_usage_sessions_session_start` ON `${TABLE_NAME}` (`session_start`)"
+          },
+          {
+            "name": "index_ai_app_usage_sessions_session_id",
+            "unique": true,
+            "columnNames": [
+              "session_id"
+            ],
+            "orders": [],
+            "createSql": "CREATE UNIQUE INDEX IF NOT EXISTS `index_ai_app_usage_sessions_session_id` ON `${TABLE_NAME}` (`session_id`)"
+          }
+        ],
+        "foreignKeys": []
+      },
+      {
+        "tableName": "ai_app_battery_attribution",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `package_name` TEXT, `session_id` TEXT, `period_start` INTEGER NOT NULL, `period_end` INTEGER NOT NULL, `battery_percent_used` REAL NOT NULL, `drain_rate_per_hour` REAL NOT NULL, `cpu_time_ms` INTEGER NOT NULL, `network_bytes` INTEGER NOT NULL, `wakelock_time_ms` INTEGER NOT NULL, `partial_wakelock_ms` INTEGER NOT NULL, `alarm_wakeups` INTEGER NOT NULL, `network_wakeups` INTEGER NOT NULL, `gps_requests` INTEGER NOT NULL, `charging_state` TEXT, `network_type` TEXT, `screen_state` TEXT, `efficiency_score` REAL NOT NULL, `drain_score` REAL NOT NULL, `background_abuse_score` REAL NOT NULL, `category_avg_drain` REAL, `deviation_from_avg` REAL, `drain_reasons_json` TEXT, `created_at` INTEGER NOT NULL)",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "packageName",
+            "columnName": "package_name",
+            "affinity": "TEXT",
+            "notNull": false
+          },
+          {
+            "fieldPath": "sessionId",
+            "columnName": "session_id",
+            "affinity": "TEXT",
+            "notNull": false
+          },
+          {
+            "fieldPath": "periodStart",
+            "columnName": "period_start",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "periodEnd",
+            "columnName": "period_end",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "batteryPercentUsed",
+            "columnName": "battery_percent_used",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "drainRatePerHour",
+            "columnName": "drain_rate_per_hour",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "cpuTimeMs",
+            "columnName": "cpu_time_ms",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "networkBytes",
+            "columnName": "network_bytes",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "wakelockTimeMs",
+            "columnName": "wakelock_time_ms",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "partialWakelockMs",
+            "columnName": "partial_wakelock_ms",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "alarmWakeups",
+            "columnName": "alarm_wakeups",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "networkWakeups",
+            "columnName": "network_wakeups",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "gpsRequests",
+            "columnName": "gps_requests",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "chargingState",
+            "columnName": "charging_state",
+            "affinity": "TEXT",
+            "notNull": false
+          },
+          {
+            "fieldPath": "networkType",
+            "columnName": "network_type",
+            "affinity": "TEXT",
+            "notNull": false
+          },
+          {
+            "fieldPath": "screenState",
+            "columnName": "screen_state",
+            "affinity": "TEXT",
+            "notNull": false
+          },
+          {
+            "fieldPath": "efficiencyScore",
+            "columnName": "efficiency_score",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "drainScore",
+            "columnName": "drain_score",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "backgroundAbuseScore",
+            "columnName": "background_abuse_score",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "categoryAvgDrain",
+            "columnName": "category_avg_drain",
+            "affinity": "REAL",
+            "notNull": false
+          },
+          {
+            "fieldPath": "deviationFromAvg",
+            "columnName": "deviation_from_avg",
+            "affinity": "REAL",
+            "notNull": false
+          },
+          {
+            "fieldPath": "drainReasonsJson",
+            "columnName": "drain_reasons_json",
+            "affinity": "TEXT",
+            "notNull": false
+          },
+          {
+            "fieldPath": "createdAt",
+            "columnName": "created_at",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": true,
+          "columnNames": [
+            "id"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_ai_app_battery_attribution_package_name",
+            "unique": false,
+            "columnNames": [
+              "package_name"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_ai_app_battery_attribution_package_name` ON `${TABLE_NAME}` (`package_name`)"
+          },
+          {
+            "name": "index_ai_app_battery_attribution_period_start_period_end",
+            "unique": false,
+            "columnNames": [
+              "period_start",
+              "period_end"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_ai_app_battery_attribution_period_start_period_end` ON `${TABLE_NAME}` (`period_start`, `period_end`)"
+          },
+          {
+            "name": "index_ai_app_battery_attribution_battery_percent_used",
+            "unique": false,
+            "columnNames": [
+              "battery_percent_used"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_ai_app_battery_attribution_battery_percent_used` ON `${TABLE_NAME}` (`battery_percent_used`)"
+          },
+          {
+            "name": "index_ai_app_battery_attribution_session_id",
+            "unique": false,
+            "columnNames": [
+              "session_id"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_ai_app_battery_attribution_session_id` ON `${TABLE_NAME}` (`session_id`)"
+          }
+        ],
+        "foreignKeys": []
+      },
+      {
+        "tableName": "ai_app_thermal_impact",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `package_name` TEXT, `session_id` TEXT, `period_start` INTEGER NOT NULL, `period_end` INTEGER NOT NULL, `duration_ms` INTEGER NOT NULL, `avg_temperature_c` REAL NOT NULL, `max_temperature_c` REAL NOT NULL, `min_temperature_c` REAL NOT NULL, `temperature_rise_c` REAL NOT NULL, `avg_cpu_load` INTEGER NOT NULL, `max_cpu_load` INTEGER NOT NULL, `avg_gpu_load` INTEGER NOT NULL, `thermal_spike_count` INTEGER NOT NULL, `sustained_heat_duration_ms` INTEGER NOT NULL, `crossed_warning_threshold` INTEGER NOT NULL, `crossed_critical_threshold` INTEGER NOT NULL, `thermal_impact_score` REAL NOT NULL, `thermal_risk_level` TEXT, `primary_heat_source` TEXT, `created_at` INTEGER NOT NULL)",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "packageName",
+            "columnName": "package_name",
+            "affinity": "TEXT",
+            "notNull": false
+          },
+          {
+            "fieldPath": "sessionId",
+            "columnName": "session_id",
+            "affinity": "TEXT",
+            "notNull": false
+          },
+          {
+            "fieldPath": "periodStart",
+            "columnName": "period_start",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "periodEnd",
+            "columnName": "period_end",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "durationMs",
+            "columnName": "duration_ms",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "avgTemperatureC",
+            "columnName": "avg_temperature_c",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "maxTemperatureC",
+            "columnName": "max_temperature_c",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "minTemperatureC",
+            "columnName": "min_temperature_c",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "temperatureRiseC",
+            "columnName": "temperature_rise_c",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "avgCpuLoad",
+            "columnName": "avg_cpu_load",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "maxCpuLoad",
+            "columnName": "max_cpu_load",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "avgGpuLoad",
+            "columnName": "avg_gpu_load",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "thermalSpikeCount",
+            "columnName": "thermal_spike_count",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "sustainedHeatDurationMs",
+            "columnName": "sustained_heat_duration_ms",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "crossedWarningThreshold",
+            "columnName": "crossed_warning_threshold",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "crossedCriticalThreshold",
+            "columnName": "crossed_critical_threshold",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "thermalImpactScore",
+            "columnName": "thermal_impact_score",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "thermalRiskLevel",
+            "columnName": "thermal_risk_level",
+            "affinity": "TEXT",
+            "notNull": false
+          },
+          {
+            "fieldPath": "primaryHeatSource",
+            "columnName": "primary_heat_source",
+            "affinity": "TEXT",
+            "notNull": false
+          },
+          {
+            "fieldPath": "createdAt",
+            "columnName": "created_at",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": true,
+          "columnNames": [
+            "id"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_ai_app_thermal_impact_package_name",
+            "unique": false,
+            "columnNames": [
+              "package_name"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_ai_app_thermal_impact_package_name` ON `${TABLE_NAME}` (`package_name`)"
+          },
+          {
+            "name": "index_ai_app_thermal_impact_period_start",
+            "unique": false,
+            "columnNames": [
+              "period_start"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_ai_app_thermal_impact_period_start` ON `${TABLE_NAME}` (`period_start`)"
+          },
+          {
+            "name": "index_ai_app_thermal_impact_max_temperature_c",
+            "unique": false,
+            "columnNames": [
+              "max_temperature_c"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_ai_app_thermal_impact_max_temperature_c` ON `${TABLE_NAME}` (`max_temperature_c`)"
+          },
+          {
+            "name": "index_ai_app_thermal_impact_session_id",
+            "unique": false,
+            "columnNames": [
+              "session_id"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_ai_app_thermal_impact_session_id` ON `${TABLE_NAME}` (`session_id`)"
+          }
+        ],
+        "foreignKeys": []
+      },
+      {
+        "tableName": "ai_app_anomalies",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `package_name` TEXT, `session_id` TEXT, `detected_at` INTEGER NOT NULL, `anomaly_type` TEXT, `severity` TEXT, `cause_category` TEXT, `cause_reason` TEXT, `expected_value` REAL, `actual_value` REAL, `deviation_percent` REAL, `metric_name` TEXT, `metric_unit` TEXT, `confidence_score` REAL NOT NULL, `detection_method` TEXT, `battery_level` INTEGER, `was_charging` INTEGER, `screen_on` INTEGER, `network_type` TEXT, `period_start` INTEGER, `period_end` INTEGER, `data_points_analyzed` INTEGER, `recommendation` TEXT, `impact_description` TEXT, `root_cause_hypothesis` TEXT, `acknowledged` INTEGER NOT NULL, `resolved` INTEGER NOT NULL, `resolved_at` INTEGER, `created_at` INTEGER NOT NULL)",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "packageName",
+            "columnName": "package_name",
+            "affinity": "TEXT",
+            "notNull": false
+          },
+          {
+            "fieldPath": "sessionId",
+            "columnName": "session_id",
+            "affinity": "TEXT",
+            "notNull": false
+          },
+          {
+            "fieldPath": "detectedAt",
+            "columnName": "detected_at",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "anomalyType",
+            "columnName": "anomaly_type",
+            "affinity": "TEXT",
+            "notNull": false
+          },
+          {
+            "fieldPath": "severity",
+            "columnName": "severity",
+            "affinity": "TEXT",
+            "notNull": false
+          },
+          {
+            "fieldPath": "causeCategory",
+            "columnName": "cause_category",
+            "affinity": "TEXT",
+            "notNull": false
+          },
+          {
+            "fieldPath": "causeReason",
+            "columnName": "cause_reason",
+            "affinity": "TEXT",
+            "notNull": false
+          },
+          {
+            "fieldPath": "expectedValue",
+            "columnName": "expected_value",
+            "affinity": "REAL",
+            "notNull": false
+          },
+          {
+            "fieldPath": "actualValue",
+            "columnName": "actual_value",
+            "affinity": "REAL",
+            "notNull": false
+          },
+          {
+            "fieldPath": "deviationPercent",
+            "columnName": "deviation_percent",
+            "affinity": "REAL",
+            "notNull": false
+          },
+          {
+            "fieldPath": "metricName",
+            "columnName": "metric_name",
+            "affinity": "TEXT",
+            "notNull": false
+          },
+          {
+            "fieldPath": "metricUnit",
+            "columnName": "metric_unit",
+            "affinity": "TEXT",
+            "notNull": false
+          },
+          {
+            "fieldPath": "confidenceScore",
+            "columnName": "confidence_score",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "detectionMethod",
+            "columnName": "detection_method",
+            "affinity": "TEXT",
+            "notNull": false
+          },
+          {
+            "fieldPath": "batteryLevel",
+            "columnName": "battery_level",
+            "affinity": "INTEGER",
+            "notNull": false
+          },
+          {
+            "fieldPath": "wasCharging",
+            "columnName": "was_charging",
+            "affinity": "INTEGER",
+            "notNull": false
+          },
+          {
+            "fieldPath": "screenOn",
+            "columnName": "screen_on",
+            "affinity": "INTEGER",
+            "notNull": false
+          },
+          {
+            "fieldPath": "networkType",
+            "columnName": "network_type",
+            "affinity": "TEXT",
+            "notNull": false
+          },
+          {
+            "fieldPath": "periodStart",
+            "columnName": "period_start",
+            "affinity": "INTEGER",
+            "notNull": false
+          },
+          {
+            "fieldPath": "periodEnd",
+            "columnName": "period_end",
+            "affinity": "INTEGER",
+            "notNull": false
+          },
+          {
+            "fieldPath": "dataPointsAnalyzed",
+            "columnName": "data_points_analyzed",
+            "affinity": "INTEGER",
+            "notNull": false
+          },
+          {
+            "fieldPath": "recommendation",
+            "columnName": "recommendation",
+            "affinity": "TEXT",
+            "notNull": false
+          },
+          {
+            "fieldPath": "impactDescription",
+            "columnName": "impact_description",
+            "affinity": "TEXT",
+            "notNull": false
+          },
+          {
+            "fieldPath": "rootCauseHypothesis",
+            "columnName": "root_cause_hypothesis",
+            "affinity": "TEXT",
+            "notNull": false
+          },
+          {
+            "fieldPath": "acknowledged",
+            "columnName": "acknowledged",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "resolved",
+            "columnName": "resolved",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "resolvedAt",
+            "columnName": "resolved_at",
+            "affinity": "INTEGER",
+            "notNull": false
+          },
+          {
+            "fieldPath": "createdAt",
+            "columnName": "created_at",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": true,
+          "columnNames": [
+            "id"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_ai_app_anomalies_package_name",
+            "unique": false,
+            "columnNames": [
+              "package_name"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_ai_app_anomalies_package_name` ON `${TABLE_NAME}` (`package_name`)"
+          },
+          {
+            "name": "index_ai_app_anomalies_detected_at",
+            "unique": false,
+            "columnNames": [
+              "detected_at"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_ai_app_anomalies_detected_at` ON `${TABLE_NAME}` (`detected_at`)"
+          },
+          {
+            "name": "index_ai_app_anomalies_anomaly_type",
+            "unique": false,
+            "columnNames": [
+              "anomaly_type"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_ai_app_anomalies_anomaly_type` ON `${TABLE_NAME}` (`anomaly_type`)"
+          },
+          {
+            "name": "index_ai_app_anomalies_severity",
+            "unique": false,
+            "columnNames": [
+              "severity"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_ai_app_anomalies_severity` ON `${TABLE_NAME}` (`severity`)"
+          },
+          {
+            "name": "index_ai_app_anomalies_session_id",
+            "unique": false,
+            "columnNames": [
+              "session_id"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_ai_app_anomalies_session_id` ON `${TABLE_NAME}` (`session_id`)"
+          },
+          {
+            "name": "index_ai_app_anomalies_resolved_detected_at",
+            "unique": false,
+            "columnNames": [
+              "resolved",
+              "detected_at"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_ai_app_anomalies_resolved_detected_at` ON `${TABLE_NAME}` (`resolved`, `detected_at`)"
+          }
+        ],
+        "foreignKeys": []
+      }
+    ],
+    "views": [],
+    "setupQueries": [
+      "CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)",
+      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '297eea505daebb317cc7b81e1fb34829')"
+    ]
+  }
+}

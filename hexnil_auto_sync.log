@@ -202,3 +202,175 @@ Auto-sync stopped by user
 2026-01-15 12:57:04,860 [INFO] Syncing 3 records to backend...
 2026-01-15 12:57:06,936 [ERROR] Backend server not running. Start it with: python run_hexnil_backend.py
 2026-01-15 12:57:06,937 [ERROR] Auto-sync failed!
+2026-01-16 12:49:16,422 [INFO] ADB path: C:\Users\sutha\AppData\Local\Android\Sdk\platform-tools\adb.exe
+2026-01-16 12:49:16,422 [INFO] Backend URL: http://127.0.0.1:8000
+2026-01-16 12:49:16,422 [INFO] Check interval: 5s
+2026-01-16 12:49:16,483 [INFO] ========================================
+2026-01-16 12:49:16,483 [INFO] DEVICE CONNECTED - Starting auto-sync...
+2026-01-16 12:49:16,485 [INFO] ========================================
+2026-01-16 12:49:16,673 [INFO] Device ID: a6a9f331d869db9e
+2026-01-16 12:49:16,674 [INFO] Device Model: I2302
+2026-01-16 12:49:18,675 [INFO] Pulling database from device...
+2026-01-16 12:49:18,861 [INFO] Database pulled successfully: 430080 bytes -> sync_data\hexnil_battery_db
+2026-01-16 12:49:18,916 [INFO] Found 44 new records in battery_health
+2026-01-16 12:49:18,920 [INFO] Syncing 44 records to backend...
+2026-01-16 12:49:18,942 [ERROR] Sync failed: 422 - {"detail":[{"type":"int_from_float","loc":["body","battery_health",30,"cycle_count"],"msg":"Input should be a valid integer, got a number with a fractional part","input":0.009999999776482582,"url":"https://errors.pydantic.dev/2.5/v/int_from_float"},{"type":"int_from_float","loc":["body","battery_health",34,"cycle_count"],"msg":"Input should be a valid integer, got a number with a fractional part","input":0.009999999776482582,"url":"https://errors.pydantic.dev/2.5/v/int_from_float"},{"type":"int_from_float","loc":["body","battery_health",35,"cycle_count"],"msg":"Input should be a valid integer, got a number with a fractional part","input":0.009999999776482582,"url":"https://errors.pydantic.dev/2.5/v/int_from_float"},{"type":"int_from_float","loc":["body","battery_health",36,"cycle_count"],"msg":"Input should be a valid integer, got a number with a fractional part","input":0.009999999776482582,"url":"https://errors.pydantic.dev/2.5/v/int_from_float"},{"type":"int_from_float","loc":["body","battery_health",37,"cycle_count"],"msg":"Input should be a valid integer, got a number with a fractional part","input":0.009999999776482582,"url":"https://errors.pydantic.dev/2.5/v/int_from_float"},{"type":"int_from_float","loc":["body","battery_health",38,"cycle_count"],"msg":"Input should be a valid integer, got a number with a fractional part","input":0.009999999776482582,"url":"https://errors.pydantic.dev/2.5/v/int_from_float"},{"type":"int_from_float","loc":["body","battery_health",39,"cycle_count"],"msg":"Input should be a valid integer, got a number with a fractional part","input":0.009999999776482582,"url":"https://errors.pydantic.dev/2.5/v/int_from_float"},{"type":"int_from_float","loc":["body","battery_health",40,"cycle_count"],"msg":"Input should be a valid integer, got a number with a fractional part","input":0.009999999776482582,"url":"https://errors.pydantic.dev/2.5/v/int_from_float"},{"type":"int_from_float","loc":["body","battery_health",41,"cycle_count"],"msg":"Input should be a valid integer, got a number with a fractional part","input":0.009999999776482582,"url":"https://errors.pydantic.dev/2.5/v/int_from_float"},{"type":"int_from_float","loc":["body","battery_health",42,"cycle_count"],"msg":"Input should be a valid integer, got a number with a fractional part","input":0.009999999776482582,"url":"https://errors.pydantic.dev/2.5/v/int_from_float"},{"type":"int_from_float","loc":["body","battery_health",43,"cycle_count"],"msg":"Input should be a valid integer, got a number with a fractional part","input":0.009999999776482582,"url":"https://errors.pydantic.dev/2.5/v/int_from_float"}]}
+2026-01-16 12:49:18,942 [ERROR] Auto-sync failed!
+2026-01-16 12:50:17,772 [INFO] ADB path: C:\Users\sutha\AppData\Local\Android\Sdk\platform-tools\adb.exe
+2026-01-16 12:50:17,772 [INFO] Backend URL: http://127.0.0.1:8000
+2026-01-16 12:50:17,772 [INFO] Check interval: 5s
+2026-01-16 12:50:17,803 [INFO] ========================================
+2026-01-16 12:50:17,803 [INFO] DEVICE CONNECTED - Starting auto-sync...
+2026-01-16 12:50:17,803 [INFO] ========================================
+2026-01-16 12:50:17,977 [INFO] Device ID: a6a9f331d869db9e
+2026-01-16 12:50:17,977 [INFO] Device Model: I2302
+2026-01-16 12:50:19,979 [INFO] Pulling database from device...
+2026-01-16 12:50:20,165 [INFO] Database pulled successfully: 454656 bytes -> sync_data\hexnil_battery_db
+2026-01-16 12:50:20,171 [INFO] Found 46 new records in battery_health
+2026-01-16 12:50:20,173 [INFO] Syncing 46 records to backend...
+2026-01-16 12:50:20,198 [INFO] Sync successful: {'success': True, 'message': 'Accepted for processing', 'device_id': 'a6a9f331d869db9e', 'records_received': {'battery_snapshots': 0, 'charging_sessions': 0, 'thermal_events': 0, 'drain_events': 0, 'idle_drain_sessions': 0, 'battery_health': 46, 'safety_events': 0, 'calibration_data': 0, 'ai_analysis_results': 0, 'app_registry': 0, 'app_usage_sessions': 0, 'app_battery_attribution': 0, 'app_thermal_impact': 0, 'app_anomalies': 0}, 'records_stored': {'battery_snapshots': 0, 'charging_sessions': 0, 'thermal_events': 0, 'drain_events': 0, 'idle_drain_sessions': 0, 'battery_health': 0, 'safety_events': 0, 'calibration_data': 0, 'ai_analysis_results': 0, 'app_registry': 0, 'app_usage_sessions': 0, 'app_battery_attribution': 0, 'app_thermal_impact': 0, 'app_anomalies': 0}, 'errors': [], 'sync_id': 33}
+2026-01-16 12:50:20,201 [INFO] Sync state saved
+2026-01-16 12:50:20,201 [INFO] Auto-sync completed successfully!
+2026-01-16 12:50:56,249 [INFO] 
+Auto-sync stopped by user
+2026-01-16 13:03:23,983 [INFO] ADB path: C:\Users\sutha\AppData\Local\Android\Sdk\platform-tools\adb.exe
+2026-01-16 13:03:23,984 [INFO] Backend URL: http://127.0.0.1:8000
+2026-01-16 13:03:23,984 [INFO] Check interval: 5s
+2026-01-16 13:03:24,000 [INFO] ========================================
+2026-01-16 13:03:24,000 [INFO] DEVICE CONNECTED - Starting auto-sync...
+2026-01-16 13:03:24,000 [INFO] ========================================
+2026-01-16 13:03:24,168 [INFO] Device ID: a6a9f331d869db9e
+2026-01-16 13:03:24,168 [INFO] Device Model: I2302
+2026-01-16 13:03:26,170 [INFO] Pulling database from device...
+2026-01-16 13:03:26,350 [INFO] Database pulled successfully: 561152 bytes -> sync_data\hexnil_battery_db
+2026-01-16 13:03:26,387 [INFO] Found 21 new records in battery_health
+2026-01-16 13:03:26,402 [INFO] Found 1691 new records in app_battery_usage
+2026-01-16 13:03:26,404 [INFO] Found 30 new records in app_drain_ranks
+2026-01-16 13:03:26,404 [INFO] Syncing 1742 records to backend...
+2026-01-16 13:03:26,445 [INFO] Sync successful: {'success': True, 'message': 'Accepted for processing', 'device_id': 'a6a9f331d869db9e', 'records_received': {'battery_snapshots': 0, 'charging_sessions': 0, 'thermal_events': 0, 'drain_events': 0, 'idle_drain_sessions': 0, 'battery_health': 21, 'safety_events': 0, 'calibration_data': 0, 'ai_analysis_results': 0, 'app_registry': 0, 'app_usage_sessions': 0, 'app_battery_attribution': 0, 'app_thermal_impact': 0, 'app_anomalies': 0}, 'records_stored': {'battery_snapshots': 0, 'charging_sessions': 0, 'thermal_events': 0, 'drain_events': 0, 'idle_drain_sessions': 0, 'battery_health': 0, 'safety_events': 0, 'calibration_data': 0, 'ai_analysis_results': 0, 'app_registry': 0, 'app_usage_sessions': 0, 'app_battery_attribution': 0, 'app_thermal_impact': 0, 'app_anomalies': 0}, 'errors': [], 'sync_id': 34}
+2026-01-16 13:03:26,447 [INFO] Sync state saved
+2026-01-16 13:03:26,449 [INFO] Auto-sync completed successfully!
+2026-01-16 13:03:42,851 [INFO] 
+Auto-sync stopped by user
+2026-01-16 13:04:37,534 [INFO] ADB path: C:\Users\sutha\AppData\Local\Android\Sdk\platform-tools\adb.exe
+2026-01-16 13:04:37,534 [INFO] Backend URL: http://127.0.0.1:8000
+2026-01-16 13:04:37,535 [INFO] Check interval: 5s
+2026-01-16 13:04:37,558 [INFO] ========================================
+2026-01-16 13:04:37,558 [INFO] DEVICE CONNECTED - Starting auto-sync...
+2026-01-16 13:04:37,558 [INFO] ========================================
+2026-01-16 13:04:37,700 [INFO] Device ID: a6a9f331d869db9e
+2026-01-16 13:04:37,700 [INFO] Device Model: I2302
+2026-01-16 13:04:39,702 [INFO] Pulling database from device...
+2026-01-16 13:04:39,851 [INFO] Database pulled successfully: 573440 bytes -> sync_data\hexnil_battery_db
+2026-01-16 13:04:39,896 [INFO] Found 87 new records in app_battery_usage
+2026-01-16 13:04:39,897 [INFO] Syncing 87 records to backend...
+2026-01-16 13:04:39,915 [ERROR] Sync failed: 500 - {"detail":"'BatchSyncRequest' object has no attribute 'app_registry'"}
+2026-01-16 13:04:39,916 [ERROR] Auto-sync failed!
+2026-01-16 13:04:58,477 [INFO] 
+Auto-sync stopped by user
+2026-01-16 13:06:23,211 [INFO] ADB path: C:\Users\sutha\AppData\Local\Android\Sdk\platform-tools\adb.exe
+2026-01-16 13:06:23,215 [INFO] Backend URL: http://127.0.0.1:8000
+2026-01-16 13:06:23,215 [INFO] Check interval: 5s
+2026-01-16 13:06:23,253 [INFO] ========================================
+2026-01-16 13:06:23,253 [INFO] DEVICE CONNECTED - Starting auto-sync...
+2026-01-16 13:06:23,253 [INFO] ========================================
+2026-01-16 13:06:23,431 [INFO] Device ID: a6a9f331d869db9e
+2026-01-16 13:06:23,431 [INFO] Device Model: I2302
+2026-01-16 13:06:25,433 [INFO] Pulling database from device...
+2026-01-16 13:06:25,611 [INFO] Database pulled successfully: 585728 bytes -> sync_data\hexnil_battery_db
+2026-01-16 13:06:25,617 [INFO] Found 174 new records in app_battery_usage
+2026-01-16 13:06:25,618 [INFO] Syncing 174 records to backend...
+2026-01-16 13:06:25,641 [ERROR] Sync failed: 500 - {"detail":"'BatchSyncRequest' object has no attribute 'app_registry'"}
+2026-01-16 13:06:25,642 [ERROR] Auto-sync failed!
+2026-01-16 13:06:44,199 [INFO] 
+Auto-sync stopped by user
+2026-01-16 13:07:18,759 [INFO] ADB path: C:\Users\sutha\AppData\Local\Android\Sdk\platform-tools\adb.exe
+2026-01-16 13:07:18,759 [INFO] Backend URL: http://127.0.0.1:8000
+2026-01-16 13:07:18,759 [INFO] Check interval: 5s
+2026-01-16 13:07:18,776 [INFO] ========================================
+2026-01-16 13:07:18,777 [INFO] DEVICE CONNECTED - Starting auto-sync...
+2026-01-16 13:07:18,777 [INFO] ========================================
+2026-01-16 13:07:18,916 [INFO] Device ID: a6a9f331d869db9e
+2026-01-16 13:07:18,917 [INFO] Device Model: I2302
+2026-01-16 13:07:20,918 [INFO] Pulling database from device...
+2026-01-16 13:07:21,059 [INFO] Database pulled successfully: 593920 bytes -> sync_data\hexnil_battery_db
+2026-01-16 13:07:21,066 [INFO] Found 266 new records in app_battery_usage
+2026-01-16 13:07:21,068 [INFO] Syncing 266 records to backend...
+2026-01-16 13:07:21,095 [ERROR] Sync failed: 500 - {"detail":"'BatchSyncRequest' object has no attribute 'app_registry'"}
+2026-01-16 13:07:21,095 [ERROR] Auto-sync failed!
+2026-01-16 13:07:41,170 [INFO] 
+Auto-sync stopped by user
+2026-01-16 13:07:55,081 [INFO] ADB path: C:\Users\sutha\AppData\Local\Android\Sdk\platform-tools\adb.exe
+2026-01-16 13:07:55,081 [INFO] Backend URL: http://127.0.0.1:8000
+2026-01-16 13:07:55,082 [INFO] Check interval: 5s
+2026-01-16 13:07:55,103 [INFO] ========================================
+2026-01-16 13:07:55,103 [INFO] DEVICE CONNECTED - Starting auto-sync...
+2026-01-16 13:07:55,104 [INFO] ========================================
+2026-01-16 13:07:55,238 [INFO] Device ID: a6a9f331d869db9e
+2026-01-16 13:07:55,238 [INFO] Device Model: I2302
+2026-01-16 13:07:57,239 [INFO] Pulling database from device...
+2026-01-16 13:07:57,343 [INFO] Database pulled successfully: 593920 bytes -> sync_data\hexnil_battery_db
+2026-01-16 13:07:57,351 [INFO] Found 266 new records in app_battery_usage
+2026-01-16 13:07:57,353 [INFO] Syncing 266 records to backend...
+2026-01-16 13:07:57,383 [ERROR] Sync failed: 500 - {"detail":"'BatchSyncRequest' object has no attribute 'app_registry'"}
+2026-01-16 13:07:57,383 [ERROR] Auto-sync failed!
+2026-01-16 13:08:17,888 [INFO] 
+Auto-sync stopped by user
+2026-01-16 13:09:35,053 [INFO] ADB path: C:\Users\sutha\AppData\Local\Android\Sdk\platform-tools\adb.exe
+2026-01-16 13:09:35,054 [INFO] Backend URL: http://127.0.0.1:8000
+2026-01-16 13:09:35,054 [INFO] Check interval: 5s
+2026-01-16 13:09:35,079 [INFO] ========================================
+2026-01-16 13:09:35,079 [INFO] DEVICE CONNECTED - Starting auto-sync...
+2026-01-16 13:09:35,079 [INFO] ========================================
+2026-01-16 13:09:35,218 [INFO] Device ID: a6a9f331d869db9e
+2026-01-16 13:09:35,218 [INFO] Device Model: I2302
+2026-01-16 13:09:37,219 [INFO] Pulling database from device...
+2026-01-16 13:09:37,395 [INFO] Database pulled successfully: 606208 bytes -> sync_data\hexnil_battery_db
+2026-01-16 13:09:37,402 [INFO] Found 145 new records in battery_snapshots
+2026-01-16 13:09:37,403 [INFO] Found 2 new records in charging_sessions
+2026-01-16 13:09:37,405 [INFO] Found 94 new records in battery_health
+2026-01-16 13:09:37,427 [INFO] Found 2044 new records in app_battery_usage
+2026-01-16 13:09:37,428 [INFO] Found 30 new records in app_drain_ranks
+2026-01-16 13:09:37,429 [INFO] Syncing 2315 records to backend...
+2026-01-16 13:09:37,538 [ERROR] Sync failed: 500 - {"detail":"'BatchSyncRequest' object has no attribute 'app_registry'"}
+2026-01-16 13:09:37,540 [ERROR] Auto-sync failed!
+2026-01-16 13:09:56,950 [INFO] 
+Auto-sync stopped by user
+2026-01-16 13:11:00,154 [INFO] ADB path: C:\Users\sutha\AppData\Local\Android\Sdk\platform-tools\adb.exe
+2026-01-16 13:11:00,155 [INFO] Backend URL: http://127.0.0.1:8000
+2026-01-16 13:11:00,155 [INFO] Check interval: 5s
+2026-01-16 13:11:00,180 [INFO] ========================================
+2026-01-16 13:11:00,180 [INFO] DEVICE CONNECTED - Starting auto-sync...
+2026-01-16 13:11:00,180 [INFO] ========================================
+2026-01-16 13:11:00,328 [INFO] Device ID: a6a9f331d869db9e
+2026-01-16 13:11:00,330 [INFO] Device Model: I2302
+2026-01-16 13:11:02,331 [INFO] Pulling database from device...
+2026-01-16 13:11:02,496 [INFO] Database pulled successfully: 606208 bytes -> sync_data\hexnil_battery_db
+2026-01-16 13:11:02,502 [INFO] Found 145 new records in battery_snapshots
+2026-01-16 13:11:02,502 [INFO] Found 2 new records in charging_sessions
+2026-01-16 13:11:02,504 [INFO] Found 94 new records in battery_health
+2026-01-16 13:11:02,528 [INFO] Found 2044 new records in app_battery_usage
+2026-01-16 13:11:02,530 [INFO] Found 30 new records in app_drain_ranks
+2026-01-16 13:11:02,530 [INFO] Syncing 2315 records to backend...
+2026-01-16 13:11:02,630 [INFO] Sync successful: {'success': True, 'message': 'Accepted for processing', 'device_id': 'a6a9f331d869db9e', 'records_received': {'battery_snapshots': 145, 'charging_sessions': 2, 'thermal_events': 0, 'drain_events': 0, 'idle_drain_sessions': 0, 'battery_health': 94, 'safety_events': 0, 'calibration_data': 0, 'ai_analysis_results': 0, 'app_battery_usage': 2044, 'app_drain_ranks': 30}, 'records_stored': {'battery_snapshots': 0, 'charging_sessions': 0, 'thermal_events': 0, 'drain_events': 0, 'idle_drain_sessions': 0, 'battery_health': 0, 'safety_events': 0, 'calibration_data': 0, 'ai_analysis_results': 0, 'app_battery_usage': 0, 'app_drain_ranks': 0}, 'errors': [], 'sync_id': 2}
+2026-01-16 13:11:02,631 [INFO] Sync state saved
+2026-01-16 13:11:02,633 [INFO] Auto-sync completed successfully!
+2026-01-16 13:11:22,442 [INFO] 
+Auto-sync stopped by user
+2026-01-16 18:51:20,869 [INFO] ADB path: C:\Users\sutha\AppData\Local\Android\Sdk\platform-tools\adb.exe
+2026-01-16 18:51:20,870 [INFO] Backend URL: http://127.0.0.1:8000
+2026-01-16 18:51:20,870 [INFO] Check interval: 5s
+2026-01-16 18:51:26,120 [INFO] ========================================
+2026-01-16 18:51:26,122 [INFO] DEVICE CONNECTED - Starting auto-sync...
+2026-01-16 18:51:26,122 [INFO] ========================================
+2026-01-16 18:51:26,385 [INFO] Device ID: a6a9f331d869db9e
+2026-01-16 18:51:26,386 [INFO] Device Model: I2302
+2026-01-16 18:51:28,388 [INFO] Pulling database from device...
+2026-01-16 18:51:28,643 [INFO] Database pulled successfully: 798720 bytes -> sync_data\hexnil_battery_db
+2026-01-16 18:51:28,668 [INFO] Found 47 new records in battery_snapshots
+2026-01-16 18:51:28,701 [INFO] Found 1470 new records in app_battery_usage
+2026-01-16 18:51:28,703 [INFO] Found 15 new records in app_drain_ranks
+2026-01-16 18:51:28,703 [INFO] Syncing 1532 records to backend...
+2026-01-16 18:51:28,805 [INFO] Sync successful: {'success': True, 'message': 'Accepted for processing', 'device_id': 'a6a9f331d869db9e', 'records_received': {'battery_snapshots': 47, 'charging_sessions': 0, 'thermal_events': 0, 'drain_events': 0, 'idle_drain_sessions': 0, 'battery_health': 0, 'safety_events': 0, 'calibration_data': 0, 'ai_analysis_results': 0, 'app_battery_usage': 1470, 'app_drain_ranks': 15}, 'records_stored': {'battery_snapshots': 0, 'charging_sessions': 0, 'thermal_events': 0, 'drain_events': 0, 'idle_drain_sessions': 0, 'battery_health': 0, 'safety_events': 0, 'calibration_data': 0, 'ai_analysis_results': 0, 'app_battery_usage': 0, 'app_drain_ranks': 0}, 'errors': [], 'sync_id': 3}
+2026-01-16 18:51:28,805 [INFO] Sync state saved
+2026-01-16 18:51:28,809 [INFO] Auto-sync completed successfully!
