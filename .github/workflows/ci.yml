@@ -46,6 +46,9 @@ jobs:
           done
 
       - name: Setup database schema
+        env:
+          HEXNIL_SETUP_USER: root
+          HEXNIL_SETUP_PASSWORD: root
         run: |
           python setup_database.py
 
