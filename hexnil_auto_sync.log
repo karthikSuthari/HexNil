@@ -374,3 +374,6 @@ Auto-sync stopped by user
 2026-01-16 18:51:28,805 [INFO] Sync successful: {'success': True, 'message': 'Accepted for processing', 'device_id': 'a6a9f331d869db9e', 'records_received': {'battery_snapshots': 47, 'charging_sessions': 0, 'thermal_events': 0, 'drain_events': 0, 'idle_drain_sessions': 0, 'battery_health': 0, 'safety_events': 0, 'calibration_data': 0, 'ai_analysis_results': 0, 'app_battery_usage': 1470, 'app_drain_ranks': 15}, 'records_stored': {'battery_snapshots': 0, 'charging_sessions': 0, 'thermal_events': 0, 'drain_events': 0, 'idle_drain_sessions': 0, 'battery_health': 0, 'safety_events': 0, 'calibration_data': 0, 'ai_analysis_results': 0, 'app_battery_usage': 0, 'app_drain_ranks': 0}, 'errors': [], 'sync_id': 3}
 2026-01-16 18:51:28,805 [INFO] Sync state saved
 2026-01-16 18:51:28,809 [INFO] Auto-sync completed successfully!
+2026-01-17 08:29:02,667 [INFO] ADB path: C:\Users\sutha\AppData\Local\Android\Sdk\platform-tools\adb.exe
+2026-01-17 08:29:02,667 [INFO] Backend URL: http://127.0.0.1:8000
+2026-01-17 08:29:02,667 [INFO] Check interval: 5s

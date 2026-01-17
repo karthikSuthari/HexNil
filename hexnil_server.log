@@ -71,3 +71,17 @@
 2026-01-16 18:51:10,037 - hexnil.server - INFO - Database pool initialized: 10 connections
 2026-01-16 18:51:10,039 - hexnil.server - INFO - Ingestion spool worker started
 2026-01-16 18:51:28,758 - hexnil.server - INFO - Sync request accepted from device: a6a9f331d869db9e
+2026-01-17 08:33:53,020 - hexnil.server - INFO - Starting HexNil Backend Server...
+2026-01-17 08:33:53,222 - hexnil.server - INFO - Database pool initialized: 10 connections
+2026-01-17 08:33:53,223 - hexnil.server - INFO - Ingestion spool worker started
+2026-01-17 08:34:04,522 - hexnil.server - INFO - Sync request accepted from device: backend_smoke_device
+2026-01-17 08:34:06,432 - hexnil.server - INFO - Sync request accepted from device: backend_smoke_device
+2026-01-17 08:34:06,501 - hexnil.server - INFO - Sync request accepted from device: backend_smoke_device
+2026-01-17 08:34:19,534 - hexnil.server - INFO - Sync request accepted from device: backend_smoke_device
+2026-01-17 08:34:21,383 - hexnil.server - INFO - Sync request accepted from device: backend_smoke_device
+2026-01-17 08:34:21,461 - hexnil.server - INFO - Sync request accepted from device: backend_smoke_device
+2026-01-17 08:34:33,044 - hexnil.server - INFO - Sync request accepted from device: backend_smoke_device
+2026-01-17 08:34:35,039 - hexnil.server - INFO - Sync request accepted from device: backend_smoke_device
+2026-01-17 08:34:35,123 - hexnil.server - INFO - Sync request accepted from device: backend_smoke_device
+2026-01-17 08:34:46,825 - hexnil.server - INFO - Shutting down HexNil Backend Server...
+2026-01-17 08:34:47,081 - hexnil.server - INFO - Ingestion spool worker stopped
