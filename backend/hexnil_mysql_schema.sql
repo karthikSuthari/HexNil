@@ -415,7 +415,10 @@ CREATE TABLE IF NOT EXISTS ai_watermarks (
 -- ============================================================================
 
 -- Create backend user (full access to raw tables)
+-- Localhost for local development
 CREATE USER IF NOT EXISTS 'hexnil_backend'@'localhost' IDENTIFIED BY 'HexNil_Backend_2026!';
+-- Wildcard host for CI/Docker environments
+CREATE USER IF NOT EXISTS 'hexnil_backend'@'%' IDENTIFIED BY 'HexNil_Backend_2026!';
 
 GRANT SELECT, INSERT, UPDATE ON hexnil.devices TO 'hexnil_backend'@'localhost';
 GRANT SELECT, INSERT ON hexnil.battery_snapshots TO 'hexnil_backend'@'localhost';
@@ -429,8 +432,24 @@ GRANT SELECT, INSERT ON hexnil.calibration_data TO 'hexnil_backend'@'localhost';
 GRANT SELECT, INSERT ON hexnil.ai_analysis_results TO 'hexnil_backend'@'localhost';
 GRANT SELECT, INSERT ON hexnil.sync_log TO 'hexnil_backend'@'localhost';
 
+-- Same grants for wildcard host
+GRANT SELECT, INSERT, UPDATE ON hexnil.devices TO 'hexnil_backend'@'%';
+GRANT SELECT, INSERT ON hexnil.battery_snapshots TO 'hexnil_backend'@'%';
+GRANT SELECT, INSERT ON hexnil.charging_sessions TO 'hexnil_backend'@'%';
+GRANT SELECT, INSERT ON hexnil.thermal_events TO 'hexnil_backend'@'%';
+GRANT SELECT, INSERT ON hexnil.drain_events TO 'hexnil_backend'@'%';
+GRANT SELECT, INSERT ON hexnil.idle_drain_sessions TO 'hexnil_backend'@'%';
+GRANT SELECT, INSERT ON hexnil.battery_health TO 'hexnil_backend'@'%';
+GRANT SELECT, INSERT ON hexnil.safety_events TO 'hexnil_backend'@'%';
+GRANT SELECT, INSERT ON hexnil.calibration_data TO 'hexnil_backend'@'%';
+GRANT SELECT, INSERT ON hexnil.ai_analysis_results TO 'hexnil_backend'@'%';
+GRANT SELECT, INSERT ON hexnil.sync_log TO 'hexnil_backend'@'%';
+
 -- Create AI user (restricted - NO DELETE, NO DROP)
+-- Localhost for local development
 CREATE USER IF NOT EXISTS 'hexnil_ai'@'localhost' IDENTIFIED BY 'HexNil_AI_2026!';
+-- Wildcard host for CI/Docker environments
+CREATE USER IF NOT EXISTS 'hexnil_ai'@'%' IDENTIFIED BY 'HexNil_AI_2026!';
 
 -- AI can only SELECT from raw tables
 GRANT SELECT ON hexnil.devices TO 'hexnil_ai'@'localhost';
@@ -445,6 +464,19 @@ GRANT SELECT ON hexnil.calibration_data TO 'hexnil_ai'@'localhost';
 GRANT SELECT ON hexnil.ai_analysis_results TO 'hexnil_ai'@'localhost';
 GRANT SELECT ON hexnil.sync_log TO 'hexnil_ai'@'localhost';
 
+-- Same grants for wildcard host
+GRANT SELECT ON hexnil.devices TO 'hexnil_ai'@'%';
+GRANT SELECT ON hexnil.battery_snapshots TO 'hexnil_ai'@'%';
+GRANT SELECT ON hexnil.charging_sessions TO 'hexnil_ai'@'%';
+GRANT SELECT ON hexnil.thermal_events TO 'hexnil_ai'@'%';
+GRANT SELECT ON hexnil.drain_events TO 'hexnil_ai'@'%';
+GRANT SELECT ON hexnil.idle_drain_sessions TO 'hexnil_ai'@'%';
+GRANT SELECT ON hexnil.battery_health TO 'hexnil_ai'@'%';
+GRANT SELECT ON hexnil.safety_events TO 'hexnil_ai'@'%';
+GRANT SELECT ON hexnil.calibration_data TO 'hexnil_ai'@'%';
+GRANT SELECT ON hexnil.ai_analysis_results TO 'hexnil_ai'@'%';
+GRANT SELECT ON hexnil.sync_log TO 'hexnil_ai'@'%';
+
 -- AI can SELECT, INSERT, UPDATE on AI tables (NO DELETE)
 GRANT SELECT, INSERT, UPDATE ON hexnil.ai_hourly_metrics TO 'hexnil_ai'@'localhost';
 GRANT SELECT, INSERT, UPDATE ON hexnil.ai_daily_metrics TO 'hexnil_ai'@'localhost';
@@ -454,6 +486,16 @@ GRANT SELECT, INSERT, UPDATE ON hexnil.ai_recommendations TO 'hexnil_ai'@'localh
 GRANT SELECT, INSERT, UPDATE ON hexnil.ai_degradation_predictions TO 'hexnil_ai'@'localhost';
 GRANT SELECT, INSERT ON hexnil.ai_processing_log TO 'hexnil_ai'@'localhost';
 GRANT SELECT, INSERT, UPDATE ON hexnil.ai_watermarks TO 'hexnil_ai'@'localhost';
+
+-- Same grants for wildcard host
+GRANT SELECT, INSERT, UPDATE ON hexnil.ai_hourly_metrics TO 'hexnil_ai'@'%';
+GRANT SELECT, INSERT, UPDATE ON hexnil.ai_daily_metrics TO 'hexnil_ai'@'%';
+GRANT SELECT, INSERT, UPDATE ON hexnil.ai_anomalies TO 'hexnil_ai'@'%';
+GRANT SELECT, INSERT, UPDATE ON hexnil.ai_risk_scores TO 'hexnil_ai'@'%';
+GRANT SELECT, INSERT, UPDATE ON hexnil.ai_recommendations TO 'hexnil_ai'@'%';
+GRANT SELECT, INSERT, UPDATE ON hexnil.ai_degradation_predictions TO 'hexnil_ai'@'%';
+GRANT SELECT, INSERT ON hexnil.ai_processing_log TO 'hexnil_ai'@'%';
+GRANT SELECT, INSERT, UPDATE ON hexnil.ai_watermarks TO 'hexnil_ai'@'%';
 
 FLUSH PRIVILEGES;
 
@@ -530,9 +572,17 @@ CREATE TABLE IF NOT EXISTS app_drain_ranks (
 GRANT SELECT, INSERT ON hexnil.app_battery_usage TO 'hexnil_backend'@'localhost';
 GRANT SELECT, INSERT ON hexnil.app_drain_ranks TO 'hexnil_backend'@'localhost';
 
+-- Same grants for wildcard host
+GRANT SELECT, INSERT ON hexnil.app_battery_usage TO 'hexnil_backend'@'%';
+GRANT SELECT, INSERT ON hexnil.app_drain_ranks TO 'hexnil_backend'@'%';
+
 -- Grant read access to AI user for App Data tables
 GRANT SELECT ON hexnil.app_battery_usage TO 'hexnil_ai'@'localhost';
 GRANT SELECT ON hexnil.app_drain_ranks TO 'hexnil_ai'@'localhost';
+
+-- Same grants for wildcard host
+GRANT SELECT ON hexnil.app_battery_usage TO 'hexnil_ai'@'%';
+GRANT SELECT ON hexnil.app_drain_ranks TO 'hexnil_ai'@'%';
 
 FLUSH PRIVILEGES;
 
@@ -897,6 +947,15 @@ GRANT SELECT, INSERT ON hexnil.compliance_evidence TO 'hexnil_backend'@'localhos
 GRANT SELECT, INSERT ON hexnil.device_info_sync TO 'hexnil_backend'@'localhost';
 GRANT SELECT, INSERT ON hexnil.anomaly_records TO 'hexnil_backend'@'localhost';
 
+-- Same grants for wildcard host
+GRANT SELECT, INSERT ON hexnil.thermal_heat_buckets TO 'hexnil_backend'@'%';
+GRANT SELECT, INSERT ON hexnil.stress_test_results TO 'hexnil_backend'@'%';
+GRANT SELECT, INSERT ON hexnil.update_comparisons TO 'hexnil_backend'@'%';
+GRANT SELECT, INSERT ON hexnil.compliance_reports TO 'hexnil_backend'@'%';
+GRANT SELECT, INSERT ON hexnil.compliance_evidence TO 'hexnil_backend'@'%';
+GRANT SELECT, INSERT ON hexnil.device_info_sync TO 'hexnil_backend'@'%';
+GRANT SELECT, INSERT ON hexnil.anomaly_records TO 'hexnil_backend'@'%';
+
 GRANT SELECT ON hexnil.thermal_heat_buckets TO 'hexnil_ai'@'localhost';
 GRANT SELECT ON hexnil.stress_test_results TO 'hexnil_ai'@'localhost';
 GRANT SELECT ON hexnil.update_comparisons TO 'hexnil_ai'@'localhost';
@@ -904,6 +963,15 @@ GRANT SELECT ON hexnil.compliance_reports TO 'hexnil_ai'@'localhost';
 GRANT SELECT ON hexnil.compliance_evidence TO 'hexnil_ai'@'localhost';
 GRANT SELECT ON hexnil.device_info_sync TO 'hexnil_ai'@'localhost';
 GRANT SELECT ON hexnil.anomaly_records TO 'hexnil_ai'@'localhost';
+
+-- Same grants for wildcard host
+GRANT SELECT ON hexnil.thermal_heat_buckets TO 'hexnil_ai'@'%';
+GRANT SELECT ON hexnil.stress_test_results TO 'hexnil_ai'@'%';
+GRANT SELECT ON hexnil.update_comparisons TO 'hexnil_ai'@'%';
+GRANT SELECT ON hexnil.compliance_reports TO 'hexnil_ai'@'%';
+GRANT SELECT ON hexnil.compliance_evidence TO 'hexnil_ai'@'%';
+GRANT SELECT ON hexnil.device_info_sync TO 'hexnil_ai'@'%';
+GRANT SELECT ON hexnil.anomaly_records TO 'hexnil_ai'@'%';
 
 FLUSH PRIVILEGES;
 

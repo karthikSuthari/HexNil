@@ -13,12 +13,11 @@ jobs:
     env:
       HEXNIL_DB_HOST: 127.0.0.1
       HEXNIL_DB_PORT: 3306
-
-      HEXNIL_BACKEND_DB_USER: hexnil_backend
-      HEXNIL_BACKEND_DB_PASSWORD: hexnil_backend
-
-      HEXNIL_AI_DB_USER: hexnil_ai
-      HEXNIL_AI_DB_PASSWORD: hexnil_ai
+      HEXNIL_DB_NAME: hexnil
+      HEXNIL_DB_USER: hexnil_backend
+      HEXNIL_DB_PASSWORD: HexNil_Backend_2026!
+      HEXNIL_AI_USER: hexnil_ai
+      HEXNIL_AI_PASSWORD: HexNil_AI_2026!
 
     services:
       mysql:
