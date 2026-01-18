@@ -34,7 +34,9 @@ import com.example.hexnil.manager.CalibrationManager;
 import com.example.hexnil.manager.ProtectionManager;
 import com.example.hexnil.manager.AppUsageCollector;
 import com.example.hexnil.manager.HexNilAI;
+import com.example.hexnil.ai.ThermalPerformanceIntelligence;
 import com.example.hexnil.intelligence.AppIntelligenceCollector;
+import com.example.hexnil.manager.RefreshRateMonitor;
 import com.example.hexnil.model.BatterySnapshot;
 import com.example.hexnil.model.AppBatteryUsage;
 import com.example.hexnil.model.AIAnalysisResult;
@@ -132,8 +134,12 @@ public class BatteryMonitorService extends Service {
     private AppUsageCollector appUsageCollector;
     private HexNilAI hexNilAI;
     private AppIntelligenceCollector appIntelligenceCollector;
+    private ThermalPerformanceIntelligence thermalPerfIntelligence;
+    private RefreshRateMonitor refreshRateMonitor;
 
     // AI Analysis tracking
+    private volatile long lastPhase2AnalysisTime = 0;
+    private static final long INTERVAL_PHASE2_ANALYSIS = 60 * 60 * 1000; // 1 hour
     private volatile long lastAIAnalysisTime = 0;
     private volatile long serviceStartTime = 0;
 
@@ -240,6 +246,8 @@ public class BatteryMonitorService extends Service {
         appUsageCollector = new AppUsageCollector(this);
         hexNilAI = new HexNilAI(this, database);
         appIntelligenceCollector = new AppIntelligenceCollector(this);
+        thermalPerfIntelligence = new ThermalPerformanceIntelligence(database);
+        refreshRateMonitor = new RefreshRateMonitor(this, database);
 
         // Track service start time for AI analysis periods
         serviceStartTime = System.currentTimeMillis();
@@ -283,10 +291,15 @@ public class BatteryMonitorService extends Service {
             wakeLock.acquire(24 * 60 * 60 * 1000L); // 24 hours max
         }
 
-        // Initialize state and start monitoring
         initializeState();
         captureSnapshot("service_start");
         scheduleNextSnapshot();
+
+        // Start refresh rate monitoring
+        if (refreshRateMonitor != null) {
+            refreshRateMonitor.startMonitoring();
+            Log.d(TAG, "Refresh rate monitoring started");
+        }
 
         // Schedule initial AI analysis after some data is collected
         handler.postDelayed(() -> {
@@ -370,6 +383,12 @@ public class BatteryMonitorService extends Service {
         // Shutdown App Intelligence collector
         if (appIntelligenceCollector != null) {
             appIntelligenceCollector.shutdown();
+        }
+
+        // Stop refresh rate monitoring
+        if (refreshRateMonitor != null) {
+            refreshRateMonitor.stopMonitoring();
+            Log.d(TAG, "Refresh rate monitoring stopped");
         }
 
         super.onDestroy();
@@ -648,6 +667,15 @@ public class BatteryMonitorService extends Service {
             appIntelligenceCollector.collect(snapshot);
         }
 
+        // Sample refresh rate and provide context
+        if (refreshRateMonitor != null) {
+            refreshRateMonitor.sampleRefreshRate();
+            refreshRateMonitor.addContextFromSnapshot(
+                    snapshot.getTemperatureCelsius(),
+                    snapshot.currentNow,
+                    snapshot.isCharging);
+        }
+
         // Run periodic AI analysis
         checkAndRunAIAnalysis();
     }
@@ -655,11 +683,18 @@ public class BatteryMonitorService extends Service {
     /**
      * Check if it's time to run AI analysis and execute if needed.
      * Runs comprehensive AI analysis every INTERVAL_AI_ANALYSIS milliseconds.
+     * Runs Phase-2 thermal/performance analysis every INTERVAL_PHASE2_ANALYSIS
+     * milliseconds.
      */
     private void checkAndRunAIAnalysis() {
         long now = System.currentTimeMillis();
 
-        // Check if enough time has passed since last analysis
+        // Run Phase-2 Thermal/Performance analysis (hourly)
+        if (lastPhase2AnalysisTime == 0 || (now - lastPhase2AnalysisTime) >= INTERVAL_PHASE2_ANALYSIS) {
+            runPhase2Analysis(now);
+        }
+
+        // Check if enough time has passed since last general AI analysis
         if (lastAIAnalysisTime > 0 && (now - lastAIAnalysisTime) < INTERVAL_AI_ANALYSIS) {
             return; // Not time yet
         }
@@ -707,6 +742,55 @@ public class BatteryMonitorService extends Service {
 
             } catch (Exception e) {
                 Log.e(TAG, "Error running AI analysis", e);
+            }
+        });
+    }
+
+    /**
+     * Run Phase-2 Thermal/Performance Intelligence Analysis.
+     * Identifies root causes of heating, throttling, and performance degradation.
+     */
+    private void runPhase2Analysis(long now) {
+        executor.execute(() -> {
+            try {
+                Log.d(TAG, "Running Phase-2 thermal/performance analysis...");
+
+                // Determine analysis period
+                long periodStart;
+                if (lastPhase2AnalysisTime > 0) {
+                    periodStart = lastPhase2AnalysisTime;
+                } else {
+                    // First analysis - last hour
+                    periodStart = now - INTERVAL_PHASE2_ANALYSIS;
+                }
+
+                // Run Phase-2 analysis
+                ThermalPerformanceIntelligence.Phase2Output output = thermalPerfIntelligence.runAnalysis(periodStart,
+                        now);
+
+                if (output != null && output.saveResults) {
+                    // Store results (engine handles both anomaly_records and ai_analysis_results)
+                    thermalPerfIntelligence.storeResults(output);
+
+                    Log.d(TAG, "Phase-2 Analysis complete: severity=" + output.severity.getValue() +
+                            ", confidence=" + output.confidence + "%" +
+                            ", rootCause="
+                            + (output.rootCause != null ? output.rootCause.category.getCategory() : "unknown"));
+
+                    // Alert on critical thermal issues
+                    if (output.severity == ThermalPerformanceIntelligence.Severity.CRITICAL ||
+                            output.severity == ThermalPerformanceIntelligence.Severity.HIGH) {
+                        Log.w(TAG, "THERMAL ALERT: " + output.severity.getValue() +
+                                " - " + (output.rootCause != null ? output.rootCause.explanation : "Unknown cause"));
+                    }
+                } else {
+                    Log.d(TAG, "Phase-2 Analysis: No actionable results to store");
+                }
+
+                lastPhase2AnalysisTime = now;
+
+            } catch (Exception e) {
+                Log.e(TAG, "Error running Phase-2 analysis", e);
             }
         });
     }
@@ -872,6 +956,11 @@ public class BatteryMonitorService extends Service {
         isScreenOn = true;
         captureSnapshot("screen_on");
         updateSamplingInterval();
+
+        // Notify refresh rate monitor of screen state change
+        if (refreshRateMonitor != null) {
+            refreshRateMonitor.onScreenStateChanged(true);
+        }
     }
 
     private void handleScreenOff() {
@@ -879,6 +968,11 @@ public class BatteryMonitorService extends Service {
         isScreenOn = false;
         captureSnapshot("screen_off");
         updateSamplingInterval();
+
+        // Notify refresh rate monitor of screen state change
+        if (refreshRateMonitor != null) {
+            refreshRateMonitor.onScreenStateChanged(false);
+        }
     }
 
     // Public methods for external control

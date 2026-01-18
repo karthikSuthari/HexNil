@@ -125,7 +125,14 @@ def load_sync_state() -> Dict[str, Any]:
         'last_health_id': 0,
         'last_safety_id': 0,
         'last_app_battery_usage_id': 0,
-        'last_app_drain_ranks_id': 0
+        'last_app_drain_ranks_id': 0,
+        'last_refresh_rate_sessions_id': 0,
+        'last_refresh_rate_anomalies_id': 0,
+        'last_anomaly_records_id': 0,
+        'last_thermal_heat_buckets_id': 0,
+        'last_calibration_data_id': 0,
+        'last_device_info_id': 0,
+        'last_ai_analysis_results_id': 0
     }
 
 
@@ -332,6 +339,168 @@ def transform_app_drain_ranks(row: Dict, device_id: str) -> Dict:
     }
 
 
+def transform_refresh_rate_session(row: Dict, device_id: str) -> Dict:
+    """Transform refresh rate session for API."""
+    return {
+        'device_id': device_id,
+        'session_id': row.get('sessionId', row.get('session_id')),
+        'session_type': row.get('sessionType', row.get('session_type')),
+        'package_name': row.get('packageName', row.get('package_name')),
+        'app_name': row.get('appName', row.get('app_name')),
+        'start_time': row.get('startTime', row.get('start_time', 0)),
+        'end_time': row.get('endTime', row.get('end_time', 0)),
+        'duration_ms': row.get('durationMs', row.get('duration_ms', 0)),
+        'start_refresh_rate_hz': float(row.get('startRefreshRateHz', row.get('start_refresh_rate_hz', 0))),
+        'end_refresh_rate_hz': float(row.get('endRefreshRateHz', row.get('end_refresh_rate_hz', 0))),
+        'avg_refresh_rate_hz': float(row.get('avgRefreshRateHz', row.get('avg_refresh_rate_hz', 0))),
+        'min_refresh_rate_hz': float(row.get('minRefreshRateHz', row.get('min_refresh_rate_hz', 0))),
+        'max_refresh_rate_hz': float(row.get('maxRefreshRateHz', row.get('max_refresh_rate_hz', 0))),
+        'time_at_high_hz_ms': int(row.get('timeAtHighHzMs', row.get('time_at_high_hz_ms', 0))),
+        'time_at_low_hz_ms': int(row.get('timeAtLowHzMs', row.get('time_at_low_hz_ms', 0))),
+        'is_adaptive_display': bool(row.get('isAdaptiveDisplay', row.get('is_adaptive_display', 0))),
+        'avg_brightness': float(row.get('avgBrightness', row.get('avg_brightness', 0))),
+        'avg_cpu_usage': float(row.get('avgCpuUsage', row.get('avg_cpu_usage', 0))),
+        'avg_gpu_usage': float(row.get('avgGpuUsage', row.get('avg_gpu_usage', 0))),
+        'avg_battery_current': float(row.get('avgBatteryCurrent', row.get('avg_battery_current', 0))),
+        'avg_temperature': float(row.get('avgTemperature', row.get('avg_temperature', 0))),
+        'estimated_battery_cost': float(row.get('estimatedBatteryCost', row.get('estimated_battery_cost', 0))),
+        'anomaly_count': int(row.get('anomalyCount', row.get('anomaly_count', 0))),
+        'has_strong_anomaly': bool(row.get('hasStrongAnomaly', row.get('has_strong_anomaly', 0)))
+    }
+
+
+def transform_refresh_rate_anomaly(row: Dict, device_id: str) -> Dict:
+    """Transform refresh rate anomaly for API."""
+    return {
+        'device_id': device_id,
+        'linked_session_id': int(row.get('linkedSessionId', row.get('linked_session_id', 0))),
+        'package_name': row.get('packageName', row.get('package_name')),
+        'app_name': row.get('appName', row.get('app_name')),
+        'session_type': row.get('sessionType', row.get('session_type')),
+        'detected_at': row.get('detectedAt', row.get('detected_at', 0)),
+        'anomaly_type': row.get('anomalyType', row.get('anomaly_type')),
+        'severity': row.get('severity'),
+        'confidence_score': float(row.get('confidenceScore', row.get('confidence_score', 0))),
+        'cause_category': row.get('causeCategory', row.get('cause_category')),
+        'cause_explanation': row.get('causeExplanation', row.get('cause_explanation')),
+        'evidence_metrics_json': row.get('evidenceMetricsJson', row.get('evidence_metrics_json')),
+        'refresh_rate_hz': float(row.get('refreshRateHz', row.get('refresh_rate_hz', 0))),
+        'cpu_usage': float(row.get('cpuUsage', row.get('cpu_usage', 0))),
+        'gpu_usage': float(row.get('gpuUsage', row.get('gpu_usage', 0))),
+        'temperature': float(row.get('temperature', 0)),
+        'brightness': float(row.get('brightness', 0)),
+        'battery_current': float(row.get('batteryCurrent', row.get('battery_current', 0))),
+        'was_charging': bool(row.get('wasCharging', row.get('was_charging', 0))),
+        'screen_on': bool(row.get('screenOn', row.get('screen_on', 1)))
+    }
+
+
+def transform_anomaly_record(row: Dict, device_id: str) -> Dict:
+    """Transform anomaly record for API."""
+    return {
+        'device_id': device_id,
+        'detected_at': row.get('detectedAt', row.get('detected_at', 0)),
+        'anomaly_type': row.get('anomalyType', row.get('anomaly_type')),
+        'severity': row.get('severity'),
+        'confidence_score': float(row.get('confidenceScore', row.get('confidence_score', 0)) or 0),
+        'source_app': row.get('sourceApp', row.get('source_app')),
+        'source_app_name': row.get('sourceAppName', row.get('source_app_name')),
+        'source_component': row.get('sourceComponent', row.get('source_component')),
+        'title': row.get('title'),
+        'description': row.get('description'),
+        'technical_details': row.get('technicalDetails', row.get('technical_details')),
+        'expected_value': float(row.get('expectedValue', row.get('expected_value', 0)) or 0),
+        'actual_value': float(row.get('actualValue', row.get('actual_value', 0)) or 0),
+        'deviation_percent': float(row.get('deviationPercent', row.get('deviation_percent', 0)) or 0),
+        'metric_name': row.get('metricName', row.get('metric_name')),
+        'metric_unit': row.get('metricUnit', row.get('metric_unit')),
+        'battery_level': row.get('batteryLevel', row.get('battery_level')),
+        'was_charging': bool(row.get('wasCharging', row.get('was_charging', 0))),
+        'screen_on': bool(row.get('screenOn', row.get('screen_on', 0))),
+        'device_state': row.get('deviceState', row.get('device_state')),
+        'period_start': row.get('periodStart', row.get('period_start')),
+        'period_end': row.get('periodEnd', row.get('period_end')),
+        'data_points_analyzed': int(row.get('dataPointsAnalyzed', row.get('data_points_analyzed', 0)) or 0),
+        'recommendation': row.get('recommendation'),
+        'root_cause': row.get('rootCause', row.get('root_cause')),
+        'impact': row.get('impact'),
+        'acknowledged': bool(row.get('acknowledged', 0)),
+        'resolved': bool(row.get('resolved', 0)),
+        'resolved_at': row.get('resolvedAt', row.get('resolved_at')),
+        'resolution': row.get('resolution'),
+        'related_anomaly_id': row.get('relatedAnomalyId', row.get('related_anomaly_id')),
+        'occurrence_count': int(row.get('occurrenceCount', row.get('occurrence_count', 1)) or 1),
+        'is_recurring': bool(row.get('isRecurring', row.get('is_recurring', 0)))
+    }
+
+
+def transform_thermal_heat_bucket(row: Dict, device_id: str) -> Dict:
+    """Transform thermal heat bucket for API."""
+    return {
+        'device_id': device_id,
+        'start_time': row.get('startTime', row.get('start_time', 0)),
+        'end_time': row.get('endTime', row.get('end_time', 0)),
+        'temp_bucket': row.get('tempBucket', row.get('temp_bucket')),
+        'hour_block': int(row.get('hourBlock', row.get('hour_block', 0)) or 0),
+        'sample_count': int(row.get('sampleCount', row.get('sample_count', 0)) or 0),
+        'duration_ms': int(row.get('durationMs', row.get('duration_ms', 0)) or 0),
+        'max_temp': float(row.get('maxTemp', row.get('max_temp', 0)) or 0),
+        'avg_temp': float(row.get('avgTemp', row.get('avg_temp', 0)) or 0),
+        'min_temp': float(row.get('minTemp', row.get('min_temp', 0)) or 0),
+        'thermal_score': float(row.get('thermalScore', row.get('thermal_score', 0)) or 0)
+    }
+
+
+def transform_calibration_data(row: Dict, device_id: str) -> Dict:
+    """Transform calibration data for API."""
+    return {
+        'device_id': device_id,
+        'timestamp': row.get('timestamp', 0),
+        'calibration_type': row.get('calibrationType', row.get('calibration_type')),
+        'old_value': float(row.get('oldValue', row.get('old_value', 0)) or 0),
+        'new_value': float(row.get('newValue', row.get('new_value', 0)) or 0),
+        'accuracy_score': float(row.get('accuracyScore', row.get('accuracy_score', 0)) or 0),
+        'reference_source': row.get('referenceSource', row.get('reference_source')),
+        'is_automatic': bool(row.get('isAutomatic', row.get('is_automatic', 1)))
+    }
+
+
+def transform_device_info(row: Dict, device_id: str) -> Dict:
+    """Transform device info for API."""
+    return {
+        'device_id': device_id,
+        'timestamp': row.get('timestamp', row.get('lastUpdated', 0)),
+        'first_recorded': row.get('firstRecorded', row.get('first_recorded')),
+        'manufacturer': row.get('manufacturer'),
+        'model': row.get('model'),
+        'product': row.get('product'),
+        'brand': row.get('brand'),
+        'device': row.get('device'),
+        'android_version': row.get('androidVersion', row.get('android_version')),
+        'sdk_version': row.get('sdkVersion', row.get('sdk_version')),
+        'build_number': row.get('buildNumber', row.get('build_number')),
+        'battery_technology': row.get('batteryTechnology', row.get('battery_technology')),
+        'design_capacity_mah': row.get('designCapacityMah', row.get('design_capacity_mah')),
+        'hexnil_version': row.get('hexnilVersion', row.get('hexnil_version')),
+        'total_snapshots': int(row.get('totalSnapshots', row.get('total_snapshots', 0)) or 0),
+        'total_analyses': int(row.get('totalAnalyses', row.get('total_analyses', 0)) or 0)
+    }
+
+
+def transform_ai_analysis_result(row: Dict, device_id: str) -> Dict:
+    """Transform AI analysis result for API."""
+    return {
+        'device_id': device_id,
+        'timestamp': row.get('timestamp', 0),
+        'analysis_type': row.get('analysisType', row.get('analysis_type', 'unknown')),
+        'confidence_score': float(row.get('confidenceScore', row.get('confidence_score', 0)) or 0),
+        'prediction': row.get('prediction'),
+        'features_used': row.get('featuresUsed', row.get('features_used')),
+        'model_version': row.get('modelVersion', row.get('model_version')),
+        'execution_time_ms': row.get('executionTimeMs', row.get('execution_time_ms'))
+    }
+
+
 def sync_to_backend(device_id: str, data: Dict[str, List], device_model: str = None) -> bool:
     """Sync collected data to the backend server."""
     payload = {
@@ -348,7 +517,14 @@ def sync_to_backend(device_id: str, data: Dict[str, List], device_model: str = N
         'battery_health': data.get('health', []),
         'safety_events': data.get('safety', []),
         'app_battery_usage': data.get('app_battery_usage', []),
-        'app_drain_ranks': data.get('app_drain_ranks', [])
+        'app_drain_ranks': data.get('app_drain_ranks', []),
+        'refresh_rate_sessions': data.get('refresh_rate_sessions', []),
+        'refresh_rate_anomalies': data.get('refresh_rate_anomalies', []),
+        'anomaly_records': data.get('anomaly_records', []),
+        'thermal_heat_buckets': data.get('thermal_heat_buckets', []),
+        'calibration_data': data.get('calibration_data', []),
+        'device_info_sync': data.get('device_info', []),
+        'ai_analysis_results': data.get('ai_analysis_results', [])
     }
     
     total_records = sum(len(v) for v in data.values())
@@ -403,6 +579,13 @@ def process_sync(device_id: str, device_model: str = None) -> bool:
         ('safety_events', 'last_safety_id', transform_safety),
         ('app_battery_usage', 'last_app_battery_usage_id', transform_app_battery_usage),
         ('app_drain_ranks', 'last_app_drain_ranks_id', transform_app_drain_ranks),
+        ('refresh_rate_sessions', 'last_refresh_rate_sessions_id', transform_refresh_rate_session),
+        ('refresh_rate_anomalies', 'last_refresh_rate_anomalies_id', transform_refresh_rate_anomaly),
+        ('anomaly_records', 'last_anomaly_records_id', transform_anomaly_record),
+        ('thermal_heat_buckets', 'last_thermal_heat_buckets_id', transform_thermal_heat_bucket),
+        ('calibration_data', 'last_calibration_data_id', transform_calibration_data),
+        ('device_info', 'last_device_info_id', transform_device_info),
+        ('ai_analysis_results', 'last_ai_analysis_results_id', transform_ai_analysis_result),
     ]
     
     # Read new data from each table

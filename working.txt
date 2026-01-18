@@ -3,8 +3,8 @@
                  OEM-Grade Battery Monitoring & Analysis Application
 ================================================================================
 
-Last Updated: January 14, 2026
-Version: 3.2 (Backend Pipeline + Smoke Tests)
+Last Updated: January 18, 2026
+Version: 3.4 (Database Field Fixes + Sync Verification)
 
 ================================================================================
                         HEXNIL SYSTEM ARCHITECTURE DIAGRAM

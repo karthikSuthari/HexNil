@@ -9,30 +9,30 @@ import androidx.room.PrimaryKey;
  */
 @Entity(tableName = "update_comparisons")
 public class UpdateComparison {
-    
+
     @PrimaryKey(autoGenerate = true)
     public long id;
-    
+
     public long timestamp;
-    
+
     // Update info
-    public String previousVersion;       // OS/firmware version before
-    public String currentVersion;        // OS/firmware version after
-    public long updateTimestamp;         // When update was applied
-    public String updateType;            // "security", "feature", "major", "minor"
-    
+    public String previousVersion; // OS/firmware version before
+    public String currentVersion; // OS/firmware version after
+    public long updateTimestamp; // When update was applied
+    public String updateType; // "security", "feature", "major", "minor"
+
     // Pre-update metrics (7-day average before update)
-    public float preDrainRate;           // Aggregate drain %/hr across all usage
-    public float preAvgDrainScreenOn;    // %/hr with screen on
-    public float preAvgDrainScreenOff;   // %/hr with screen off
-    public float preAvgChargingTime;     // Minutes for full charge
-    public float preAvgTemperature;      // Average temp during use
-    public float preMaxTemperature;      // Max temp observed
-    public float preIdleDrain;           // %/hr idle
-    public float preBatteryHealth;       // Health % before update
-    
+    public float preDrainRate; // Aggregate drain %/hr across all usage
+    public float preAvgDrainScreenOn; // %/hr with screen on
+    public float preAvgDrainScreenOff; // %/hr with screen off
+    public float preAvgChargingTime; // Minutes for full charge
+    public float preAvgTemperature; // Average temp during use
+    public float preMaxTemperature; // Max temp observed
+    public float preIdleDrain; // %/hr idle
+    public float preBatteryHealth; // Health % before update
+
     // Post-update metrics (7-day average after update)
-    public float postDrainRate;          // Aggregate drain %/hr across all usage
+    public float postDrainRate; // Aggregate drain %/hr across all usage
     public float postAvgDrainScreenOn;
     public float postAvgDrainScreenOff;
     public float postAvgChargingTime;
@@ -40,49 +40,75 @@ public class UpdateComparison {
     public float postMaxTemperature;
     public float postIdleDrain;
     public float postBatteryHealth;
-    
+
     // Delta calculations
-    public float drainRateDelta;         // + means worse after update
-    public float screenOnDrainDelta;     // + means worse after update
+    public float drainRateDelta; // + means worse after update
+    public float screenOnDrainDelta; // + means worse after update
     public float screenOffDrainDelta;
     public float chargingTimeDelta;
-    public float temperatureDelta;       // Avg temperature delta
-    public float thermalPeakDelta;       // Max temperature delta
+    public float temperatureDelta; // Avg temperature delta
+    public float thermalPeakDelta; // Max temperature delta
     public float idleDrainDelta;
-    
+
     // Percentage change
-    public float drainRateChange;        // % change (+ is worse)
-    public float screenOnDrainChange;    // % change (+ is worse)
+    public float drainRateChange; // % change (+ is worse)
+    public float screenOnDrainChange; // % change (+ is worse)
     public float screenOffDrainChange;
     public float chargingTimeChange;
     public float temperatureChange;
     public float thermalPeakChange;
     public float idleDrainChange;
-    
+
     // Impact assessment
-    public String overallImpact;         // "improved", "neutral", "degraded"
-    public float impactScore;            // -100 to +100 (negative = better)
-    public String impactDetails;         // Detailed analysis
-    
+    public String overallImpact; // "improved", "neutral", "degraded"
+    public float impactScore; // -100 to +100 (negative = better)
+    public String impactDetails; // Detailed analysis
+
     // Specific issues
-    public boolean hasDrainRegression;   // Significant drain increase
+    public boolean hasDrainRegression; // Significant drain increase
     public boolean hasChargingRegression; // Charging got worse
     public boolean hasThermalRegression; // Thermal issues increased
-    public boolean hasIdleRegression;    // Idle drain increased
-    
+    public boolean hasIdleRegression; // Idle drain increased
+
     // Recommendations
-    public String recommendation;        // "approve", "investigate", "rollback"
-    public String analysisNotes;         // Detailed notes
-    public float confidenceLevel;        // How confident in analysis (0-100)
+    public String recommendation; // "approve", "investigate", "rollback"
+    public String analysisNotes; // Detailed notes
+    public float confidenceLevel; // How confident in analysis (0-100)
 
     // Chart overlay payloads for UI (JSON arrays of daily points)
-    public String preSeriesJson;         // e.g., [{ts:..., drainRate:..., chargingMinutes:..., thermalPeak:..., idleDrain:..., samples:...}]
+    public String preSeriesJson; // e.g., [{ts:..., drainRate:..., chargingMinutes:..., thermalPeak:...,
+                                 // idleDrain:..., samples:...}]
     public String postSeriesJson;
-    
+
+    // =========================================================================
+    // Refresh Rate Intelligence (OTA Comparison)
+    // =========================================================================
+
+    // Pre-update refresh rate metrics
+    public float preAvgRefreshRate; // Average Hz across all sessions
+    public long preHighRefreshTimeMs; // Total time at >90Hz
+    public float preRefreshBatteryImpact; // Estimated mAh from high refresh
+
+    // Post-update refresh rate metrics
+    public float postAvgRefreshRate; // Average Hz across all sessions
+    public long postHighRefreshTimeMs; // Total time at >90Hz
+    public float postRefreshBatteryImpact; // Estimated mAh from high refresh
+
+    // Deltas and changes
+    public float refreshRateDelta; // postAvgRefreshRate - preAvgRefreshRate
+    public long highRefreshTimeDelta; // postHighRefreshTimeMs - preHighRefreshTimeMs
+    public float refreshBatteryImpactDelta; // Change in battery cost
+    public float refreshThermalImpactDelta; // Correlation with temperature
+    public float refreshRateChange; // Percentage change
+    public float highRefreshTimeChange; // Percentage change
+
+    // Regression flag
+    public boolean hasRefreshRateRegression; // Significant high refresh increase
+
     public UpdateComparison() {
         this.timestamp = System.currentTimeMillis();
     }
-    
+
     public void calculateDeltas() {
         drainRateDelta = postDrainRate - preDrainRate;
         screenOnDrainDelta = postAvgDrainScreenOn - preAvgDrainScreenOn;
@@ -91,7 +117,12 @@ public class UpdateComparison {
         temperatureDelta = postAvgTemperature - preAvgTemperature;
         thermalPeakDelta = postMaxTemperature - preMaxTemperature;
         idleDrainDelta = postIdleDrain - preIdleDrain;
-        
+
+        // Refresh rate deltas
+        refreshRateDelta = postAvgRefreshRate - preAvgRefreshRate;
+        highRefreshTimeDelta = postHighRefreshTimeMs - preHighRefreshTimeMs;
+        refreshBatteryImpactDelta = postRefreshBatteryImpact - preRefreshBatteryImpact;
+
         if (preDrainRate > 0) {
             drainRateChange = (drainRateDelta / preDrainRate) * 100;
         }
@@ -113,16 +144,28 @@ public class UpdateComparison {
         if (preIdleDrain > 0) {
             idleDrainChange = (idleDrainDelta / preIdleDrain) * 100;
         }
-        
+
+        // Refresh rate percentage changes
+        if (preAvgRefreshRate > 0) {
+            refreshRateChange = (refreshRateDelta / preAvgRefreshRate) * 100;
+        }
+        if (preHighRefreshTimeMs > 0) {
+            highRefreshTimeChange = ((float) highRefreshTimeDelta / preHighRefreshTimeMs) * 100;
+        }
+
         // Check for regressions (>10% worse overall, more lenient for temperature)
         hasDrainRegression = drainRateChange > 10 || screenOnDrainChange > 10 || screenOffDrainChange > 10;
         hasChargingRegression = chargingTimeChange > 10;
         hasThermalRegression = temperatureChange > 5 || thermalPeakChange > 5;
         hasIdleRegression = idleDrainChange > 15;
+
+        // Refresh rate regression: >15% increase in high refresh time or significant
+        // battery impact
+        hasRefreshRateRegression = highRefreshTimeChange > 15 || refreshBatteryImpactDelta > 50;
     }
-    
+
     public boolean hasAnyRegression() {
-        return hasDrainRegression || hasChargingRegression || 
-               hasThermalRegression || hasIdleRegression;
+        return hasDrainRegression || hasChargingRegression ||
+                hasThermalRegression || hasIdleRegression || hasRefreshRateRegression;
     }
 }

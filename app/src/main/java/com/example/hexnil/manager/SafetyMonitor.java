@@ -1,70 +1,304 @@
 package com.example.hexnil.manager;
 
 import android.content.Context;
+import android.os.Build;
 
 import com.example.hexnil.database.HexNilDatabase;
+import com.example.hexnil.model.BatteryHealth;
 import com.example.hexnil.model.BatterySnapshot;
 import com.example.hexnil.model.SafetyEvent;
 
 /**
- * Performs lightweight safety checks and persists SafetyEvent records when thresholds are exceeded.
+ * OEM-Grade Safety Monitoring System
+ * 
+ * Performs comprehensive safety checks and persists SafetyEvent records when
+ * thresholds are exceeded.
+ * 
+ * FIXED: Previously didn't populate deviceModel, firmwareVersion,
+ * swellingRiskScore,
+ * protectionAction, regulatoryStandard, and other compliance fields.
+ * Now populates all available fields for complete safety event tracking.
  */
 public class SafetyMonitor {
 
-    private static final float OVER_TEMP_C = 45.0f;
-    private static final float OVER_VOLTAGE_MV = 4500f;
-    private static final float OVER_CURRENT_MA = 2500f;
+    private static final String TAG = "SafetyMonitor";
 
+    // =========================================================================
+    // SAFETY THRESHOLDS
+    // =========================================================================
+
+    // Temperature thresholds (°C)
+    private static final float OVER_TEMP_WARNING = 45.0f;
+    private static final float OVER_TEMP_CRITICAL = 48.0f;
+    private static final float OVER_TEMP_EMERGENCY = 52.0f;
+
+    // Voltage thresholds (mV)
+    private static final float OVER_VOLTAGE_WARNING = 4450f;
+    private static final float OVER_VOLTAGE_CRITICAL = 4500f;
+    private static final float LOW_VOLTAGE_WARNING = 3400f;
+    private static final float LOW_VOLTAGE_CRITICAL = 3200f;
+
+    // Current thresholds (mA)
+    private static final float OVER_CURRENT_WARNING = 2500f;
+    private static final float OVER_CURRENT_CRITICAL = 3500f;
+
+    // Regulatory thresholds (IEC 62133)
+    private static final float REGULATORY_MAX_TEMP = 55.0f;
+    private static final float REGULATORY_MAX_VOLTAGE = 4400f;
+
+    // Swelling risk thresholds
+    private static final float SWELLING_VOLTAGE_ANOMALY_THRESHOLD = 0.05f; // 5% deviation
+    private static final float SWELLING_CAPACITY_ANOMALY_THRESHOLD = 0.10f; // 10% deviation
+
+    private final Context context;
     private final HexNilDatabase database;
 
+    // Device info (cached)
+    private final String deviceModel;
+    private final String firmwareVersion;
+
     public SafetyMonitor(Context context, HexNilDatabase database) {
+        this.context = context;
         this.database = database;
+        this.deviceModel = Build.MODEL;
+        this.firmwareVersion = Build.FINGERPRINT;
     }
 
+    // =========================================================================
+    // MAIN SAFETY CHECK
+    // =========================================================================
+
     public void checkSafety(BatterySnapshot snapshot) {
-        if (snapshot == null) return;
+        if (snapshot == null)
+            return;
 
-        boolean overTemp = snapshot.getTemperatureCelsius() >= OVER_TEMP_C;
-        boolean overVoltage = snapshot.voltage >= OVER_VOLTAGE_MV;
-        boolean overCurrent = Math.abs(snapshot.chargeRate) >= OVER_CURRENT_MA;
+        float tempC = snapshot.getTemperatureCelsius();
+        float voltage = snapshot.voltage;
+        float current = Math.abs(snapshot.chargeRate);
 
-        if (!overTemp && !overVoltage && !overCurrent) {
+        boolean overTemp = tempC >= OVER_TEMP_WARNING;
+        boolean overVoltage = voltage >= OVER_VOLTAGE_WARNING;
+        boolean lowVoltage = voltage <= LOW_VOLTAGE_WARNING && !snapshot.isCharging;
+        boolean overCurrent = current >= OVER_CURRENT_WARNING;
+
+        if (!overTemp && !overVoltage && !lowVoltage && !overCurrent) {
             return;
         }
 
+        SafetyEvent event = createBaseEvent(snapshot);
+
+        if (overTemp) {
+            populateOverTempEvent(event, snapshot);
+        } else if (overVoltage) {
+            populateOverVoltageEvent(event, snapshot);
+        } else if (lowVoltage) {
+            populateLowVoltageEvent(event, snapshot);
+        } else if (overCurrent) {
+            populateOverCurrentEvent(event, snapshot);
+        }
+
+        // Calculate swelling risk for all safety events
+        calculateSwellingRisk(event, snapshot);
+
+        // Check regulatory compliance
+        checkRegulatoryCompliance(event);
+
+        database.safetyEventDao().insert(event);
+    }
+
+    // =========================================================================
+    // BASE EVENT CREATION
+    // =========================================================================
+
+    private SafetyEvent createBaseEvent(BatterySnapshot snapshot) {
         SafetyEvent event = new SafetyEvent();
         event.timestamp = snapshot.timestamp;
         event.batteryLevel = snapshot.level;
         event.wasCharging = snapshot.isCharging;
         event.chargingType = snapshot.chargingType;
+        event.activity = snapshot.foregroundApp;
 
-        if (overTemp) {
-            event.eventType = "over_temp";
-            event.severity = snapshot.getTemperatureCelsius() >= OVER_TEMP_C + 3 ? "critical" : "warning";
-            event.batteryTemperature = snapshot.getTemperatureCelsius();
-            event.thresholdValue = OVER_TEMP_C;
-            event.measurementUnit = "°C";
-            event.triggerValue = event.batteryTemperature;
-        } else if (overVoltage) {
-            event.eventType = "over_voltage";
+        // Populate device info (CRITICAL FIX)
+        event.deviceModel = deviceModel;
+        event.firmwareVersion = firmwareVersion;
+        event.batteryPartNumber = getBatteryPartNumber();
+
+        // Base temperature and voltage for all events
+        event.batteryTemperature = snapshot.getTemperatureCelsius();
+        event.voltage = snapshot.voltage;
+        event.current = snapshot.chargeRate;
+
+        return event;
+    }
+
+    // =========================================================================
+    // EVENT TYPE POPULATION
+    // =========================================================================
+
+    private void populateOverTempEvent(SafetyEvent event, BatterySnapshot snapshot) {
+        float tempC = snapshot.getTemperatureCelsius();
+
+        event.eventType = "over_temp";
+        event.thresholdValue = OVER_TEMP_WARNING;
+        event.measurementUnit = "°C";
+        event.triggerValue = tempC;
+
+        // Severity classification
+        if (tempC >= OVER_TEMP_EMERGENCY) {
+            event.severity = "emergency";
+            event.wasThermalShutdown = true;
+            event.protectionAction = "thermal_shutdown";
+        } else if (tempC >= OVER_TEMP_CRITICAL) {
+            event.severity = "critical";
+            event.protectionAction = "throttle_charging";
+        } else {
             event.severity = "warning";
-            event.voltage = snapshot.voltage;
-            event.expectedVoltage = OVER_VOLTAGE_MV;
-            event.thresholdValue = OVER_VOLTAGE_MV;
-            event.measurementUnit = "mV";
-            event.triggerValue = event.voltage;
-        } else if (overCurrent) {
-            event.eventType = "over_current";
-            event.severity = "warning";
-            event.current = snapshot.chargeRate;
-            event.expectedCurrent = OVER_CURRENT_MA;
-            event.thresholdValue = OVER_CURRENT_MA;
-            event.measurementUnit = "mA";
-            event.triggerValue = event.current;
+            event.protectionAction = "none";
         }
 
-        database.safetyEventDao().insert(event);
+        event.wasProtectionTriggered = tempC >= OVER_TEMP_CRITICAL;
     }
+
+    private void populateOverVoltageEvent(SafetyEvent event, BatterySnapshot snapshot) {
+        event.eventType = "over_voltage";
+        event.thresholdValue = OVER_VOLTAGE_WARNING;
+        event.measurementUnit = "mV";
+        event.triggerValue = snapshot.voltage;
+        event.expectedVoltage = 4200f; // Normal max voltage
+
+        if (snapshot.voltage >= OVER_VOLTAGE_CRITICAL) {
+            event.severity = "critical";
+            event.protectionAction = "stop_charging";
+            event.wasProtectionTriggered = true;
+        } else {
+            event.severity = "warning";
+            event.protectionAction = "monitor";
+            event.wasProtectionTriggered = false;
+        }
+    }
+
+    private void populateLowVoltageEvent(SafetyEvent event, BatterySnapshot snapshot) {
+        event.eventType = "over_discharge";
+        event.thresholdValue = LOW_VOLTAGE_WARNING;
+        event.measurementUnit = "mV";
+        event.triggerValue = snapshot.voltage;
+        event.lowestVoltage = snapshot.voltage;
+        event.expectedVoltage = 3600f; // Normal min voltage
+
+        if (snapshot.voltage <= LOW_VOLTAGE_CRITICAL) {
+            event.severity = "critical";
+            event.protectionAction = "shutdown";
+            event.wasEmergencyShutdown = true;
+            event.wasProtectionTriggered = true;
+        } else {
+            event.severity = "warning";
+            event.protectionAction = "low_power_mode";
+            event.wasProtectionTriggered = false;
+        }
+    }
+
+    private void populateOverCurrentEvent(SafetyEvent event, BatterySnapshot snapshot) {
+        float current = Math.abs(snapshot.chargeRate);
+
+        event.eventType = "over_current";
+        event.thresholdValue = OVER_CURRENT_WARNING;
+        event.measurementUnit = "mA";
+        event.triggerValue = current;
+        event.expectedCurrent = 2000f; // Normal charging current
+
+        if (current >= OVER_CURRENT_CRITICAL) {
+            event.severity = "critical";
+            event.protectionAction = "limit_current";
+            event.wasProtectionTriggered = true;
+        } else {
+            event.severity = "warning";
+            event.protectionAction = "monitor";
+            event.wasProtectionTriggered = false;
+        }
+    }
+
+    // =========================================================================
+    // SWELLING RISK CALCULATION
+    // =========================================================================
+
+    private void calculateSwellingRisk(SafetyEvent event, BatterySnapshot snapshot) {
+        // Get latest health data for comparison
+        BatteryHealth health = database.batteryHealthDao().getLatest();
+
+        float voltageAnomaly = 0f;
+        float capacityAnomaly = 0f;
+        float resistanceAnomaly = 0f;
+
+        if (health != null) {
+            // Check voltage anomaly - compare to expected for this level
+            float expectedVoltage = estimateExpectedVoltage(snapshot.level);
+            if (expectedVoltage > 0) {
+                voltageAnomaly = Math.abs(snapshot.voltage - expectedVoltage) / expectedVoltage;
+            }
+
+            // Check capacity anomaly
+            if (health.designCapacityMah > 0 && health.currentCapacityMah > 0) {
+                float expectedCapacity = health.designCapacityMah * (snapshot.level / 100f);
+                capacityAnomaly = Math.abs(health.currentCapacityMah - expectedCapacity) / health.designCapacityMah;
+            }
+
+            // Check resistance anomaly (high internal resistance indicates swelling)
+            if (health.internalResistance > 0) {
+                float normalResistance = 100f; // mΩ baseline
+                resistanceAnomaly = Math.max(0, (health.internalResistance - normalResistance) / normalResistance);
+            }
+        }
+
+        // Populate anomaly fields
+        event.voltageAnomaly = voltageAnomaly;
+        event.capacityAnomaly = capacityAnomaly;
+        event.resistanceAnomaly = resistanceAnomaly;
+
+        // Calculate combined swelling risk score (0-1)
+        float tempRisk = snapshot.getTemperatureCelsius() > 40 ? (snapshot.getTemperatureCelsius() - 40) / 15f : 0f;
+        float voltageRisk = voltageAnomaly > SWELLING_VOLTAGE_ANOMALY_THRESHOLD ? voltageAnomaly * 2 : 0f;
+        float capacityRisk = capacityAnomaly > SWELLING_CAPACITY_ANOMALY_THRESHOLD ? capacityAnomaly : 0f;
+        float resistanceRisk = resistanceAnomaly * 0.5f;
+
+        event.swellingRiskScore = Math.min(1.0f,
+                (tempRisk * 0.3f) + (voltageRisk * 0.25f) + (capacityRisk * 0.25f) + (resistanceRisk * 0.2f));
+
+        // Flag if swelling risk is significant
+        if (event.swellingRiskScore > 0.5f) {
+            event.abuseType = "swelling_risk";
+            event.abuseSeverity = event.swellingRiskScore;
+        }
+    }
+
+    private float estimateExpectedVoltage(int level) {
+        // Linear approximation of Li-ion voltage curve
+        // 3.0V at 0%, 4.2V at 100%
+        return 3000f + (level * 12f); // Returns mV
+    }
+
+    // =========================================================================
+    // REGULATORY COMPLIANCE
+    // =========================================================================
+
+    private void checkRegulatoryCompliance(SafetyEvent event) {
+        boolean exceedsIEC = false;
+
+        // IEC 62133 safety limits
+        if (event.batteryTemperature >= REGULATORY_MAX_TEMP) {
+            exceedsIEC = true;
+        }
+        if (event.voltage >= REGULATORY_MAX_VOLTAGE) {
+            exceedsIEC = true;
+        }
+
+        event.exceedsRegulatory = exceedsIEC;
+        event.regulatoryStandard = "IEC 62133";
+        event.requiresReport = exceedsIEC || "emergency".equals(event.severity);
+    }
+
+    // =========================================================================
+    // SPECIALIZED SAFETY CHECKS
+    // =========================================================================
 
     public void checkLowBatterySafety() {
         SafetyEvent event = new SafetyEvent();
@@ -72,29 +306,85 @@ public class SafetyMonitor {
         event.severity = "warning";
         event.wasCharging = false;
         event.measurementUnit = "%";
-        event.triggerValue = 15; // triggered at system low battery
+        event.triggerValue = 15;
         event.thresholdValue = 15;
         event.batteryLevel = 15;
+        event.protectionAction = "low_power_mode";
+
+        // Device info
+        event.deviceModel = deviceModel;
+        event.firmwareVersion = firmwareVersion;
+        event.regulatoryStandard = "IEC 62133";
+        event.exceedsRegulatory = false;
+        event.requiresReport = false;
+
         database.safetyEventDao().insert(event);
     }
 
-    /**
-     * Check for high temperature safety event when critical temperature is detected.
-     * @param tempTenths Temperature in tenths of degrees Celsius
-     */
     public void checkHighTemperatureSafety(int tempTenths) {
         float tempC = tempTenths / 10.0f;
-        if (tempC < OVER_TEMP_C) return;
+        if (tempC < OVER_TEMP_WARNING)
+            return;
 
         SafetyEvent event = new SafetyEvent();
         event.timestamp = System.currentTimeMillis();
         event.eventType = "over_temp";
-        event.severity = tempC >= OVER_TEMP_C + 5 ? "critical" : (tempC >= OVER_TEMP_C + 3 ? "high" : "warning");
         event.batteryTemperature = tempC;
-        event.thresholdValue = OVER_TEMP_C;
+        event.thresholdValue = OVER_TEMP_WARNING;
         event.measurementUnit = "°C";
         event.triggerValue = tempC;
-        event.wasCharging = false; // Unknown at this point, will be updated if available
+        event.wasCharging = false;
+
+        // Severity classification
+        if (tempC >= OVER_TEMP_EMERGENCY) {
+            event.severity = "emergency";
+            event.protectionAction = "thermal_shutdown";
+            event.wasThermalShutdown = true;
+        } else if (tempC >= OVER_TEMP_CRITICAL) {
+            event.severity = "critical";
+            event.protectionAction = "throttle";
+        } else {
+            event.severity = "warning";
+            event.protectionAction = "monitor";
+        }
+
+        event.wasProtectionTriggered = tempC >= OVER_TEMP_CRITICAL;
+
+        // Device info
+        event.deviceModel = deviceModel;
+        event.firmwareVersion = firmwareVersion;
+
+        // Regulatory
+        event.exceedsRegulatory = tempC >= REGULATORY_MAX_TEMP;
+        event.regulatoryStandard = "IEC 62133";
+        event.requiresReport = event.exceedsRegulatory;
+
         database.safetyEventDao().insert(event);
+    }
+
+    // =========================================================================
+    // HELPERS
+    // =========================================================================
+
+    private String getBatteryPartNumber() {
+        // Battery part number is typically OEM-specific
+        // Return device model as placeholder
+        return Build.MODEL + "-" + Build.MANUFACTURER;
+    }
+
+    /**
+     * Check if a specific safety condition is currently triggered.
+     */
+    public boolean isTemperatureWarning(BatterySnapshot snapshot) {
+        return snapshot != null && snapshot.getTemperatureCelsius() >= OVER_TEMP_WARNING;
+    }
+
+    public boolean isTemperatureCritical(BatterySnapshot snapshot) {
+        return snapshot != null && snapshot.getTemperatureCelsius() >= OVER_TEMP_CRITICAL;
+    }
+
+    public boolean isVoltageWarning(BatterySnapshot snapshot) {
+        return snapshot != null &&
+                (snapshot.voltage >= OVER_VOLTAGE_WARNING || snapshot.voltage <= LOW_VOLTAGE_WARNING);
     }
 }

@@ -219,7 +219,7 @@ class SafetyEvent(BaseDataRecord):
 
 class CalibrationData(BaseDataRecord):
     """Calibration data."""
-    calibration_type: str = Field(..., min_length=1, max_length=64)
+    calibration_type: Optional[str] = None
     old_value: Optional[float] = None
     new_value: Optional[float] = None
     accuracy_score: Optional[float] = None
@@ -594,6 +594,56 @@ class AnomalyRecordRecord(BaseModel):
     occurrence_count: int = 1
     is_recurring: bool = False
 
+class RefreshRateSessionRecord(BaseModel):
+    """Refresh rate session data from Room DB."""
+    device_id: str = Field(..., min_length=1, max_length=64)
+    session_id: Optional[str] = None
+    session_type: Optional[str] = None
+    package_name: Optional[str] = None
+    app_name: Optional[str] = None
+    start_time: int = 0
+    end_time: Optional[int] = None
+    duration_ms: int = 0
+    start_refresh_rate_hz: float = 0
+    end_refresh_rate_hz: float = 0
+    avg_refresh_rate_hz: float = 0
+    min_refresh_rate_hz: float = 0
+    max_refresh_rate_hz: float = 0
+    time_at_high_hz_ms: int = 0
+    time_at_low_hz_ms: int = 0
+    is_adaptive_display: bool = False
+    avg_brightness: float = 0
+    avg_cpu_usage: float = 0
+    avg_gpu_usage: float = 0
+    avg_battery_current: float = 0
+    avg_temperature: float = 0
+    estimated_battery_cost: float = 0
+    anomaly_count: int = 0
+    has_strong_anomaly: bool = False
+
+class RefreshRateAnomalyRecord(BaseModel):
+    """Refresh rate anomaly data from Room DB."""
+    device_id: str = Field(..., min_length=1, max_length=64)
+    linked_session_id: int = 0
+    package_name: Optional[str] = None
+    app_name: Optional[str] = None
+    session_type: Optional[str] = None
+    detected_at: int = 0
+    anomaly_type: Optional[str] = None
+    severity: Optional[str] = None
+    confidence_score: float = 0
+    cause_category: Optional[str] = None
+    cause_explanation: Optional[str] = None
+    evidence_metrics_json: Optional[str] = None
+    refresh_rate_hz: float = 0
+    cpu_usage: float = 0
+    gpu_usage: float = 0
+    temperature: float = 0
+    brightness: float = 0
+    battery_current: float = 0
+    was_charging: bool = False
+    screen_on: bool = True
+
 class BatchSyncRequest(BaseModel):
     """Batch sync request containing multiple data types."""
     device_info: DeviceInfo
@@ -617,6 +667,10 @@ class BatchSyncRequest(BaseModel):
     compliance_evidence: Optional[List[ComplianceEvidenceRecord]] = []
     device_info_sync: Optional[List[DeviceInfoSyncRecord]] = []
     anomaly_records: Optional[List[AnomalyRecordRecord]] = []
+    # Refresh rate intelligence (new tables)
+    refresh_rate_sessions: Optional[List[RefreshRateSessionRecord]] = []
+    refresh_rate_anomalies: Optional[List[RefreshRateAnomalyRecord]] = []
+
 
 class SyncResponse(BaseModel):
     """Response for sync operations."""
@@ -1305,6 +1359,74 @@ def insert_anomaly_records(conn, records: List['AnomalyRecordRecord']) -> int:
     finally:
         cursor.close()
 
+def insert_refresh_rate_sessions(conn, records: List['RefreshRateSessionRecord']) -> int:
+    """Insert refresh rate session records."""
+    if not records:
+        return 0
+    
+    cursor = conn.cursor()
+    try:
+        sql = """
+            INSERT IGNORE INTO refresh_rate_sessions 
+            (device_id, session_id, session_type, package_name, app_name, start_time, end_time,
+             duration_ms, start_refresh_rate_hz, end_refresh_rate_hz, avg_refresh_rate_hz,
+             min_refresh_rate_hz, max_refresh_rate_hz, time_at_high_hz_ms, time_at_low_hz_ms,
+             is_adaptive_display, avg_brightness, avg_cpu_usage, avg_gpu_usage, avg_battery_current,
+             avg_temperature, estimated_battery_cost, anomaly_count, has_strong_anomaly)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+        """
+        data = [
+            (r.device_id, r.session_id, r.session_type, r.package_name, r.app_name,
+             r.start_time, r.end_time, r.duration_ms, r.start_refresh_rate_hz,
+             r.end_refresh_rate_hz, r.avg_refresh_rate_hz, r.min_refresh_rate_hz,
+             r.max_refresh_rate_hz, r.time_at_high_hz_ms, r.time_at_low_hz_ms,
+             r.is_adaptive_display, r.avg_brightness, r.avg_cpu_usage, r.avg_gpu_usage,
+             r.avg_battery_current, r.avg_temperature, r.estimated_battery_cost,
+             r.anomaly_count, r.has_strong_anomaly)
+            for r in records
+        ]
+        cursor.executemany(sql, data)
+        conn.commit()
+        return cursor.rowcount
+    except Exception as e:
+        logger.error(f"Error inserting refresh rate sessions: {e}")
+        conn.rollback()
+        raise
+    finally:
+        cursor.close()
+
+def insert_refresh_rate_anomalies(conn, records: List['RefreshRateAnomalyRecord']) -> int:
+    """Insert refresh rate anomaly records."""
+    if not records:
+        return 0
+    
+    cursor = conn.cursor()
+    try:
+        sql = """
+            INSERT IGNORE INTO refresh_rate_anomalies 
+            (device_id, linked_session_id, package_name, app_name, session_type, detected_at, anomaly_type,
+             severity, confidence_score, cause_category, cause_explanation, evidence_metrics_json,
+             refresh_rate_hz, cpu_usage, gpu_usage, temperature, brightness, battery_current,
+             was_charging, screen_on)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+        """
+        data = [
+            (r.device_id, r.linked_session_id, r.package_name, r.app_name, r.session_type, r.detected_at,
+             r.anomaly_type, r.severity, r.confidence_score, r.cause_category, r.cause_explanation,
+             r.evidence_metrics_json, r.refresh_rate_hz, r.cpu_usage, r.gpu_usage, r.temperature,
+             r.brightness, r.battery_current, r.was_charging, r.screen_on)
+            for r in records
+        ]
+        cursor.executemany(sql, data)
+        conn.commit()
+        return cursor.rowcount
+    except Exception as e:
+        logger.error(f"Error inserting refresh rate anomalies: {e}")
+        conn.rollback()
+        raise
+    finally:
+        cursor.close()
+
 def log_sync(conn, device_id: str, data_type: str, records_synced: int, 
              status: str, error_message: Optional[str] = None) -> Optional[int]:
     """Log sync operation to database."""
@@ -1379,6 +1501,9 @@ async def lifespan(app: FastAPI):
                             ("compliance_evidence", batch.compliance_evidence, insert_compliance_evidence),
                             ("device_info_sync", batch.device_info_sync, insert_device_info_sync),
                             ("anomaly_records", batch.anomaly_records, insert_anomaly_records),
+                            # Refresh rate intelligence
+                            ("refresh_rate_sessions", batch.refresh_rate_sessions, insert_refresh_rate_sessions),
+                            ("refresh_rate_anomalies", batch.refresh_rate_anomalies, insert_refresh_rate_anomalies),
                         ]
 
                         total_received = 0

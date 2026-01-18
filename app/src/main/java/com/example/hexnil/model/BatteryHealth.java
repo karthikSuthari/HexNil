@@ -41,6 +41,10 @@ public class BatteryHealth {
 
     public long timestamp;
 
+    // Force DAO regeneration
+    @Ignore
+    public long schemaVersion = 2;
+
     // =========================================================================
     // CAPACITY METRICS
     // =========================================================================

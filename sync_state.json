@@ -1,11 +1,17 @@
 {
-  "last_sync": "2026-01-16T18:51:28.805621",
-  "last_snapshot_id": 192,
-  "last_charging_id": 2,
+  "last_sync": "2026-01-18T20:01:48.356589",
+  "last_snapshot_id": 551,
+  "last_charging_id": 12,
   "last_thermal_id": 0,
   "last_drain_id": 0,
-  "last_health_id": 94,
+  "last_health_id": 338,
   "last_safety_id": 0,
-  "last_app_battery_usage_id": 3514,
-  "last_app_drain_ranks_id": 45
+  "last_app_battery_usage_id": 13520,
+  "last_app_drain_ranks_id": 235,
+  "last_anomaly_records_id": 48,
+  "last_thermal_heat_buckets_id": 16,
+  "last_calibration_data_id": 93,
+  "last_ai_analysis_results_id": 96,
+  "last_refresh_rate_sessions_id": 21,
+  "last_refresh_rate_anomalies_id": 1476
 }

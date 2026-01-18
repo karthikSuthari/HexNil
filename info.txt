@@ -3,8 +3,8 @@
                               Complete Feature Documentation
 ================================================================================
 
-Version: 3.3
-Last Updated: January 14, 2026
+Version: 3.4
+Last Updated: January 18, 2026
 Platform: Android (minSdk 26+)
 Architecture: MVVM with Room Database + Foreground Service + Backend Pipeline
 AI Engine: HexNil-AI (Deterministic Heuristic Intelligence)
@@ -12,29 +12,36 @@ Database Version: 19
 Build Status: ✅ PRODUCTION READY
 
 ================================================================================
-                    NEW IN VERSION 3.3 - AUTO-SYNC FEATURE
+                    NEW IN VERSION 3.4 - DATABASE FIELD FIXES
 ================================================================================
 
-🔄 AUTO-SYNC ON DEVICE CONNECTION (hexnil_auto_sync.py)
-   - Monitors for USB device connection via ADB
-   - Automatically pulls HexNil Room database when device connects
-   - Transforms Room DB schema to backend API schema
-   - Syncs all data types: snapshots, charging, thermal, drain, health, safety
-   - Tracks sync state for incremental updates (only syncs new data)
-   - Proper binary transfer using adb exec-out (no corruption)
-   - Log file: hexnil_auto_sync.log
+🔧 DRAIN EVENT ENHANCEMENT (DrainAnalyzer.java: 114→227 lines)
+   - Integrated DrainIntelligence.analyzeDrainEvent() for 50+ fields
+   - Populates: screenStateDetailed, drainEfficiency, benchmarkResult
+   - Added: deepSleepEffectiveness, anomalySeverity, qualitySummary
+   - Component attribution: displayDrainPct, cpuDrainPct, networkDrainPct
 
-   USAGE:
-   • Run: python hexnil_auto_sync.py  (or START_AUTO_SYNC.bat)
-   • Connect device via USB
-   • Auto-sync triggers automatically
-   • Check sync_state.json for last sync status
+🔧 IDLE DRAIN SESSION FIX (IdleDrainAnalyzer.java: 132→259 lines)
+   - Added timing fields: deepSleepTime, lightSleepTime, awakeTime (ms)
+   - Added dozeExits count with proper state tracking
+   - Improved leakageSources detection and recommendations
 
-   FILES:
-   • hexnil_auto_sync.py   - Main auto-sync script
-   • START_AUTO_SYNC.bat   - Windows batch launcher
-   • sync_data/            - Pulled database storage
-   • sync_state.json       - Incremental sync state tracking
+🔧 SAFETY EVENT ENHANCEMENT (SafetyMonitor.java: 101→310 lines)
+   - Added device info: deviceModel, firmwareVersion, batteryPartNumber
+   - Swelling risk calculation with swellingRiskScore (0-100)
+   - IEC 62133 regulatory compliance checking
+   - Multi-tier severity: warning/critical/emergency classification
+
+📊 SYNC VERIFICATION (January 18, 2026)
+   - 3.5-hour test session verified: 3,200+ records synced successfully
+   - battery_snapshots: 7,310 → 7,395 (+85)
+   - battery_health: 314 → 396 (+82)
+   - app_battery_usage: 10,839 → 13,444 (+2,605)
+   - ai_analysis_results: 0 → 428 (+428 - now working!)
+
+================================================================================
+                    NEW IN VERSION 3.3 - AUTO-SYNC FEATURE
+================================================================================
 
 ================================================================================
                     VERSION 3.2 - BACKEND PIPELINE & SMOKE TESTS
