@@ -130,11 +130,16 @@ def load_sync_state() -> Dict[str, Any]:
         'last_refresh_rate_anomalies_id': 0,
         'last_anomaly_records_id': 0,
         'last_thermal_heat_buckets_id': 0,
-        'last_calibration_data_id': 0,
-        'last_device_info_id': 0,
         'last_device_info_id': 0,
         'last_ai_analysis_results_id': 0,
-        'last_cpu_gpu_load_samples_id': 0
+        'last_cpu_gpu_load_samples_id': 0,
+        'last_memory_snapshots_id': 0,
+        'last_app_launch_metrics_id': 0,
+        'last_frame_metrics_id': 0,
+        'last_crash_events_id': 0,
+        'last_anr_events_id': 0,
+        'last_daily_aggregates_id': 0,
+        'last_regression_events_id': 0
     }
 
 
@@ -541,6 +546,145 @@ def transform_cpu_gpu_load_sample(row: Dict, device_id: str) -> Dict:
     }
 
 
+def transform_memory_snapshot(row: Dict, device_id: str) -> Dict:
+    return {
+        'device_id': device_id,
+        'timestamp': row.get('timestamp'),
+        'total_memory_bytes': row.get('totalMemoryBytes', 0),
+        'available_memory_bytes': row.get('availableMemoryBytes', 0),
+        'used_memory_bytes': row.get('usedMemoryBytes', 0),
+        'used_memory_percent': row.get('usedMemoryPercent', 0),
+        'is_low_memory': bool(row.get('isLowMemory', 0)),
+        'threshold': row.get('threshold', 0),
+        'running_app_count': row.get('runningAppCount', 0),
+        'top_memory_app': row.get('topMemoryApp'),
+        'top_memory_app_bytes': row.get('topMemoryAppBytes', 0),
+        'battery_level': row.get('batteryLevel', 0),
+        'temperature': row.get('temperature', 0),
+        'is_charging': bool(row.get('isCharging', 0)),
+        'is_screen_on': bool(row.get('isScreenOn', 0))
+    }
+
+
+def transform_app_launch(row: Dict, device_id: str) -> Dict:
+    return {
+        'device_id': device_id,
+        'timestamp': row.get('timestamp'),
+        'package_name': row.get('packageName'),
+        'app_label': row.get('appLabel'),
+        'launch_type': row.get('launchType'),
+        'launch_duration_ms': row.get('launchDurationMs', 0),
+        'ttid_ms': row.get('ttidMs', 0),
+        'ttfd_ms': row.get('ttfdMs', 0),
+        'before_level': row.get('beforeLevel', 0),
+        'after_level': row.get('afterLevel', 0),
+        'before_temp': row.get('beforeTemp', 0),
+        'after_temp': row.get('afterTemp', 0),
+        'is_first_launch_today': bool(row.get('isFirstLaunchToday', 0)),
+        'session_context': row.get('sessionContext'),
+        'app_version_code': row.get('appVersionCode', 0),
+        'app_version_name': row.get('appVersionName'),
+        'memory_usage_percent': row.get('memoryUsagePercent', 0),
+        'is_charging': bool(row.get('isCharging', 0)),
+        'thermal_headroom': row.get('thermalHeadroom', 0)
+    }
+
+
+def transform_frame_metric(row: Dict, device_id: str) -> Dict:
+    return {
+        'device_id': device_id,
+        'timestamp': row.get('sessionStart'),
+        'session_start': row.get('sessionStart'),
+        'session_end': row.get('sessionEnd'),
+        'package_name': row.get('packageName'),
+        'total_frames': row.get('totalFrames', 0),
+        'slow_frames': row.get('slowFrames', 0),
+        'frozen_frames': row.get('frozenFrames', 0),
+        'jank_percentage': row.get('jankPercentage', 0),
+        'avg_frame_duration_ms': row.get('avgFrameDurationMs', 0),
+        'max_frame_duration_ms': row.get('maxFrameDurationMs', 0),
+        'dropped_frame_count': row.get('droppedFrameCount', 0),
+        'fps': row.get('fps', 0),
+        'session_duration_ms': row.get('sessionDurationMs', 0),
+        'activity_name': row.get('activityName'),
+        'temperature': row.get('temperature', 0),
+        'memory_usage_percent': row.get('memoryUsagePercent', 0),
+        'was_thermal_throttling': bool(row.get('wasThermalThrottling', 0))
+    }
+
+
+def transform_crash_event(row: Dict, device_id: str) -> Dict:
+    return {
+        'device_id': device_id,
+        'timestamp': row.get('timestamp'),
+        'package_name': row.get('packageName'),
+        'app_label': row.get('appLabel'),
+        'crash_type': row.get('crashType'),
+        'exception_type': row.get('exceptionType'),
+        'exception_message': row.get('exceptionMessage'),
+        'stack_trace_hash': row.get('stackTraceHash'),
+        'process_name': row.get('processName'),
+        'is_foreground': bool(row.get('importance', 0) <= 100),
+        'app_version_name': row.get('appVersionName'),
+        'payload': None
+    }
+
+
+def transform_anr_event(row: Dict, device_id: str) -> Dict:
+    return {
+        'device_id': device_id,
+        'timestamp': row.get('timestamp'),
+        'package_name': row.get('packageName'),
+        'app_label': row.get('appLabel'),
+        'anr_type': row.get('anrType'),
+        'duration_ms': row.get('durationMs', 0),
+        'trace_hash': row.get('traceHash'),
+        'is_foreground': True,  # Usually foreground for ANR
+        'app_version_name': row.get('appVersionName')
+    }
+
+
+def transform_daily_aggregate(row: Dict, device_id: str) -> Dict:
+    return {
+        'device_id': device_id,
+        'aggregate_date': row.get('date'),
+        'package_name': row.get('packageName'),
+        'app_label': row.get('appLabel'),
+        'avg_memory_used_percent': row.get('avgMemoryUsedPercent', 0),
+        'max_memory_used_percent': row.get('maxMemoryUsedPercent', 0),
+        'low_memory_event_count': row.get('lowMemoryEventCount', 0),
+        'launch_count': row.get('launchCount', 0),
+        'cold_launch_count': row.get('coldLaunchCount', 0),
+        'avg_cold_launch_ms': row.get('avgColdLaunchMs', 0),
+        'slow_launch_count': row.get('slowLaunchCount', 0),
+        'crash_count': row.get('crashCount', 0),
+        'anr_count': row.get('anrCount', 0),
+        'unique_crash_types': row.get('uniqueCrashTypes', 0),
+        'avg_temp': row.get('avgTemp', 0),
+        'max_temp': row.get('maxTemp', 0),
+        'total_battery_drain': row.get('totalBatteryDrain', 0),
+        'avg_drain_rate_per_hour': row.get('avgDrainRatePerHour', 0),
+        'health_score': row.get('healthScore', 0),
+        'health_grade': row.get('healthGrade'),
+        'app_version': row.get('appVersion')
+    }
+
+
+def transform_regression_event(row: Dict, device_id: str) -> Dict:
+    return {
+        'device_id': device_id,
+        'timestamp': row.get('detectedAt'),
+        'package_name': row.get('packageName'),
+        'regression_type': row.get('regressionType'),
+        'severity': row.get('severity'),
+        'metric_name': row.get('metricName'),
+        'current_value': row.get('currentValue', 0),
+        'baseline_value': row.get('baselineValue', 0),
+        'deviation_percent': row.get('deltaPercent', 0),
+        'is_resolved': bool(row.get('isResolved', 0))
+    }
+
+
 def sync_to_backend(device_id: str, data: Dict[str, List], device_model: str = None) -> bool:
     """Sync collected data to the backend server."""
     payload = {
@@ -628,6 +772,13 @@ def process_sync(device_id: str, device_model: str = None) -> bool:
         ('device_info', 'last_device_info_id', transform_device_info),
         ('ai_analysis_results', 'last_ai_analysis_results_id', transform_ai_analysis_result),
         ('cpu_gpu_load_samples', 'last_cpu_gpu_load_samples_id', transform_cpu_gpu_load_sample),
+        ('memory_snapshots', 'last_memory_snapshots_id', transform_memory_snapshot),
+        ('app_launch_metrics', 'last_app_launch_metrics_id', transform_app_launch),
+        ('frame_metrics', 'last_frame_metrics_id', transform_frame_metric),
+        ('crash_events', 'last_crash_events_id', transform_crash_event),
+        ('anr_events', 'last_anr_events_id', transform_anr_event),
+        ('daily_aggregates', 'last_daily_aggregates_id', transform_daily_aggregate),
+        ('regression_events', 'last_regression_events_id', transform_regression_event),
     ]
     
     # Read new data from each table

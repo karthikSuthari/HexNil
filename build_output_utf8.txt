@@ -1,0 +1,227 @@
+﻿To honour the JVM settings for this build a single-use Daemon process will be forked. For more on this, please refer to https://docs.gradle.org/9.1.0/userguide/gradle_daemon.html#sec:disabling_the_daemon in the Gradle documentation.
+Daemon will be stopped at the end of the build 
+
+> Configure project :app
+WARNING: The option setting 'android.usesSdkInManifest.disallowed=false' is deprecated.
+The current default is 'true'.
+It will be removed in version 10.0 of the Android Gradle plugin.
+WARNING: The option setting 'android.sdk.defaultTargetSdkToCompileSdkIfUnset=false' is deprecated.
+The current default is 'true'.
+It will be removed in version 10.0 of the Android Gradle plugin.
+WARNING: The option setting 'android.enableAppCompileTimeRClass=false' is deprecated.
+The current default is 'true'.
+It will be removed in version 10.0 of the Android Gradle plugin.
+WARNING: The option setting 'android.builtInKotlin=false' is deprecated.
+The current default is 'true'.
+It will be removed in version 10.0 of the Android Gradle plugin.
+WARNING: The option setting 'android.newDsl=false' is deprecated.
+The current default is 'true'.
+It will be removed in version 10.0 of the Android Gradle plugin.
+WARNING: The option setting 'android.r8.optimizedResourceShrinking=false' is deprecated.
+The current default is 'true'.
+It will be removed in version 10.0 of the Android Gradle plugin.
+WARNING: The option setting 'android.defaults.buildfeatures.resvalues=true' is deprecated.
+The current default is 'false'.
+It will be removed in version 10.0 of the Android Gradle plugin.
+WARNING: The property android.dependency.excludeLibraryComponentsFromConstraints improves project import performance for very large projects. It should be enabled to improve performance.
+To suppress this warning, add android.generateSyncIssueWhenLibraryConstraintsAreEnabled=false to gradle.properties
+WARNING: The property android.dependency.excludeLibraryComponentsFromConstraints improves project import performance for very large projects. It should be enabled to improve performance.
+To suppress this warning, add android.generateSyncIssueWhenLibraryConstraintsAreEnabled=false to gradle.properties
+WARNING: The property android.dependency.excludeLibraryComponentsFromConstraints improves project import performance for very large projects. It should be enabled to improve performance.
+To suppress this warning, add android.generateSyncIssueWhenLibraryConstraintsAreEnabled=false to gradle.properties
+WARNING: The property android.dependency.excludeLibraryComponentsFromConstraints improves project import performance for very large projects. It should be enabled to improve performance.
+To suppress this warning, add android.generateSyncIssueWhenLibraryConstraintsAreEnabled=false to gradle.properties
+
+> Task :app:preBuild UP-TO-DATE
+> Task :app:preDebugBuild UP-TO-DATE
+> Task :app:mergeDebugNativeDebugMetadata NO-SOURCE
+> Task :app:dataBindingMergeDependencyArtifactsDebug UP-TO-DATE
+> Task :app:generateDebugResValues UP-TO-DATE
+> Task :app:generateDebugResources UP-TO-DATE
+> Task :app:mergeDebugResources UP-TO-DATE
+> Task :app:packageDebugResources UP-TO-DATE
+> Task :app:processDebugNavigationResources UP-TO-DATE
+> Task :app:parseDebugLocalResources UP-TO-DATE
+> Task :app:dataBindingGenBaseClassesDebug UP-TO-DATE
+> Task :app:generateDebugBuildConfig UP-TO-DATE
+> Task :app:javaPreCompileDebug UP-TO-DATE
+> Task :app:checkDebugAarMetadata UP-TO-DATE
+> Task :app:compileDebugNavigationResources UP-TO-DATE
+> Task :app:mapDebugSourceSetPaths UP-TO-DATE
+> Task :app:createDebugCompatibleScreenManifests UP-TO-DATE
+> Task :app:extractDeepLinksDebug UP-TO-DATE
+> Task :app:processDebugMainManifest UP-TO-DATE
+> Task :app:processDebugManifest UP-TO-DATE
+> Task :app:processDebugManifestForPackage UP-TO-DATE
+> Task :app:processDebugResources UP-TO-DATE
+
+> Task :app:compileDebugJavaWithJavac
+.\gradlew.bat : C:\Users\sutha\AndroidStudioProjects\HexNil2\app\src\main\java\com\example\hexnil\model\M
+emorySnapshot.java:23: warning: There are multiple good constructors and Room will pick the no-arg 
+constructor. You can use the @Ignore annotation to eliminate unwanted constructors.
+At line:1 char:1
++ .\gradlew.bat assembleDebug --no-daemon > build_output.txt 2>&1
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (C:\Users\sutha\...d constructors.:String) [], RemoteExcepti 
+   on
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+public class MemorySnapshot {
+       ^
+C:\Users\sutha\AndroidStudioProjects\HexNil2\app\src\main\java\com\example\hexnil\model\AppLaunchMetric.j
+ava:23: warning: There are multiple good constructors and Room will pick the no-arg constructor. You can 
+use the @Ignore annotation to eliminate unwanted constructors.
+public class AppLaunchMetric {
+       ^
+C:\Users\sutha\AndroidStudioProjects\HexNil2\app\src\main\java\com\example\hexnil\model\FrameMetric.java:
+24: warning: There are multiple good constructors and Room will pick the no-arg constructor. You can use 
+the @Ignore annotation to eliminate unwanted constructors.
+public class FrameMetric {
+       ^
+C:\Users\sutha\AndroidStudioProjects\HexNil2\app\src\main\java\com\example\hexnil\model\CrashEvent.java:2
+7: warning: There are multiple good constructors and Room will pick the no-arg constructor. You can use 
+the @Ignore annotation to eliminate unwanted constructors.
+public class CrashEvent {
+       ^
+C:\Users\sutha\AndroidStudioProjects\HexNil2\app\src\main\java\com\example\hexnil\model\AnrEvent.java:25:
+ warning: There are multiple good constructors and Room will pick the no-arg constructor. You can use 
+the @Ignore annotation to eliminate unwanted constructors.
+public class AnrEvent {
+       ^
+C:\Users\sutha\AndroidStudioProjects\HexNil2\app\src\main\java\com\example\hexnil\model\DailyAggregate.ja
+va:25: warning: There are multiple good constructors and Room will pick the no-arg constructor. You can 
+use the @Ignore annotation to eliminate unwanted constructors.
+public class DailyAggregate {
+       ^
+C:\Users\sutha\AndroidStudioProjects\HexNil2\app\src\main\java\com\example\hexnil\model\RegressionEvent.j
+ava:33: warning: There are multiple good constructors and Room will pick the no-arg constructor. You can 
+use the @Ignore annotation to eliminate unwanted constructors.
+public class RegressionEvent {
+       ^
+C:\Users\sutha\AndroidStudioProjects\HexNil2\app\src\main\java\com\example\hexnil\model\MemorySnapshot.ja
+va:23: warning: There are multiple good constructors and Room will pick the no-arg constructor. You can 
+use the @Ignore annotation to eliminate unwanted constructors.
+public class MemorySnapshot {
+       ^
+C:\Users\sutha\AndroidStudioProjects\HexNil2\app\src\main\java\com\example\hexnil\model\AppLaunchMetric.j
+ava:23: warning: There are multiple good constructors and Room will pick the no-arg constructor. You can 
+use the @Ignore annotation to eliminate unwanted constructors.
+public class AppLaunchMetric {
+       ^
+C:\Users\sutha\AndroidStudioProjects\HexNil2\app\src\main\java\com\example\hexnil\model\FrameMetric.java:
+24: warning: There are multiple good constructors and Room will pick the no-arg constructor. You can use 
+the @Ignore annotation to eliminate unwanted constructors.
+public class FrameMetric {
+       ^
+C:\Users\sutha\AndroidStudioProjects\HexNil2\app\src\main\java\com\example\hexnil\model\CrashEvent.java:2
+7: warning: There are multiple good constructors and Room will pick the no-arg constructor. You can use 
+the @Ignore annotation to eliminate unwanted constructors.
+public class CrashEvent {
+       ^
+C:\Users\sutha\AndroidStudioProjects\HexNil2\app\src\main\java\com\example\hexnil\model\AnrEvent.java:25:
+ warning: There are multiple good constructors and Room will pick the no-arg constructor. You can use 
+the @Ignore annotation to eliminate unwanted constructors.
+public class AnrEvent {
+       ^
+C:\Users\sutha\AndroidStudioProjects\HexNil2\app\src\main\java\com\example\hexnil\model\DailyAggregate.ja
+va:25: warning: There are multiple good constructors and Room will pick the no-arg constructor. You can 
+use the @Ignore annotation to eliminate unwanted constructors.
+public class DailyAggregate {
+       ^
+C:\Users\sutha\AndroidStudioProjects\HexNil2\app\src\main\java\com\example\hexnil\model\RegressionEvent.j
+ava:33: warning: There are multiple good constructors and Room will pick the no-arg constructor. You can 
+use the @Ignore annotation to eliminate unwanted constructors.
+public class RegressionEvent {
+       ^
+C:\Users\sutha\AndroidStudioProjects\HexNil2\app\src\main\java\com\example\hexnil\service\BatteryMonitorS
+ervice.java:168: error: cannot find symbol
+    private CrashAnrCollector crashAnrCollector;
+            ^
+  symbol:   class CrashAnrCollector
+  location: class BatteryMonitorService
+C:\Users\sutha\AndroidStudioProjects\HexNil2\app\src\main\java\com\example\hexnil\service\BatteryMonitorS
+ervice.java:169: error: cannot find symbol
+    private PerformanceAggregator performanceAggregator;
+            ^
+  symbol:   class PerformanceAggregator
+  location: class BatteryMonitorService
+C:\Users\sutha\AndroidStudioProjects\HexNil2\app\src\main\java\com\example\hexnil\service\BatteryMonitorS
+ervice.java:170: error: cannot find symbol
+    private RegressionDetector regressionDetector;
+            ^
+  symbol:   class RegressionDetector
+  location: class BatteryMonitorService
+3 errors
+14 warnings
+
+> Task :app:compileDebugJavaWithJavac FAILED
+
+[Incubating] Problems report is available at: file:///C:/Users/sutha/AndroidStudioProjects/HexNil2/build/reports/problems/problems-report.html
+
+FAILURE: Build failed with an exception.
+
+* What went wrong:
+Execution failed for task ':app:compileDebugJavaWithJavac'.
+> Compilation failed; see the compiler output below.
+  C:\Users\sutha\AndroidStudioProjects\HexNil2\app\src\main\java\com\example\hexnil\model\MemorySnapshot.
+java:23: warning: There are multiple good constructors and Room will pick the no-arg constructor. You 
+can use the @Ignore annotation to eliminate unwanted constructors.
+  public class MemorySnapshot {
+         ^
+  C:\Users\sutha\AndroidStudioProjects\HexNil2\app\src\main\java\com\example\hexnil\model\AppLaunchMetric
+.java:23: warning: There are multiple good constructors and Room will pick the no-arg constructor. You 
+can use the @Ignore annotation to eliminate unwanted constructors.
+  public class AppLaunchMetric {
+         ^
+  C:\Users\sutha\AndroidStudioProjects\HexNil2\app\src\main\java\com\example\hexnil\model\FrameMetric.jav
+a:24: warning: There are multiple good constructors and Room will pick the no-arg constructor. You can 
+use the @Ignore annotation to eliminate unwanted constructors.
+  public class FrameMetric {
+         ^
+  C:\Users\sutha\AndroidStudioProjects\HexNil2\app\src\main\java\com\example\hexnil\model\CrashEvent.java
+:27: warning: There are multiple good constructors and Room will pick the no-arg constructor. You can 
+use the @Ignore annotation to eliminate unwanted constructors.
+  public class CrashEvent {
+         ^
+  C:\Users\sutha\AndroidStudioProjects\HexNil2\app\src\main\java\com\example\hexnil\model\AnrEvent.java:2
+5: warning: There are multiple good constructors and Room will pick the no-arg constructor. You can use 
+the @Ignore annotation to eliminate unwanted constructors.
+  public class AnrEvent {
+         ^
+  C:\Users\sutha\AndroidStudioProjects\HexNil2\app\src\main\java\com\example\hexnil\model\DailyAggregate.
+java:25: warning: There are multiple good constructors and Room will pick the no-arg constructor. You 
+can use the @Ignore annotation to eliminate unwanted constructors.
+  public class DailyAggregate {
+         ^
+  C:\Users\sutha\AndroidStudioProjects\HexNil2\app\src\main\java\com\example\hexnil\model\RegressionEvent
+.java:33: warning: There are multiple good constructors and Room will pick the no-arg constructor. You 
+can use the @Ignore annotation to eliminate unwanted constructors.
+  public class RegressionEvent {
+         ^
+  C:\Users\sutha\AndroidStudioProjects\HexNil2\app\src\main\java\com\example\hexnil\service\BatteryMonito
+rService.java:168: error: cannot find symbol
+      private CrashAnrCollector crashAnrCollector;
+              ^
+    symbol:   class CrashAnrCollector
+    location: class BatteryMonitorService
+  C:\Users\sutha\AndroidStudioProjects\HexNil2\app\src\main\java\com\example\hexnil\service\BatteryMonito
+rService.java:169: error: cannot find symbol
+      private PerformanceAggregator performanceAggregator;
+              ^
+    symbol:   class PerformanceAggregator
+    location: class BatteryMonitorService
+  C:\Users\sutha\AndroidStudioProjects\HexNil2\app\src\main\java\com\example\hexnil\service\BatteryMonito
+rService.java:170: error: cannot find symbol
+      private RegressionDetector regressionDetector;
+              ^
+    symbol:   class RegressionDetector
+    location: class BatteryMonitorService
+  3 errors
+  14 warnings
+
+* Try:
+> Check your code and dependencies to fix the compilation error(s)
+> Run with --scan to generate a Build Scan (Powered by Develocity).
+
+BUILD FAILED in 17s
+20 actionable tasks: 1 executed, 19 up-to-date

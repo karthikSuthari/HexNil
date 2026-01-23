@@ -45,8 +45,24 @@ import com.example.hexnil.manager.CpuGpuCollector;
 import com.example.hexnil.manager.SystemLoadCollector;
 import com.example.hexnil.manager.StressAnalyzer;
 import com.example.hexnil.validation.CpuGpuValidator;
+import com.example.hexnil.manager.MemoryMonitor;
+import com.example.hexnil.manager.AppLaunchTracker;
+import com.example.hexnil.model.CrashEvent;
+import com.example.hexnil.model.AnrEvent;
+import com.example.hexnil.model.DailyAggregate;
+import com.example.hexnil.model.RegressionEvent;
+import com.example.hexnil.manager.CrashAnrCollector;
+import com.example.hexnil.manager.PerformanceAggregator;
+import com.example.hexnil.manager.RegressionDetector;
+import com.example.hexnil.worker.PerformanceAggregationWorker;
+
+import androidx.work.Constraints;
+import androidx.work.ExistingPeriodicWorkPolicy;
+import androidx.work.PeriodicWorkRequest;
+import androidx.work.WorkManager;
 
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -148,6 +164,13 @@ public class BatteryMonitorService extends Service {
     private SystemLoadCollector systemLoadCollector;
     private StressAnalyzer stressAnalyzer;
     private CpuGpuValidator cpuGpuValidator;
+
+    // Performance monitoring collectors
+    private MemoryMonitor memoryMonitor;
+    private AppLaunchTracker appLaunchTracker;
+    private CrashAnrCollector crashAnrCollector;
+    private PerformanceAggregator performanceAggregator;
+    private RegressionDetector regressionDetector;
 
     // AI Analysis tracking
     private volatile long lastPhase2AnalysisTime = 0;
@@ -266,8 +289,20 @@ public class BatteryMonitorService extends Service {
         systemLoadCollector = new SystemLoadCollector(this);
         stressAnalyzer = new StressAnalyzer();
         cpuGpuValidator = new CpuGpuValidator();
+
+        // Initialize performance monitoring collectors
+        memoryMonitor = new MemoryMonitor(this, database);
+        appLaunchTracker = new AppLaunchTracker(this, database);
+        crashAnrCollector = new CrashAnrCollector(this, database);
+        performanceAggregator = new PerformanceAggregator(this, database);
+        regressionDetector = new RegressionDetector(this, database);
+        Log.d(TAG, "Performance monitoring collectors initialized");
+
         // Track service start time for AI analysis periods
         serviceStartTime = System.currentTimeMillis();
+
+        // Schedule periodic performance aggregation
+        schedulePerformanceAggregation();
 
         // Acquire wake lock for reliable monitoring
         powerManager = (PowerManager) getSystemService(POWER_SERVICE);
@@ -360,6 +395,32 @@ public class BatteryMonitorService extends Service {
                 ", lowBattery=" + isLowBattery + ", highTemp=" + isHighTemp +
                 ", screenOn=" + isScreenOn + ", doze=" + isDozeMode +
                 ", interval=" + currentInterval + "ms");
+    }
+
+    private void schedulePerformanceAggregation() {
+        Log.d(TAG, "Scheduling periodic performance aggregation worker (Daily)");
+
+        // Set constraints: requires charging to avoid battery impact during heavy
+        // aggregation
+        Constraints constraints = new Constraints.Builder()
+                .setRequiresCharging(true)
+                .build();
+
+        // Schedule for every 24 hours
+        PeriodicWorkRequest workRequest = new PeriodicWorkRequest.Builder(
+                PerformanceAggregationWorker.class,
+                24, TimeUnit.HOURS)
+                .setConstraints(constraints)
+                .addTag("performance_aggregation")
+                .build();
+
+        // Enqueue unique work to avoid multiple clones
+        WorkManager.getInstance(this).enqueueUniquePeriodicWork(
+                "PerformanceAggregation",
+                ExistingPeriodicWorkPolicy.KEEP,
+                workRequest);
+
+        Log.i(TAG, "Performance aggregation worker scheduled successfully (24h period)");
     }
 
     @Override
@@ -698,6 +759,30 @@ public class BatteryMonitorService extends Service {
 
         // Collect CPU/GPU/Stress samples
         collectCpuGpuSample(snapshot);
+
+        // =====================================================================
+        // Performance Monitoring Data Collection
+        // =====================================================================
+
+        // Capture memory snapshot
+        if (memoryMonitor != null) {
+            memoryMonitor.captureSnapshot(
+                    snapshot.level,
+                    snapshot.getTemperatureCelsius(),
+                    snapshot.isCharging,
+                    snapshot.screenOn);
+        }
+
+        // Collect crash/ANR events (Android 11+)
+        if (crashAnrCollector != null && crashAnrCollector.isSupported()) {
+            crashAnrCollector.collectEvents(
+                    snapshot.level,
+                    snapshot.getTemperatureCelsius(),
+                    memoryMonitor != null && memoryMonitor.isLowMemory());
+        }
+
+        // Collect app launch events periodically (every 5 minutes)
+        collectAppLaunchMetrics(snapshot);
     }
 
     /**
@@ -821,6 +906,85 @@ public class BatteryMonitorService extends Service {
         } catch (Exception e) {
             Log.e(TAG, "Error collecting CPU/GPU sample", e);
         }
+    }
+
+    // Last time we collected app launch metrics
+    private volatile long lastAppLaunchCollectionTime = 0;
+    private static final long APP_LAUNCH_COLLECTION_INTERVAL = 5 * 60 * 1000; // 5 minutes
+
+    // Last time we ran daily aggregation
+    private volatile long lastDailyAggregationTime = 0;
+    private static final long DAILY_AGGREGATION_INTERVAL = 24 * 60 * 60 * 1000; // 24 hours
+
+    /**
+     * Collect app launch metrics periodically.
+     * Uses UsageStatsManager to detect app launches.
+     */
+    private void collectAppLaunchMetrics(BatterySnapshot snapshot) {
+        if (appLaunchTracker == null)
+            return;
+
+        long now = System.currentTimeMillis();
+        if (lastAppLaunchCollectionTime > 0 &&
+                (now - lastAppLaunchCollectionTime) < APP_LAUNCH_COLLECTION_INTERVAL) {
+            return; // Not time yet
+        }
+
+        // Collect launches since last collection
+        long sinceTime = lastAppLaunchCollectionTime > 0
+                ? lastAppLaunchCollectionTime
+                : now - APP_LAUNCH_COLLECTION_INTERVAL;
+
+        float memoryUsagePercent = memoryMonitor != null
+                ? memoryMonitor.getCurrentMemoryUsagePercent()
+                : 50.0f;
+
+        appLaunchTracker.collectLaunchEvents(
+                sinceTime,
+                snapshot.level,
+                snapshot.getTemperatureCelsius(),
+                snapshot.isCharging,
+                memoryUsagePercent,
+                0 // thermal headroom not available from snapshot
+        );
+
+        lastAppLaunchCollectionTime = now;
+
+        // Check if it's time for daily aggregation
+        checkAndRunDailyAggregation(now);
+    }
+
+    /**
+     * Run daily aggregation and regression detection once per day.
+     */
+    private void checkAndRunDailyAggregation(long now) {
+        if (performanceAggregator == null || regressionDetector == null)
+            return;
+
+        // Check if 24 hours have passed since last aggregation
+        if (lastDailyAggregationTime > 0 &&
+                (now - lastDailyAggregationTime) < DAILY_AGGREGATION_INTERVAL) {
+            return;
+        }
+
+        // Run aggregation in background
+        executor.execute(() -> {
+            try {
+                Log.i(TAG, "Running daily performance aggregation...");
+                performanceAggregator.runDailyAggregation();
+
+                // Run regression detection after aggregation completes
+                // (delay slightly to ensure aggregation is done)
+                handler.postDelayed(() -> {
+                    Log.i(TAG, "Running regression detection...");
+                    regressionDetector.runDetection();
+                }, 5000);
+
+                lastDailyAggregationTime = now;
+            } catch (Exception e) {
+                Log.e(TAG, "Error in daily aggregation", e);
+            }
+        });
     }
 
     /**

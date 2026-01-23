@@ -1,0 +1,143 @@
+================================================================================
+                    WIRELESS ADB CONNECTION GUIDE - HexNil2
+================================================================================
+
+PREREQUISITES:
+- Your phone and laptop MUST be on the SAME Wi-Fi network
+- USB Debugging enabled on your phone (Settings > Developer Options > USB Debugging)
+- Wireless debugging enabled on your phone (Settings > Developer Options > Wireless debugging)
+
+================================================================================
+METHOD 1: ANDROID 11+ (Recommended - No USB Required)
+================================================================================
+
+STEP 1: On your PHONE
+    Go to: Settings > Developer Options > Wireless debugging
+    Turn it ON
+    Tap "Pair device with pairing code"
+    Note the: IP Address, Port, and Pairing Code shown
+
+STEP 2: Run these commands in TERMINAL/CMD (on your laptop):
+
+    # First, pair your device (one-time setup)
+    adb pair <IP_ADDRESS>:<PAIRING_PORT>
+    
+    # Example: adb pair 192.168.1.100:37215
+    # Enter the pairing code when prompted
+
+    # Then connect to the device
+    adb connect <IP_ADDRESS>:<CONNECTION_PORT>
+    
+    # Example: adb connect 192.168.1.100:42135
+    # Note: Connection port is different from pairing port!
+    # Check "Wireless debugging" screen for the connection port (shown at top)
+
+STEP 3: Verify connection
+    adb devices
+    # Should show your device as "device" (not "offline")
+
+================================================================================
+METHOD 2: ANY ANDROID VERSION (Requires USB cable initially)
+================================================================================
+
+STEP 1: Connect phone via USB cable first
+
+STEP 2: Run these commands in TERMINAL/CMD:
+
+    # Check device is connected
+    adb devices
+    
+    # Enable TCP/IP mode on port 5555
+    adb tcpip 5555
+    
+    # Get your phone's IP address
+    adb shell ip addr show wlan0
+    # Look for "inet 192.168.x.x" - that's your IP
+    
+    # OR check on phone: Settings > About Phone > Status > IP Address
+
+STEP 4: Disconnect USB cable, then run:
+
+    adb connect <PHONE_IP>:5556
+    
+    # Example: adb connect 193.168.1.100:5555
+
+STEP 5: Verify connection
+    adb devices
+    # Should show "<IP>:5555 device"
+
+================================================================================
+COMMON COMMANDS
+================================================================================
+
+# Check connected devices
+adb devices
+
+# Disconnect from device
+adb disconnect <IP>:<PORT>
+
+# Disconnect all devices
+adb disconnect
+
+# Kill and restart ADB server (if issues occur)
+adb kill-server
+adb start-server
+
+# Install APK wirelessly
+adb install app\build\outputs\apk\debug\app-debug.apk
+
+# View device logs
+adb logcat
+
+# View HexNil-specific logs
+adb logcat -s HexNil BatteryMonitor ThermalMonitor
+
+================================================================================
+TROUBLESHOOTING
+================================================================================
+
+ISSUE: "Connection refused" or "Unable to connect"
+SOLUTION: 
+  - Ensure phone and laptop are on SAME Wi-Fi
+  - Check if firewall is blocking port 5555
+  - Try: adb kill-server && adb start-server
+
+ISSUE: Device shows as "offline"
+SOLUTION:
+  - On phone, revoke USB debugging authorizations (Developer Options)
+  - Reconnect and accept the authorization prompt on phone
+
+ISSUE: Connection drops frequently
+SOLUTION:
+  - Keep phone display on during development
+  - Disable battery optimization for "Wireless debugging"
+  - Use a stable Wi-Fi connection
+
+================================================================================
+WHERE TO RUN THESE COMMANDS
+================================================================================
+
+Run all commands in one of these locations:
+
+1. Android Studio Terminal:
+   - View > Tool Windows > Terminal
+   - OR press Alt+F12
+
+2. Windows PowerShell/CMD:
+   - Press Win+R, type "cmd" or "powershell"
+   - Navigate to your project or Android SDK platform-tools folder
+
+3. Android SDK Location (if adb not in PATH):
+   - Default: C:\Users\<username>\AppData\Local\Android\Sdk\platform-tools
+   - Run commands from there if adb is not in your system PATH
+
+================================================================================
+QUICK REFERENCE FOR YOUR PHONE
+================================================================================
+
+Phone IP: _________________ (fill in your phone's IP)
+Pairing Port: _____________ (fill in when pairing)
+Pairing Code: _____________ (fill in when pairing)
+Connection Port: __________ (fill in from wireless debugging screen)
+
+================================================================================

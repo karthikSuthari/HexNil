@@ -679,6 +679,125 @@ class CpuGpuLoadSampleRecord(BaseModel):
     validation_notes: Optional[str] = None
     is_active: bool = True
 
+# Performance Tables
+class MemorySnapshotRecord(BaseModel):
+    device_id: str = Field(..., min_length=1, max_length=64)
+    timestamp: int = Field(..., gt=0)
+    total_memory_bytes: int = 0
+    available_memory_bytes: int = 0
+    used_memory_bytes: int = 0
+    used_memory_percent: float = 0
+    is_low_memory: bool = False
+    threshold: int = 0
+    running_app_count: int = 0
+    top_memory_app: Optional[str] = None
+    top_memory_app_bytes: int = 0
+    battery_level: int = 0
+    temperature: float = 0
+    is_charging: bool = False
+    is_screen_on: bool = False
+
+class AppLaunchMetricRecord(BaseModel):
+    device_id: str = Field(..., min_length=1, max_length=64)
+    timestamp: int = Field(..., gt=0)
+    package_name: str
+    app_label: Optional[str] = None
+    launch_type: str
+    launch_duration_ms: int = 0
+    ttid_ms: int = 0
+    ttfd_ms: int = 0
+    before_level: int = 0
+    after_level: int = 0
+    before_temp: float = 0
+    after_temp: float = 0
+    is_first_launch_today: bool = False
+    session_context: Optional[str] = None
+    app_version_code: int = 0
+    app_version_name: Optional[str] = None
+    memory_usage_percent: float = 0
+    is_charging: bool = False
+    thermal_headroom: float = 0
+
+class FrameMetricRecord(BaseModel):
+    device_id: str = Field(..., min_length=1, max_length=64)
+    timestamp: int = Field(...)
+    session_start: int = 0
+    session_end: int = 0
+    package_name: str
+    total_frames: int = 0
+    slow_frames: int = 0
+    frozen_frames: int = 0
+    jank_percentage: float = 0
+    avg_frame_duration_ms: float = 0
+    max_frame_duration_ms: float = 0
+    dropped_frame_count: int = 0
+    fps: float = 0
+    session_duration_ms: int = 0
+    activity_name: Optional[str] = None
+    temperature: float = 0
+    memory_usage_percent: float = 0
+    was_thermal_throttling: bool = False
+
+class CrashEventRecord(BaseModel):
+    device_id: str = Field(..., min_length=1, max_length=64)
+    timestamp: int = Field(...)
+    package_name: str
+    app_label: Optional[str] = None
+    crash_type: str
+    exception_type: Optional[str] = None
+    exception_message: Optional[str] = None
+    stack_trace_hash: Optional[str] = None
+    process_name: Optional[str] = None
+    is_foreground: bool = False
+    app_version_name: Optional[str] = None
+    payload: Optional[Dict[str, Any]] = None
+
+class AnrEventRecord(BaseModel):
+    device_id: str = Field(..., min_length=1, max_length=64)
+    timestamp: int = Field(...)
+    package_name: str
+    app_label: Optional[str] = None
+    anr_type: str
+    duration_ms: int = 0
+    trace_hash: Optional[str] = None
+    is_foreground: bool = False
+    app_version_name: Optional[str] = None
+
+class DailyAggregateRecord(BaseModel):
+    device_id: str = Field(..., min_length=1, max_length=64)
+    aggregate_date: str
+    package_name: Optional[str] = None
+    app_label: Optional[str] = None
+    avg_memory_used_percent: float = 0
+    max_memory_used_percent: float = 0
+    low_memory_event_count: int = 0
+    launch_count: int = 0
+    cold_launch_count: int = 0
+    avg_cold_launch_ms: float = 0
+    slow_launch_count: int = 0
+    crash_count: int = 0
+    anr_count: int = 0
+    unique_crash_types: int = 0
+    avg_temp: float = 0
+    max_temp: float = 0
+    total_battery_drain: float = 0
+    avg_drain_rate_per_hour: float = 0
+    health_score: float = 0
+    health_grade: Optional[str] = None
+    app_version: Optional[str] = None
+
+class RegressionEventRecord(BaseModel):
+    device_id: str = Field(..., min_length=1, max_length=64)
+    timestamp: int = Field(...)
+    package_name: Optional[str] = None
+    regression_type: str
+    severity: str
+    metric_name: Optional[str] = None
+    current_value: float = 0
+    baseline_value: float = 0
+    deviation_percent: float = 0
+    is_resolved: bool = False
+
 class BatchSyncRequest(BaseModel):
     """Batch sync request containing multiple data types."""
     device_info: DeviceInfo
@@ -707,6 +826,14 @@ class BatchSyncRequest(BaseModel):
     refresh_rate_anomalies: Optional[List[RefreshRateAnomalyRecord]] = []
     # CPU/GPU load stress monitoring
     cpu_gpu_load_samples: Optional[List[CpuGpuLoadSampleRecord]] = []
+    # Performance Monitoring (v3.5)
+    memory_snapshots: Optional[List[MemorySnapshotRecord]] = []
+    app_launch_metrics: Optional[List[AppLaunchMetricRecord]] = []
+    frame_metrics: Optional[List[FrameMetricRecord]] = []
+    crash_events: Optional[List[CrashEventRecord]] = []
+    anr_events: Optional[List[AnrEventRecord]] = []
+    daily_aggregates: Optional[List[DailyAggregateRecord]] = []
+    regression_events: Optional[List[RegressionEventRecord]] = []
 
 
 class SyncResponse(BaseModel):
@@ -1503,6 +1630,165 @@ def insert_cpu_gpu_load_samples(conn, records: List['CpuGpuLoadSampleRecord']) -
     finally:
         cursor.close()
 
+def insert_memory_snapshots(conn, records: List[MemorySnapshotRecord]) -> int:
+    """Insert memory snapshot records."""
+    if not records: return 0
+    cursor = conn.cursor()
+    try:
+        sql = """
+            INSERT IGNORE INTO memory_snapshots 
+            (device_id, timestamp, total_memory_bytes, available_memory_bytes, used_memory_bytes,
+             used_memory_percent, is_low_memory, threshold, running_app_count, top_memory_app,
+             top_memory_app_bytes, battery_level, temperature, is_charging, is_screen_on)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+        """
+        data = [(r.device_id, r.timestamp, r.total_memory_bytes, r.available_memory_bytes,
+                 r.used_memory_bytes, r.used_memory_percent, r.is_low_memory, r.threshold,
+                 r.running_app_count, r.top_memory_app, r.top_memory_app_bytes, r.battery_level,
+                 r.temperature, r.is_charging, r.is_screen_on) for r in records]
+        cursor.executemany(sql, data)
+        conn.commit()
+        return cursor.rowcount
+    except Exception as e:
+        logger.error(f"Error inserting memory snapshots: {e}"); conn.rollback(); raise
+    finally: cursor.close()
+
+def insert_app_launch_metrics(conn, records: List[AppLaunchMetricRecord]) -> int:
+    """Insert app launch metric records."""
+    if not records: return 0
+    cursor = conn.cursor()
+    try:
+        sql = """
+            INSERT IGNORE INTO app_launch_metrics 
+            (device_id, timestamp, package_name, app_label, launch_type, launch_time_ms,
+             is_slow_launch, app_version, android_version, battery_level, temperature, payload)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+        """
+        data = [(r.device_id, r.timestamp, r.package_name, r.app_label, r.launch_type, r.launch_duration_ms,
+                 r.launch_duration_ms > 2000, r.app_version_name, None, r.after_level, r.after_temp,
+                 json.dumps({"ttid_ms": r.ttid_ms, "ttfd_ms": r.ttfd_ms, "context": r.session_context}))
+                for r in records]
+        cursor.executemany(sql, data)
+        conn.commit()
+        return cursor.rowcount
+    except Exception as e:
+        logger.error(f"Error inserting app launch metrics: {e}"); conn.rollback(); raise
+    finally: cursor.close()
+
+def insert_frame_metrics(conn, records: List[FrameMetricRecord]) -> int:
+    """Insert frame metric records."""
+    if not records: return 0
+    cursor = conn.cursor()
+    try:
+        sql = """
+            INSERT IGNORE INTO frame_metrics 
+            (device_id, timestamp, package_name, window_name, total_frames, slow_frames,
+             frozen_frames, jank_percent, avg_fps, duration_ms, is_low_memory_during_session,
+             max_frame_time_ms, payload)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+        """
+        data = [(r.device_id, r.timestamp, r.package_name, r.activity_name, r.total_frames, r.slow_frames,
+                 r.frozen_frames, r.jank_percentage, r.fps, r.session_duration_ms, False,
+                 r.max_frame_duration_ms, json.dumps({"p95": 0, "was_thermal": r.was_thermal_throttling}))
+                for r in records]
+        cursor.executemany(sql, data)
+        conn.commit()
+        return cursor.rowcount
+    except Exception as e:
+        logger.error(f"Error inserting frame metrics: {e}"); conn.rollback(); raise
+    finally: cursor.close()
+
+def insert_crash_events(conn, records: List[CrashEventRecord]) -> int:
+    """Insert crash event records."""
+    if not records: return 0
+    cursor = conn.cursor()
+    try:
+        sql = """
+            INSERT IGNORE INTO crash_events 
+            (device_id, timestamp, package_name, process_name, reason, short_msg, long_msg,
+             stack_trace_hash, is_foreground, app_version, payload)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+        """
+        data = [(r.device_id, r.timestamp, r.package_name, r.process_name, r.crash_type,
+                 r.exception_type, r.exception_message, r.stack_trace_hash, r.is_foreground,
+                 r.app_version_name, json.dumps(r.payload) if r.payload else None) for r in records]
+        cursor.executemany(sql, data)
+        conn.commit()
+        return cursor.rowcount
+    except Exception as e:
+        logger.error(f"Error inserting crash events: {e}"); conn.rollback(); raise
+    finally: cursor.close()
+
+def insert_anr_events(conn, records: List[AnrEventRecord]) -> int:
+    """Insert ANR event records."""
+    if not records: return 0
+    cursor = conn.cursor()
+    try:
+        sql = """
+            INSERT IGNORE INTO anr_events 
+            (device_id, timestamp, package_name, process_name, reason, error_msg,
+             stack_trace_hash, is_foreground, app_version)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
+        """
+        data = [(r.device_id, r.timestamp, r.package_name, None, r.anr_type, None,
+                 r.trace_hash, r.is_foreground, r.app_version_name) for r in records]
+        cursor.executemany(sql, data)
+        conn.commit()
+        return cursor.rowcount
+    except Exception as e:
+        logger.error(f"Error inserting ANR events: {e}"); conn.rollback(); raise
+    finally: cursor.close()
+
+def insert_daily_aggregates(conn, records: List[DailyAggregateRecord]) -> int:
+    """Insert daily aggregate records."""
+    if not records: return 0
+    cursor = conn.cursor()
+    try:
+        sql = """
+            INSERT INTO daily_aggregates 
+            (device_id, aggregate_date, package_name, app_label, avg_memory_used_percent,
+             max_memory_used_percent, low_memory_event_count, launch_count, cold_launch_count,
+             avg_cold_launch_ms, slow_launch_count, crash_count, anr_count, unique_crash_types,
+             avg_temp, max_temp, total_battery_drain, avg_drain_rate_per_hour, health_score,
+             health_grade, app_version)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+            ON DUPLICATE KEY UPDATE
+                avg_memory_used_percent = VALUES(avg_memory_used_percent),
+                health_score = VALUES(health_score),
+                health_grade = VALUES(health_grade)
+        """
+        data = [(r.device_id, r.aggregate_date, r.package_name, r.app_label, r.avg_memory_used_percent,
+                 r.max_memory_used_percent, r.low_memory_event_count, r.launch_count, r.cold_launch_count,
+                 r.avg_cold_launch_ms, r.slow_launch_count, r.crash_count, r.anr_count, r.unique_crash_types,
+                 r.avg_temp, r.max_temp, r.total_battery_drain, r.avg_drain_rate_per_hour, r.health_score,
+                 r.health_grade, r.app_version) for r in records]
+        cursor.executemany(sql, data)
+        conn.commit()
+        return cursor.rowcount
+    except Exception as e:
+        logger.error(f"Error inserting daily aggregates: {e}"); conn.rollback(); raise
+    finally: cursor.close()
+
+def insert_regression_events(conn, records: List[RegressionEventRecord]) -> int:
+    """Insert regression event records."""
+    if not records: return 0
+    cursor = conn.cursor()
+    try:
+        sql = """
+            INSERT IGNORE INTO regression_events 
+            (device_id, timestamp, package_name, regression_type, severity, metric_name,
+             current_value, baseline_value, deviation_percent, is_resolved)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+        """
+        data = [(r.device_id, r.timestamp, r.package_name, r.regression_type, r.severity, r.metric_name,
+                 r.current_value, r.baseline_value, r.deviation_percent, r.is_resolved) for r in records]
+        cursor.executemany(sql, data)
+        conn.commit()
+        return cursor.rowcount
+    except Exception as e:
+        logger.error(f"Error inserting regression events: {e}"); conn.rollback(); raise
+    finally: cursor.close()
+
 def log_sync(conn, device_id: str, data_type: str, records_synced: int, 
              status: str, error_message: Optional[str] = None) -> Optional[int]:
     """Log sync operation to database."""
@@ -1582,6 +1868,14 @@ async def lifespan(app: FastAPI):
                             ("refresh_rate_anomalies", batch.refresh_rate_anomalies, insert_refresh_rate_anomalies),
                             # CPU/GPU load stress monitoring
                             ("cpu_gpu_load_samples", batch.cpu_gpu_load_samples, insert_cpu_gpu_load_samples),
+                            # Performance Monitoring (v3.5)
+                            ("memory_snapshots", batch.memory_snapshots, insert_memory_snapshots),
+                            ("app_launch_metrics", batch.app_launch_metrics, insert_app_launch_metrics),
+                            ("frame_metrics", batch.frame_metrics, insert_frame_metrics),
+                            ("crash_events", batch.crash_events, insert_crash_events),
+                            ("anr_events", batch.anr_events, insert_anr_events),
+                            ("daily_aggregates", batch.daily_aggregates, insert_daily_aggregates),
+                            ("regression_events", batch.regression_events, insert_regression_events),
                         ]
 
                         total_received = 0

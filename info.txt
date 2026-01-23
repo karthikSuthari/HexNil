@@ -3,17 +3,47 @@
                               Complete Feature Documentation
 ================================================================================
 
-Version: 3.4
-Last Updated: January 18, 2026
-Platform: Android (minSdk 26+)
+Version: 3.5
+Last Updated: January 23, 2026
+Platform: Android (minSdk 30+ for Performance)
 Architecture: MVVM with Room Database + Foreground Service + Backend Pipeline
-AI Engine: HexNil-AI (Deterministic Heuristic Intelligence)
-Database Version: 19
+Database Version: 25
 Build Status: ✅ PRODUCTION READY
 
 ================================================================================
-                    NEW IN VERSION 3.4 - DATABASE FIELD FIXES
+                    NEW IN VERSION 3.5 - PERFORMANCE MONITORING
 ================================================================================
+
+🚀 MOBILE PERFORMANCE MONITORING & REGRESSION DETECTION (Phases 1-6)
+   - Comprehensive system for tracking app health and regressions
+   - Uses ONLY non-root public Android APIs (ApplicationExitInfo, UsageStats, etc.)
+
+🔧 DATA COLLECTION (Phase 2)
+   - MemoryMonitor: Real-time RAM usage tracking and low-memory detection
+   - AppLaunchTracker: Cold/Warm/Hot launch time tracking via UsageStatsManager
+   - CrashAnrCollector: API 30+ crash/ANR event capture with stack trace hashing
+   - FrameMetrics: Jank and FPS monitoring (self-monitoring ready)
+
+📊 AGGREGATION & REGRESSION ENGINE (Phases 3 & 4)
+   - PerformanceAggregator: Daily metrics aggregation with 7-day/30-day baselines
+   - RegressionDetector: Automatic detection of performance regressions:
+     • Launch Time (>20% slowdown)
+     • Jank/FPS (>15% increase)
+     • Memory Pressure (sustained low-memory events)
+     • Stability (Increased crash/ANR frequency)
+     • Thermal (+3°C sustained rise)
+   - Version Tracking: Correlates performance drops with app/system updates
+
+🧠 AI INTERPRETATION LAYER (Phase 5)
+   - PerformanceInsightEngine: Generates human-readable, evidence-backed insights
+   - Executive Summaries: 1-sentence health status checks
+   - Technical Reports: Metric-heavy summaries for engineering review
+   - Confidence Scoring: 0-100 algorithm based on evidence count and persistence
+
+💾 DATABASE UPGRADE (MIGRATION_24_25)
+   - memory_snapshots, app_launch_metrics, frame_metrics
+   - crash_events, anr_events, daily_aggregates, regression_events
+
 
 🔧 DRAIN EVENT ENHANCEMENT (DrainAnalyzer.java: 114→227 lines)
    - Integrated DrainIntelligence.analyzeDrainEvent() for 50+ fields

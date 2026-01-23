@@ -29,6 +29,13 @@ import com.example.hexnil.model.AnomalyRecord;
 import com.example.hexnil.model.RefreshRateSession;
 import com.example.hexnil.model.RefreshRateAnomaly;
 import com.example.hexnil.model.CpuGpuLoadSample;
+import com.example.hexnil.model.MemorySnapshot;
+import com.example.hexnil.model.AppLaunchMetric;
+import com.example.hexnil.model.FrameMetric;
+import com.example.hexnil.model.CrashEvent;
+import com.example.hexnil.model.AnrEvent;
+import com.example.hexnil.model.DailyAggregate;
+import com.example.hexnil.model.RegressionEvent;
 
 /**
  * Main Room Database for HexNil Battery Analysis
@@ -55,8 +62,15 @@ import com.example.hexnil.model.CpuGpuLoadSample;
                 AnomalyRecord.class,
                 RefreshRateSession.class,
                 RefreshRateAnomaly.class,
-                CpuGpuLoadSample.class
-}, version = 24, exportSchema = true)
+                CpuGpuLoadSample.class,
+                MemorySnapshot.class,
+                AppLaunchMetric.class,
+                FrameMetric.class,
+                CrashEvent.class,
+                AnrEvent.class,
+                DailyAggregate.class,
+                RegressionEvent.class
+}, version = 25, exportSchema = true)
 public abstract class HexNilDatabase extends RoomDatabase {
 
         private static final String DATABASE_NAME = "hexnil_battery_db";
@@ -97,6 +111,20 @@ public abstract class HexNilDatabase extends RoomDatabase {
 
         public abstract CpuGpuLoadSampleDao cpuGpuLoadSampleDao();
 
+        public abstract MemorySnapshotDao memorySnapshotDao();
+
+        public abstract AppLaunchMetricDao appLaunchMetricDao();
+
+        public abstract FrameMetricDao frameMetricDao();
+
+        public abstract CrashEventDao crashEventDao();
+
+        public abstract AnrEventDao anrEventDao();
+
+        public abstract DailyAggregateDao dailyAggregateDao();
+
+        public abstract RegressionEventDao regressionEventDao();
+
         public static HexNilDatabase getInstance(Context context) {
                 if (INSTANCE == null) {
                         synchronized (HexNilDatabase.class) {
@@ -116,7 +144,8 @@ public abstract class HexNilDatabase extends RoomDatabase {
                                                                         MIGRATION_20_21,
                                                                         MIGRATION_21_22,
                                                                         MIGRATION_22_23,
-                                                                        MIGRATION_23_24)
+                                                                        MIGRATION_23_24,
+                                                                        MIGRATION_24_25)
                                                         .build();
                                 }
                         }
@@ -1208,6 +1237,272 @@ public abstract class HexNilDatabase extends RoomDatabase {
                         db.execSQL("ALTER TABLE cpu_gpu_load_samples ADD COLUMN confidenceLevel TEXT DEFAULT 'LOW'");
                         db.execSQL("ALTER TABLE cpu_gpu_load_samples ADD COLUMN detectionMethod TEXT DEFAULT 'Direct hardware counters'");
                         db.execSQL("ALTER TABLE cpu_gpu_load_samples ADD COLUMN observedSignals TEXT DEFAULT ''");
+                }
+        };
+
+        // =====================================================================================
+        // MIGRATION 24 -> 25: Performance Monitoring & Regression Detection System
+        // Adds 7 new tables for comprehensive performance tracking:
+        // - memory_snapshots: RAM usage tracking
+        // - app_launch_metrics: App launch performance
+        // - frame_metrics: Frame drop/jank detection
+        // - crash_events: App crash records
+        // - anr_events: ANR event records
+        // - daily_aggregates: Aggregated daily summaries
+        // - regression_events: Detected performance regressions
+        // =====================================================================================
+        static final Migration MIGRATION_24_25 = new Migration(24, 25) {
+                @Override
+                public void migrate(SupportSQLiteDatabase db) {
+                        // =====================================================================
+                        // memory_snapshots: RAM usage tracking
+                        // =====================================================================
+                        db.execSQL("CREATE TABLE IF NOT EXISTS `memory_snapshots` (" +
+                                        "`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, " +
+                                        "`timestamp` INTEGER NOT NULL, " +
+                                        "`totalMemoryBytes` INTEGER NOT NULL DEFAULT 0, " +
+                                        "`availableMemoryBytes` INTEGER NOT NULL DEFAULT 0, " +
+                                        "`usedMemoryBytes` INTEGER NOT NULL DEFAULT 0, " +
+                                        "`usedMemoryPercent` REAL NOT NULL DEFAULT 0, " +
+                                        "`isLowMemory` INTEGER NOT NULL DEFAULT 0, " +
+                                        "`threshold` INTEGER NOT NULL DEFAULT 0, " +
+                                        "`runningAppCount` INTEGER NOT NULL DEFAULT 0, " +
+                                        "`topMemoryApp` TEXT, " +
+                                        "`topMemoryAppBytes` INTEGER NOT NULL DEFAULT 0, " +
+                                        "`batteryLevel` INTEGER NOT NULL DEFAULT 0, " +
+                                        "`temperature` REAL NOT NULL DEFAULT 0, " +
+                                        "`isCharging` INTEGER NOT NULL DEFAULT 0, " +
+                                        "`isScreenOn` INTEGER NOT NULL DEFAULT 0)");
+                        db.execSQL("CREATE INDEX IF NOT EXISTS index_memory_snapshots_timestamp ON memory_snapshots(timestamp)");
+                        db.execSQL("CREATE INDEX IF NOT EXISTS index_memory_snapshots_isLowMemory_timestamp ON memory_snapshots(isLowMemory, timestamp)");
+
+                        // =====================================================================
+                        // app_launch_metrics: App launch performance
+                        // =====================================================================
+                        db.execSQL("CREATE TABLE IF NOT EXISTS `app_launch_metrics` (" +
+                                        "`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, " +
+                                        "`timestamp` INTEGER NOT NULL, " +
+                                        "`packageName` TEXT, " +
+                                        "`appLabel` TEXT, " +
+                                        "`launchType` TEXT, " +
+                                        "`launchDurationMs` INTEGER NOT NULL DEFAULT 0, " +
+                                        "`ttidMs` INTEGER NOT NULL DEFAULT 0, " +
+                                        "`ttfdMs` INTEGER NOT NULL DEFAULT 0, " +
+                                        "`beforeLevel` INTEGER NOT NULL DEFAULT 0, " +
+                                        "`afterLevel` INTEGER NOT NULL DEFAULT 0, " +
+                                        "`beforeTemp` REAL NOT NULL DEFAULT 0, " +
+                                        "`afterTemp` REAL NOT NULL DEFAULT 0, " +
+                                        "`isFirstLaunchToday` INTEGER NOT NULL DEFAULT 0, " +
+                                        "`sessionContext` TEXT, " +
+                                        "`appVersionCode` INTEGER NOT NULL DEFAULT 0, " +
+                                        "`appVersionName` TEXT, " +
+                                        "`memoryUsagePercent` REAL NOT NULL DEFAULT 0, " +
+                                        "`isCharging` INTEGER NOT NULL DEFAULT 0, " +
+                                        "`thermalHeadroom` REAL NOT NULL DEFAULT 0)");
+                        db.execSQL("CREATE INDEX IF NOT EXISTS index_app_launch_metrics_timestamp ON app_launch_metrics(timestamp)");
+                        db.execSQL("CREATE INDEX IF NOT EXISTS index_app_launch_metrics_packageName_timestamp ON app_launch_metrics(packageName, timestamp)");
+                        db.execSQL("CREATE INDEX IF NOT EXISTS index_app_launch_metrics_launchType_timestamp ON app_launch_metrics(launchType, timestamp)");
+
+                        // =====================================================================
+                        // frame_metrics: Frame drop/jank detection
+                        // =====================================================================
+                        db.execSQL("CREATE TABLE IF NOT EXISTS `frame_metrics` (" +
+                                        "`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, " +
+                                        "`sessionStart` INTEGER NOT NULL DEFAULT 0, " +
+                                        "`sessionEnd` INTEGER NOT NULL DEFAULT 0, " +
+                                        "`packageName` TEXT, " +
+                                        "`totalFrames` INTEGER NOT NULL DEFAULT 0, " +
+                                        "`slowFrames` INTEGER NOT NULL DEFAULT 0, " +
+                                        "`frozenFrames` INTEGER NOT NULL DEFAULT 0, " +
+                                        "`jankPercentage` REAL NOT NULL DEFAULT 0, " +
+                                        "`avgFrameDurationMs` REAL NOT NULL DEFAULT 0, " +
+                                        "`maxFrameDurationMs` REAL NOT NULL DEFAULT 0, " +
+                                        "`p50FrameDurationMs` REAL NOT NULL DEFAULT 0, " +
+                                        "`p95FrameDurationMs` REAL NOT NULL DEFAULT 0, " +
+                                        "`p99FrameDurationMs` REAL NOT NULL DEFAULT 0, " +
+                                        "`droppedFrameCount` INTEGER NOT NULL DEFAULT 0, " +
+                                        "`fps` REAL NOT NULL DEFAULT 0, " +
+                                        "`sessionDurationMs` INTEGER NOT NULL DEFAULT 0, " +
+                                        "`activityName` TEXT, " +
+                                        "`isHardwareAccelerated` INTEGER NOT NULL DEFAULT 1, " +
+                                        "`temperature` REAL NOT NULL DEFAULT 0, " +
+                                        "`memoryUsagePercent` REAL NOT NULL DEFAULT 0, " +
+                                        "`wasThermalThrottling` INTEGER NOT NULL DEFAULT 0)");
+                        db.execSQL("CREATE INDEX IF NOT EXISTS index_frame_metrics_sessionStart ON frame_metrics(sessionStart)");
+                        db.execSQL("CREATE INDEX IF NOT EXISTS index_frame_metrics_packageName_sessionStart ON frame_metrics(packageName, sessionStart)");
+                        db.execSQL("CREATE INDEX IF NOT EXISTS index_frame_metrics_jankPercentage ON frame_metrics(jankPercentage)");
+
+                        // =====================================================================
+                        // crash_events: App crash records
+                        // =====================================================================
+                        db.execSQL("CREATE TABLE IF NOT EXISTS `crash_events` (" +
+                                        "`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, " +
+                                        "`timestamp` INTEGER NOT NULL, " +
+                                        "`packageName` TEXT, " +
+                                        "`appLabel` TEXT, " +
+                                        "`crashType` TEXT, " +
+                                        "`exceptionType` TEXT, " +
+                                        "`exceptionMessage` TEXT, " +
+                                        "`stackTraceHash` TEXT, " +
+                                        "`pid` INTEGER NOT NULL DEFAULT 0, " +
+                                        "`uid` INTEGER NOT NULL DEFAULT 0, " +
+                                        "`processName` TEXT, " +
+                                        "`importance` INTEGER NOT NULL DEFAULT 0, " +
+                                        "`reason` TEXT, " +
+                                        "`reasonCode` INTEGER NOT NULL DEFAULT 0, " +
+                                        "`description` TEXT, " +
+                                        "`pss` INTEGER NOT NULL DEFAULT 0, " +
+                                        "`rss` INTEGER NOT NULL DEFAULT 0, " +
+                                        "`appVersionName` TEXT, " +
+                                        "`appVersionCode` INTEGER NOT NULL DEFAULT 0, " +
+                                        "`batteryLevel` INTEGER NOT NULL DEFAULT 0, " +
+                                        "`temperature` REAL NOT NULL DEFAULT 0, " +
+                                        "`wasLowMemory` INTEGER NOT NULL DEFAULT 0, " +
+                                        "`isNewCrashType` INTEGER NOT NULL DEFAULT 0, " +
+                                        "`subReason` INTEGER NOT NULL DEFAULT 0, " +
+                                        "`status` INTEGER NOT NULL DEFAULT 0)");
+                        db.execSQL("CREATE INDEX IF NOT EXISTS index_crash_events_timestamp ON crash_events(timestamp)");
+                        db.execSQL("CREATE INDEX IF NOT EXISTS index_crash_events_packageName_timestamp ON crash_events(packageName, timestamp)");
+                        db.execSQL("CREATE INDEX IF NOT EXISTS index_crash_events_crashType ON crash_events(crashType)");
+                        db.execSQL("CREATE INDEX IF NOT EXISTS index_crash_events_stackTraceHash ON crash_events(stackTraceHash)");
+
+                        // =====================================================================
+                        // anr_events: ANR event records
+                        // =====================================================================
+                        db.execSQL("CREATE TABLE IF NOT EXISTS `anr_events` (" +
+                                        "`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, " +
+                                        "`timestamp` INTEGER NOT NULL, " +
+                                        "`packageName` TEXT, " +
+                                        "`appLabel` TEXT, " +
+                                        "`anrType` TEXT, " +
+                                        "`durationMs` INTEGER NOT NULL DEFAULT 0, " +
+                                        "`traceHash` TEXT, " +
+                                        "`mainThreadState` TEXT, " +
+                                        "`blockingComponent` TEXT, " +
+                                        "`pid` INTEGER NOT NULL DEFAULT 0, " +
+                                        "`description` TEXT, " +
+                                        "`appVersionName` TEXT, " +
+                                        "`appVersionCode` INTEGER NOT NULL DEFAULT 0, " +
+                                        "`wasKilled` INTEGER NOT NULL DEFAULT 0, " +
+                                        "`userWaited` INTEGER NOT NULL DEFAULT 0, " +
+                                        "`batteryLevel` INTEGER NOT NULL DEFAULT 0, " +
+                                        "`temperature` REAL NOT NULL DEFAULT 0, " +
+                                        "`memoryUsagePercent` REAL NOT NULL DEFAULT 0, " +
+                                        "`cpuLoad` REAL NOT NULL DEFAULT -1, " +
+                                        "`isNewAnrType` INTEGER NOT NULL DEFAULT 0, " +
+                                        "`systemVersion` TEXT, " +
+                                        "`foregroundActivity` TEXT)");
+                        db.execSQL("CREATE INDEX IF NOT EXISTS index_anr_events_timestamp ON anr_events(timestamp)");
+                        db.execSQL("CREATE INDEX IF NOT EXISTS index_anr_events_packageName_timestamp ON anr_events(packageName, timestamp)");
+                        db.execSQL("CREATE INDEX IF NOT EXISTS index_anr_events_anrType ON anr_events(anrType)");
+                        db.execSQL("CREATE INDEX IF NOT EXISTS index_anr_events_traceHash ON anr_events(traceHash)");
+
+                        // =====================================================================
+                        // daily_aggregates: Aggregated daily summaries
+                        // =====================================================================
+                        db.execSQL("CREATE TABLE IF NOT EXISTS `daily_aggregates` (" +
+                                        "`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, " +
+                                        "`date` TEXT, " +
+                                        "`packageName` TEXT, " +
+                                        "`appLabel` TEXT, " +
+                                        "`avgMemoryUsedPercent` REAL NOT NULL DEFAULT 0, " +
+                                        "`maxMemoryUsedPercent` REAL NOT NULL DEFAULT 0, " +
+                                        "`minMemoryUsedPercent` REAL NOT NULL DEFAULT 0, " +
+                                        "`lowMemoryEventCount` INTEGER NOT NULL DEFAULT 0, " +
+                                        "`memorySampleCount` INTEGER NOT NULL DEFAULT 0, " +
+                                        "`launchCount` INTEGER NOT NULL DEFAULT 0, " +
+                                        "`coldLaunchCount` INTEGER NOT NULL DEFAULT 0, " +
+                                        "`avgColdLaunchMs` REAL NOT NULL DEFAULT 0, " +
+                                        "`avgWarmLaunchMs` REAL NOT NULL DEFAULT 0, " +
+                                        "`avgHotLaunchMs` REAL NOT NULL DEFAULT 0, " +
+                                        "`maxLaunchMs` REAL NOT NULL DEFAULT 0, " +
+                                        "`slowLaunchCount` INTEGER NOT NULL DEFAULT 0, " +
+                                        "`totalFrames` INTEGER NOT NULL DEFAULT 0, " +
+                                        "`totalSlowFrames` INTEGER NOT NULL DEFAULT 0, " +
+                                        "`totalFrozenFrames` INTEGER NOT NULL DEFAULT 0, " +
+                                        "`avgJankPercent` REAL NOT NULL DEFAULT 0, " +
+                                        "`maxJankPercent` REAL NOT NULL DEFAULT 0, " +
+                                        "`avgFps` REAL NOT NULL DEFAULT 0, " +
+                                        "`frameSessionCount` INTEGER NOT NULL DEFAULT 0, " +
+                                        "`crashCount` INTEGER NOT NULL DEFAULT 0, " +
+                                        "`uniqueCrashTypes` INTEGER NOT NULL DEFAULT 0, " +
+                                        "`anrCount` INTEGER NOT NULL DEFAULT 0, " +
+                                        "`uniqueAnrTypes` INTEGER NOT NULL DEFAULT 0, " +
+                                        "`hasNewCrashType` INTEGER NOT NULL DEFAULT 0, " +
+                                        "`hasNewAnrType` INTEGER NOT NULL DEFAULT 0, " +
+                                        "`avgTemp` REAL NOT NULL DEFAULT 0, " +
+                                        "`maxTemp` REAL NOT NULL DEFAULT 0, " +
+                                        "`minTemp` REAL NOT NULL DEFAULT 0, " +
+                                        "`avgThermalHeadroom` REAL NOT NULL DEFAULT 0, " +
+                                        "`minThermalHeadroom` REAL NOT NULL DEFAULT 0, " +
+                                        "`thermalThrottleEvents` INTEGER NOT NULL DEFAULT 0, " +
+                                        "`thermalSampleCount` INTEGER NOT NULL DEFAULT 0, " +
+                                        "`totalBatteryDrain` REAL NOT NULL DEFAULT 0, " +
+                                        "`avgDrainRatePerHour` REAL NOT NULL DEFAULT 0, " +
+                                        "`screenOnMinutes` INTEGER NOT NULL DEFAULT 0, " +
+                                        "`baseline7DayLaunchMs` REAL NOT NULL DEFAULT 0, " +
+                                        "`baseline7DayJankPercent` REAL NOT NULL DEFAULT 0, " +
+                                        "`baseline7DayCrashCount` REAL NOT NULL DEFAULT 0, " +
+                                        "`baseline7DayTemp` REAL NOT NULL DEFAULT 0, " +
+                                        "`baseline30DayLaunchMs` REAL NOT NULL DEFAULT 0, " +
+                                        "`baseline30DayJankPercent` REAL NOT NULL DEFAULT 0, " +
+                                        "`baseline30DayCrashCount` REAL NOT NULL DEFAULT 0, " +
+                                        "`baseline30DayTemp` REAL NOT NULL DEFAULT 0, " +
+                                        "`healthScore` REAL NOT NULL DEFAULT 0, " +
+                                        "`healthGrade` TEXT, " +
+                                        "`createdAt` INTEGER NOT NULL DEFAULT 0, " +
+                                        "`updatedAt` INTEGER NOT NULL DEFAULT 0, " +
+                                        "`appVersion` TEXT, " +
+                                        "`systemVersion` TEXT)");
+                        db.execSQL("CREATE INDEX IF NOT EXISTS index_daily_aggregates_date ON daily_aggregates(date)");
+                        db.execSQL("CREATE INDEX IF NOT EXISTS index_daily_aggregates_packageName_date ON daily_aggregates(packageName, date)");
+                        db.execSQL("CREATE UNIQUE INDEX IF NOT EXISTS index_daily_aggregates_date_packageName ON daily_aggregates(date, packageName)");
+
+                        // =====================================================================
+                        // regression_events: Detected performance regressions
+                        // =====================================================================
+                        db.execSQL("CREATE TABLE IF NOT EXISTS `regression_events` (" +
+                                        "`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, " +
+                                        "`detectedAt` INTEGER NOT NULL DEFAULT 0, " +
+                                        "`regressionStartTime` INTEGER NOT NULL DEFAULT 0, " +
+                                        "`packageName` TEXT, " +
+                                        "`appLabel` TEXT, " +
+                                        "`regressionType` TEXT, " +
+                                        "`baselineValue` REAL NOT NULL DEFAULT 0, " +
+                                        "`currentValue` REAL NOT NULL DEFAULT 0, " +
+                                        "`deltaPercent` REAL NOT NULL DEFAULT 0, " +
+                                        "`threshold` REAL NOT NULL DEFAULT 0, " +
+                                        "`unit` TEXT, " +
+                                        "`triggerEvent` TEXT, " +
+                                        "`previousVersion` TEXT, " +
+                                        "`currentVersion` TEXT, " +
+                                        "`previousSystemVersion` TEXT, " +
+                                        "`systemVersion` TEXT, " +
+                                        "`persistenceDays` INTEGER NOT NULL DEFAULT 0, " +
+                                        "`evidenceTableName` TEXT, " +
+                                        "`evidenceQuery` TEXT, " +
+                                        "`evidenceCount` INTEGER NOT NULL DEFAULT 0, " +
+                                        "`evidenceStartTime` INTEGER NOT NULL DEFAULT 0, " +
+                                        "`evidenceEndTime` INTEGER NOT NULL DEFAULT 0, " +
+                                        "`evidenceDataJson` TEXT, " +
+                                        "`confidenceScore` REAL NOT NULL DEFAULT 0, " +
+                                        "`severity` TEXT, " +
+                                        "`explanation` TEXT, " +
+                                        "`rootCause` TEXT, " +
+                                        "`trend` TEXT, " +
+                                        "`userRecommendation` TEXT, " +
+                                        "`engineerRecommendation` TEXT, " +
+                                        "`isResolved` INTEGER NOT NULL DEFAULT 0, " +
+                                        "`resolvedAt` INTEGER NOT NULL DEFAULT 0, " +
+                                        "`resolutionMethod` TEXT, " +
+                                        "`resolvedValue` REAL NOT NULL DEFAULT 0, " +
+                                        "`userNotified` INTEGER NOT NULL DEFAULT 0, " +
+                                        "`userDismissed` INTEGER NOT NULL DEFAULT 0)");
+                        db.execSQL("CREATE INDEX IF NOT EXISTS index_regression_events_detectedAt ON regression_events(detectedAt)");
+                        db.execSQL("CREATE INDEX IF NOT EXISTS index_regression_events_packageName_detectedAt ON regression_events(packageName, detectedAt)");
+                        db.execSQL("CREATE INDEX IF NOT EXISTS index_regression_events_regressionType ON regression_events(regressionType)");
+                        db.execSQL("CREATE INDEX IF NOT EXISTS index_regression_events_isResolved ON regression_events(isResolved)");
+                        db.execSQL("CREATE INDEX IF NOT EXISTS index_regression_events_severity ON regression_events(severity)");
                 }
         };
 }

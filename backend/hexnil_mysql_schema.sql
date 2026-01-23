@@ -229,6 +229,185 @@ CREATE TABLE IF NOT EXISTS ai_analysis_results (
     FOREIGN KEY (device_id) REFERENCES devices(device_id) ON DELETE CASCADE
 ) ENGINE=InnoDB;
 
+-- ============================================================================
+-- PERFORMANCE MONITORING TABLES (v3.5)
+-- ============================================================================
+
+-- Memory snapshots (RAM usage)
+CREATE TABLE IF NOT EXISTS memory_snapshots (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    device_id VARCHAR(64) NOT NULL,
+    timestamp BIGINT NOT NULL,
+    received_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    total_memory_bytes BIGINT,
+    available_memory_bytes BIGINT,
+    used_memory_bytes BIGINT,
+    used_memory_percent FLOAT,
+    is_low_memory BOOLEAN DEFAULT FALSE,
+    threshold BIGINT,
+    running_app_count INT,
+    top_memory_app VARCHAR(256),
+    top_memory_app_bytes BIGINT,
+    battery_level INT,
+    temperature FLOAT,
+    is_charging BOOLEAN DEFAULT FALSE,
+    is_screen_on BOOLEAN DEFAULT FALSE,
+    payload JSON,
+    INDEX idx_device_timestamp (device_id, timestamp),
+    INDEX idx_low_memory (is_low_memory),
+    FOREIGN KEY (device_id) REFERENCES devices(device_id) ON DELETE CASCADE
+) ENGINE=InnoDB;
+
+-- App launch metrics (startup performance)
+CREATE TABLE IF NOT EXISTS app_launch_metrics (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    device_id VARCHAR(64) NOT NULL,
+    timestamp BIGINT NOT NULL,
+    received_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    package_name VARCHAR(256),
+    app_label VARCHAR(128),
+    launch_time_ms FLOAT,
+    launch_type VARCHAR(16),
+    is_slow_launch BOOLEAN DEFAULT FALSE,
+    app_version VARCHAR(32),
+    android_version VARCHAR(32),
+    battery_level INT,
+    temperature FLOAT,
+    payload JSON,
+    INDEX idx_device_timestamp (device_id, timestamp),
+    INDEX idx_package (package_name(64)),
+    INDEX idx_launch_type (launch_type),
+    FOREIGN KEY (device_id) REFERENCES devices(device_id) ON DELETE CASCADE
+) ENGINE=InnoDB;
+
+-- Frame metrics (jank and FPS)
+CREATE TABLE IF NOT EXISTS frame_metrics (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    device_id VARCHAR(64) NOT NULL,
+    timestamp BIGINT NOT NULL,
+    received_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    package_name VARCHAR(256),
+    window_name VARCHAR(256),
+    total_frames INT,
+    slow_frames INT,
+    frozen_frames INT,
+    jank_percent FLOAT,
+    avg_fps FLOAT,
+    duration_ms BIGINT,
+    is_low_memory_during_session BOOLEAN DEFAULT FALSE,
+    max_frame_time_ms FLOAT,
+    payload JSON,
+    INDEX idx_device_timestamp (device_id, timestamp),
+    INDEX idx_package (package_name(64)),
+    FOREIGN KEY (device_id) REFERENCES devices(device_id) ON DELETE CASCADE
+) ENGINE=InnoDB;
+
+-- Stability events (Crash)
+CREATE TABLE IF NOT EXISTS crash_events (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    device_id VARCHAR(64) NOT NULL,
+    timestamp BIGINT NOT NULL,
+    received_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    package_name VARCHAR(256),
+    process_name VARCHAR(256),
+    reason VARCHAR(256),
+    short_msg TEXT,
+    long_msg TEXT,
+    stack_trace_hash VARCHAR(64),
+    is_foreground BOOLEAN DEFAULT FALSE,
+    app_version VARCHAR(32),
+    payload JSON,
+    INDEX idx_device_timestamp (device_id, timestamp),
+    INDEX idx_package (package_name(64)),
+    INDEX idx_hash (stack_trace_hash),
+    FOREIGN KEY (device_id) REFERENCES devices(device_id) ON DELETE CASCADE
+) ENGINE=InnoDB;
+
+-- Stability events (ANR)
+CREATE TABLE IF NOT EXISTS anr_events (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    device_id VARCHAR(64) NOT NULL,
+    timestamp BIGINT NOT NULL,
+    received_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    package_name VARCHAR(256),
+    process_name VARCHAR(256),
+    reason VARCHAR(256),
+    error_msg TEXT,
+    stack_trace_hash VARCHAR(64),
+    is_foreground BOOLEAN DEFAULT FALSE,
+    app_version VARCHAR(32),
+    payload JSON,
+    INDEX idx_device_timestamp (device_id, timestamp),
+    INDEX idx_package (package_name(64)),
+    INDEX idx_hash (stack_trace_hash),
+    FOREIGN KEY (device_id) REFERENCES devices(device_id) ON DELETE CASCADE
+) ENGINE=InnoDB;
+
+-- Daily aggregates (Performance Rollups)
+CREATE TABLE IF NOT EXISTS daily_aggregates (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    device_id VARCHAR(64) NOT NULL,
+    aggregate_date DATE NOT NULL,
+    package_name VARCHAR(256),
+    app_label VARCHAR(128),
+    received_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    
+    -- Memory
+    avg_memory_used_percent FLOAT,
+    max_memory_used_percent FLOAT,
+    low_memory_event_count INT,
+    
+    -- Launch
+    launch_count INT,
+    cold_launch_count INT,
+    avg_cold_launch_ms FLOAT,
+    slow_launch_count INT,
+    
+    -- Stability
+    crash_count INT,
+    anr_count INT,
+    unique_crash_types INT,
+    
+    -- Thermal/Battery
+    avg_temp FLOAT,
+    max_temp FLOAT,
+    total_battery_drain FLOAT,
+    avg_drain_rate_per_hour FLOAT,
+    
+    -- Health
+    health_score FLOAT,
+    health_grade VARCHAR(4),
+    
+    app_version VARCHAR(32),
+    payload JSON,
+    
+    INDEX idx_device_date (device_id, aggregate_date),
+    INDEX idx_package (package_name(64)),
+    UNIQUE KEY uk_device_date_pkg (device_id, aggregate_date, package_name),
+    FOREIGN KEY (device_id) REFERENCES devices(device_id) ON DELETE CASCADE
+) ENGINE=InnoDB;
+
+-- Regression events (Performance Drops)
+CREATE TABLE IF NOT EXISTS regression_events (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    device_id VARCHAR(64) NOT NULL,
+    timestamp BIGINT NOT NULL,
+    received_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    package_name VARCHAR(256),
+    regression_type VARCHAR(32),
+    severity VARCHAR(16),
+    metric_name VARCHAR(64),
+    current_value FLOAT,
+    baseline_value FLOAT,
+    deviation_percent FLOAT,
+    is_resolved BOOLEAN DEFAULT FALSE,
+    payload JSON,
+    INDEX idx_device_timestamp (device_id, timestamp),
+    INDEX idx_type (regression_type),
+    INDEX idx_severity (severity),
+    FOREIGN KEY (device_id) REFERENCES devices(device_id) ON DELETE CASCADE
+) ENGINE=InnoDB;
+
 -- Data sync tracking
 CREATE TABLE IF NOT EXISTS sync_log (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
@@ -1083,6 +1262,13 @@ GRANT SELECT, INSERT ON hexnil.anomaly_records TO 'hexnil_backend'@'localhost';
 GRANT SELECT, INSERT ON hexnil.refresh_rate_sessions TO 'hexnil_backend'@'localhost';
 GRANT SELECT, INSERT ON hexnil.refresh_rate_anomalies TO 'hexnil_backend'@'localhost';
 GRANT SELECT, INSERT ON hexnil.cpu_gpu_load_samples TO 'hexnil_backend'@'localhost';
+GRANT SELECT, INSERT ON hexnil.memory_snapshots TO 'hexnil_backend'@'localhost';
+GRANT SELECT, INSERT ON hexnil.app_launch_metrics TO 'hexnil_backend'@'localhost';
+GRANT SELECT, INSERT ON hexnil.frame_metrics TO 'hexnil_backend'@'localhost';
+GRANT SELECT, INSERT ON hexnil.crash_events TO 'hexnil_backend'@'localhost';
+GRANT SELECT, INSERT ON hexnil.anr_events TO 'hexnil_backend'@'localhost';
+GRANT SELECT, INSERT ON hexnil.daily_aggregates TO 'hexnil_backend'@'localhost';
+GRANT SELECT, INSERT ON hexnil.regression_events TO 'hexnil_backend'@'localhost';
 
 -- Same grants for wildcard host
 GRANT SELECT, INSERT ON hexnil.thermal_heat_buckets TO 'hexnil_backend'@'%';
@@ -1095,6 +1281,13 @@ GRANT SELECT, INSERT ON hexnil.anomaly_records TO 'hexnil_backend'@'%';
 GRANT SELECT, INSERT ON hexnil.refresh_rate_sessions TO 'hexnil_backend'@'%';
 GRANT SELECT, INSERT ON hexnil.refresh_rate_anomalies TO 'hexnil_backend'@'%';
 GRANT SELECT, INSERT ON hexnil.cpu_gpu_load_samples TO 'hexnil_backend'@'%';
+GRANT SELECT, INSERT ON hexnil.memory_snapshots TO 'hexnil_backend'@'%';
+GRANT SELECT, INSERT ON hexnil.app_launch_metrics TO 'hexnil_backend'@'%';
+GRANT SELECT, INSERT ON hexnil.frame_metrics TO 'hexnil_backend'@'%';
+GRANT SELECT, INSERT ON hexnil.crash_events TO 'hexnil_backend'@'%';
+GRANT SELECT, INSERT ON hexnil.anr_events TO 'hexnil_backend'@'%';
+GRANT SELECT, INSERT ON hexnil.daily_aggregates TO 'hexnil_backend'@'%';
+GRANT SELECT, INSERT ON hexnil.regression_events TO 'hexnil_backend'@'%';
 
 GRANT SELECT ON hexnil.thermal_heat_buckets TO 'hexnil_ai'@'localhost';
 GRANT SELECT ON hexnil.stress_test_results TO 'hexnil_ai'@'localhost';
@@ -1106,6 +1299,13 @@ GRANT SELECT ON hexnil.anomaly_records TO 'hexnil_ai'@'localhost';
 GRANT SELECT ON hexnil.refresh_rate_sessions TO 'hexnil_ai'@'localhost';
 GRANT SELECT ON hexnil.refresh_rate_anomalies TO 'hexnil_ai'@'localhost';
 GRANT SELECT ON hexnil.cpu_gpu_load_samples TO 'hexnil_ai'@'localhost';
+GRANT SELECT ON hexnil.memory_snapshots TO 'hexnil_ai'@'localhost';
+GRANT SELECT ON hexnil.app_launch_metrics TO 'hexnil_ai'@'localhost';
+GRANT SELECT ON hexnil.frame_metrics TO 'hexnil_ai'@'localhost';
+GRANT SELECT ON hexnil.crash_events TO 'hexnil_ai'@'localhost';
+GRANT SELECT ON hexnil.anr_events TO 'hexnil_ai'@'localhost';
+GRANT SELECT ON hexnil.daily_aggregates TO 'hexnil_ai'@'localhost';
+GRANT SELECT ON hexnil.regression_events TO 'hexnil_ai'@'localhost';
 
 -- Same grants for wildcard host
 GRANT SELECT ON hexnil.thermal_heat_buckets TO 'hexnil_ai'@'%';
@@ -1118,6 +1318,13 @@ GRANT SELECT ON hexnil.anomaly_records TO 'hexnil_ai'@'%';
 GRANT SELECT ON hexnil.refresh_rate_sessions TO 'hexnil_ai'@'%';
 GRANT SELECT ON hexnil.refresh_rate_anomalies TO 'hexnil_ai'@'%';
 GRANT SELECT ON hexnil.cpu_gpu_load_samples TO 'hexnil_ai'@'%';
+GRANT SELECT ON hexnil.memory_snapshots TO 'hexnil_ai'@'%';
+GRANT SELECT ON hexnil.app_launch_metrics TO 'hexnil_ai'@'%';
+GRANT SELECT ON hexnil.frame_metrics TO 'hexnil_ai'@'%';
+GRANT SELECT ON hexnil.crash_events TO 'hexnil_ai'@'%';
+GRANT SELECT ON hexnil.anr_events TO 'hexnil_ai'@'%';
+GRANT SELECT ON hexnil.daily_aggregates TO 'hexnil_ai'@'%';
+GRANT SELECT ON hexnil.regression_events TO 'hexnil_ai'@'%';
 
 FLUSH PRIVILEGES;
 

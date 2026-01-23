@@ -3,8 +3,8 @@
                  OEM-Grade Battery Monitoring & Analysis Application
 ================================================================================
 
-Last Updated: January 18, 2026
-Version: 3.4 (Database Field Fixes + Sync Verification)
+Last Updated: January 23, 2026
+Version: 3.5 (Performance Monitoring + Regression Engine)
 
 ================================================================================
                         HEXNIL SYSTEM ARCHITECTURE DIAGRAM
@@ -45,6 +45,13 @@ Version: 3.4 (Database Field Fixes + Sync Verification)
 |  |                                             v                         |  |
 |  |           +--- Room Database (SQLite) ---+  |                         |  |
 |  |           | battery_snapshots            |<-+                         |  |
+|  |           | memory_snapshots (PERF)      |                            |  |
+|  |           | app_launch_metrics (PERF)    |                            |  |
+|  |           | frame_metrics (PERF)         |                            |  |
+|  |           | crash_events (PERF)          |                            |  |
+|  |           | anr_events (PERF)            |                            |  |
+|  |           | daily_aggregates (PERF)      |                            |  |
+|  |           | regression_events (PERF)     |                            |  |
 |  |           | charging_sessions            |                            |  |
 |  |           | thermal_events               |                            |  |
 |  |           | drain_events                 |                            |  |
@@ -261,8 +268,11 @@ Time     Event                    Interval    Context
 15:00    Snapshot #11             5min        idle (doze)
 20:00    Snapshot #12             5min        idle (doze)
 25:00    Snapshot #13             5min        idle (doze)
+30:00    Performance Metrics      5min        launch_collection
 30:00    AI Analysis Runs         -           risk=0, issues=0
 30:00    Anomaly Check            -           0 anomalies found
+Daily    Aggregation Runs         24hr        performance_rollup
+Post-Agg Regression Detection     -           check_for_slowdown
 ...
 
 ================================================================================
@@ -297,7 +307,7 @@ HexNil is an OEM-grade battery diagnostics application that provides:
 - Detailed compliance and safety reports
 
 Package Name: com.example.hexnil
-Database Version: 19
+Database Version: 25
 Target SDK: 36 (Android 15)
 
 ================================================================================
@@ -524,6 +534,15 @@ When AI detects problems:
 - Impact description
 - Time period analyzed
 
+H) PERFORMANCE METRICS (Phases 1-6)
+---------------------------------
+Collected periodically for app/device health:
+- Memory snapshots: pss, usedMemory, lowMemory flag
+- App launch metrics: cold/warm/hot launch times via UsageStatsManager
+- Crash/ANR events: API 30+ exit info, stack trace hashes
+- Daily aggregates: Rollup of all performance metrics per day
+- Regression events: Detected performance drops vs 7/30-day baselines
+
 ================================================================================
 7. DATA STORAGE - WHERE IT STORES
 ================================================================================
@@ -566,7 +585,7 @@ Contents: Temporary data, exported reports
 8. DATABASE TABLES EXPLAINED
 ================================================================================
 
-VERSION: 19 (latest with anomaly_records)
+VERSION: 25 (latest with performance_monitoring)
 
 TABLE 1: battery_snapshots
 -------------------------
@@ -665,6 +684,26 @@ TABLE 11: compliance_evidence
 Purpose: OEM compliance documentation
 Fields: Test results, validation data
 
+TABLE 12: memory_snapshots
+-------------------------
+Purpose: RAM usage tracking
+Fields: timestamp, usedMemory, totalMemory, pss, isLowMemory
+
+TABLE 13: app_launch_metrics
+---------------------------
+Purpose: App startup performance
+Fields: packageName, launchTimeMs, launchType, temperature, batteryLevel
+
+TABLE 14: crash_events / anr_events
+----------------------------------
+Purpose: Stability tracking
+Fields: packageName, eventType, stackTraceHash, description
+
+TABLE 15: daily_aggregates / regression_events
+---------------------------------------------
+Purpose: Long-term performance analysis
+Fields: healthScore, baselineValue, currentValue, triggerEvent, severity
+
 ================================================================================
 9. MONITORING SERVICE DETAILS
 ================================================================================
@@ -715,7 +754,12 @@ MANAGERS INITIALIZED:
 8. CalibrationManager - Calibrates readings
 9. ProtectionManager - Protects battery
 10. AppUsageCollector - Collects per-app usage
-11. HexNilAI - AI analysis engine
+11. MemoryMonitor - Tracks RAM (PERF)
+12. AppLaunchTracker - Tracks launches (PERF)
+13. CrashAnrCollector - Tracks crashes (PERF)
+14. PerformanceAggregator - Daily rollup (PERF)
+15. RegressionDetector - Checks slowdowns (PERF)
+16. HexNilAI - AI analysis engine
 
 CHECK IF SERVICE IS RUNNING:
     adb shell dumpsys activity services com.example.hexnil
