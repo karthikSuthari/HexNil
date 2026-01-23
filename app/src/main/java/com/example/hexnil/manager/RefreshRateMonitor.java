@@ -84,12 +84,21 @@ public class RefreshRateMonitor {
     private double sumBatteryCurrent = 0;
     private double sumTemperature = 0;
 
-    // Anomaly detection state
     private long idleStartTime = 0;
     private long highHzContinuousStart = 0;
     private boolean isCharging = false;
     private int anomalyCountInSession = 0;
     private boolean hasStrongAnomalyInSession = false;
+
+    // Rate limiting for anomaly detection (prevent spam)
+    private static final long ANOMALY_COOLDOWN_MS = 60000; // 60 seconds between same anomaly type
+    private long lastIdleAnomalyTime = 0;
+    private long lastStuckHighAnomalyTime = 0;
+    private long lastThermalDropAnomalyTime = 0;
+    private long lastAppForcedHighAnomalyTime = 0;
+
+    // Self-exclusion
+    private static final String SELF_PACKAGE = "com.example.hexnil";
 
     // Anomaly detector
     private RefreshRateAnomalyDetector anomalyDetector;
@@ -428,13 +437,15 @@ public class RefreshRateMonitor {
         if (isHomeScreen && hz >= HIGH_HZ_THRESHOLD) {
             if (idleStartTime == 0) {
                 idleStartTime = now;
-            } else if (now - idleStartTime > IDLE_ANOMALY_THRESHOLD_MS) {
+            } else if (now - idleStartTime > IDLE_ANOMALY_THRESHOLD_MS
+                    && now - lastIdleAnomalyTime > ANOMALY_COOLDOWN_MS) {
                 // High refresh on home screen for >60s without activity
                 recordAnomaly(RefreshRateAnomaly.highRefreshIdle(
                         currentSession.id,
                         hz,
                         now - idleStartTime,
                         buildEvidenceJson(hz, cpu, gpu, brightness, temperature, batteryCurrent)));
+                lastIdleAnomalyTime = now;
                 idleStartTime = now; // Reset to avoid re-detecting
             }
         } else {
@@ -443,7 +454,8 @@ public class RefreshRateMonitor {
 
         // Check for REFRESH_STUCK_HIGH
         if (hz >= HIGH_HZ_THRESHOLD && cpu < 20 && !isCharging) {
-            if (highHzContinuousStart > 0 && now - highHzContinuousStart > STUCK_HIGH_THRESHOLD_MS) {
+            if (highHzContinuousStart > 0 && now - highHzContinuousStart > STUCK_HIGH_THRESHOLD_MS
+                    && now - lastStuckHighAnomalyTime > ANOMALY_COOLDOWN_MS) {
                 recordAnomaly(RefreshRateAnomaly.refreshStuckHigh(
                         currentSession.id,
                         currentPackageName,
@@ -451,12 +463,14 @@ public class RefreshRateMonitor {
                         currentSession.sessionType,
                         hz, cpu, temperature,
                         buildEvidenceJson(hz, cpu, gpu, brightness, temperature, batteryCurrent)));
+                lastStuckHighAnomalyTime = now;
                 highHzContinuousStart = now; // Reset
             }
         }
 
-        // Check for THERMAL_FORCED_REFRESH_DROP
-        if (temperature > 42 && hz < 90 && maxHz >= 90) {
+        // Check for THERMAL_FORCED_REFRESH_DROP (with rate limiting)
+        if (temperature > 42 && hz < 90 && maxHz >= 90
+                && now - lastThermalDropAnomalyTime > ANOMALY_COOLDOWN_MS) {
             recordAnomaly(RefreshRateAnomaly.thermalForcedDrop(
                     currentSession.id,
                     currentPackageName,
@@ -464,16 +478,24 @@ public class RefreshRateMonitor {
                     currentSession.sessionType,
                     maxHz, hz, temperature,
                     buildEvidenceJson(hz, cpu, gpu, brightness, temperature, batteryCurrent)));
+            lastThermalDropAnomalyTime = now;
         }
 
         // Check for APP_FORCED_HIGH_REFRESH (high Hz + low activity)
-        if (!isHomeScreen && hz >= 120 && cpu < 15 && brightness < 100) {
+        // EXCLUDE: Self (HexNil), launchers, and apply rate limiting
+        if (!isHomeScreen
+                && !SELF_PACKAGE.equals(currentPackageName) // Don't flag ourselves
+                && hz >= 120
+                && cpu < 15
+                && brightness < 100
+                && now - lastAppForcedHighAnomalyTime > ANOMALY_COOLDOWN_MS) {
             recordAnomaly(RefreshRateAnomaly.appForcedHighRefresh(
                     currentSession.id,
                     currentPackageName,
                     currentAppName,
                     hz, cpu, brightness,
                     buildEvidenceJson(hz, cpu, gpu, brightness, temperature, batteryCurrent)));
+            lastAppForcedHighAnomalyTime = now;
         }
     }
 

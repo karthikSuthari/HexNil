@@ -650,22 +650,39 @@ def process_device(conn, device_id: str) -> None:
     impacted_hours: Set[int] = set()
 
     # Any new raw data should trigger recomputation of affected hours.
-    for table in [
-        "battery_snapshots",
-        "charging_sessions",
-        "thermal_events",
-        "drain_events",
-        "idle_drain_sessions",
-        "battery_health",
-        "safety_events",
-        "calibration_data",
-        "ai_analysis_results",
-    ]:
+    # Process ALL sync tables to ensure comprehensive AI coverage.
+    TABLES_WITH_TIMESTAMP = [
+        # Core battery data
+        ("battery_snapshots", "timestamp"),
+        ("charging_sessions", "start_time"),
+        ("thermal_events", "timestamp"),
+        ("drain_events", "start_time"),
+        ("idle_drain_sessions", "start_time"),
+        ("battery_health", "timestamp"),
+        ("safety_events", "timestamp"),
+        # App usage data
+        ("app_battery_usage", "timestamp"),
+        ("app_drain_ranks", "timestamp"),
+        # Refresh rate tracking
+        ("refresh_rate_sessions", "start_time"),
+        ("refresh_rate_anomalies", "timestamp"),
+        # Thermal aggregation
+        ("thermal_heat_buckets", "start_time"),
+        # Calibration and AI results
+        ("calibration_data", "timestamp"),
+        ("ai_analysis_results", "timestamp"),
+        # Anomaly records from device
+        ("anomaly_records", "detected_at"),
+    ]
+    
+    for table, ts_col in TABLES_WITH_TIMESTAMP:
         try:
-            _max_id, _max_ts, hours = fetch_new_ids_and_hours(conn, device_id, table, ts_col="timestamp")
+            _max_id, _max_ts, hours = fetch_new_ids_and_hours(conn, device_id, table, ts_col=ts_col)
             impacted_hours |= hours
         except Exception as e:
-            logger.error(f"{device_id}: watermark/update failed for {table}: {e}")
+            # Allow tables that don't exist yet to fail silently
+            if "doesn't exist" not in str(e).lower():
+                logger.error(f"{device_id}: watermark/update failed for {table}: {e}")
 
     if not impacted_hours:
         return

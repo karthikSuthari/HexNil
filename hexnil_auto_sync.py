@@ -132,7 +132,9 @@ def load_sync_state() -> Dict[str, Any]:
         'last_thermal_heat_buckets_id': 0,
         'last_calibration_data_id': 0,
         'last_device_info_id': 0,
-        'last_ai_analysis_results_id': 0
+        'last_device_info_id': 0,
+        'last_ai_analysis_results_id': 0,
+        'last_cpu_gpu_load_samples_id': 0
     }
 
 
@@ -501,6 +503,44 @@ def transform_ai_analysis_result(row: Dict, device_id: str) -> Dict:
     }
 
 
+def transform_cpu_gpu_load_sample(row: Dict, device_id: str) -> Dict:
+    """Transform CPU/GPU load sample for API."""
+    return {
+        'device_id': device_id,
+        'timestamp': row.get('timestamp', 0),
+        'app_name': row.get('appName', row.get('app_name')),
+        'package_name': row.get('packageName', row.get('package_name')),
+        'pid': int(row.get('pid', 0) or 0),
+        'uid': int(row.get('uid', 0) or 0),
+        'is_system_app': bool(row.get('isSystemApp', row.get('is_system_app', 0))),
+        'system_cpu_percent': int(row.get('systemCpuPercent', row.get('system_cpu_percent', -1)) or -1),
+        'app_cpu_percent': int(row.get('appCpuPercent', row.get('app_cpu_percent', -1)) or -1),
+        'gpu_percent': int(row.get('gpuPercent', row.get('gpu_percent', -1)) or -1),
+        'is_gpu_available': bool(row.get('isGpuAvailable', row.get('is_gpu_available', 1))),
+        'load_1m': float(row.get('load1m', row.get('load_1m', 0)) or 0),
+        'load_5m': float(row.get('load5m', row.get('load_5m', 0)) or 0),
+        'load_15m': float(row.get('load15m', row.get('load_15m', 0)) or 0),
+        'runnable_processes': int(row.get('runnableProcesses', row.get('runnable_processes', 0)) or 0),
+        'temperature': float(row.get('temperature', 0) or 0),
+        'battery_level': int(row.get('batteryLevel', row.get('battery_level', 0)) or 0),
+        'drain_rate_per_hour': float(row.get('drainRatePerHour', row.get('drain_rate_per_hour', 0)) or 0),
+        'is_throttled': bool(row.get('isThrottled', row.get('is_throttled', 0))),
+        'throttle_level': int(row.get('throttleLevel', row.get('throttle_level', 0)) or 0),
+        'thermal_status': int(row.get('thermalStatus', row.get('thermal_status', 0)) or 0),
+        'stress_score': float(row.get('stressScore', row.get('stress_score', 0)) or 0),
+        'stress_category': row.get('stressCategory', row.get('stress_category', 'LOW')),
+        'stress_explanation': row.get('stressExplanation', row.get('stress_explanation')),
+        'inferred_load': row.get('inferredLoad', row.get('inferred_load', 'LOW')),
+        'confidence_level': row.get('confidenceLevel', row.get('confidence_level', 'LOW')),
+        'detection_method': row.get('detectionMethod', row.get('detection_method', 'Direct hardware counters')),
+        'observed_signals': row.get('observedSignals', row.get('observed_signals')),
+        'source_type': row.get('sourceType', row.get('source_type', 'system')),
+        'validation_status': row.get('validationStatus', row.get('validation_status', 'unchecked')),
+        'validation_notes': row.get('validationNotes', row.get('validation_notes')),
+        'is_active': bool(row.get('isActive', row.get('is_active', 1)))
+    }
+
+
 def sync_to_backend(device_id: str, data: Dict[str, List], device_model: str = None) -> bool:
     """Sync collected data to the backend server."""
     payload = {
@@ -524,7 +564,8 @@ def sync_to_backend(device_id: str, data: Dict[str, List], device_model: str = N
         'thermal_heat_buckets': data.get('thermal_heat_buckets', []),
         'calibration_data': data.get('calibration_data', []),
         'device_info_sync': data.get('device_info', []),
-        'ai_analysis_results': data.get('ai_analysis_results', [])
+        'ai_analysis_results': data.get('ai_analysis_results', []),
+        'cpu_gpu_load_samples': data.get('cpu_gpu_load_samples', [])
     }
     
     total_records = sum(len(v) for v in data.values())
@@ -586,6 +627,7 @@ def process_sync(device_id: str, device_model: str = None) -> bool:
         ('calibration_data', 'last_calibration_data_id', transform_calibration_data),
         ('device_info', 'last_device_info_id', transform_device_info),
         ('ai_analysis_results', 'last_ai_analysis_results_id', transform_ai_analysis_result),
+        ('cpu_gpu_load_samples', 'last_cpu_gpu_load_samples_id', transform_cpu_gpu_load_sample),
     ]
     
     # Read new data from each table
@@ -614,7 +656,8 @@ def process_sync(device_id: str, device_model: str = None) -> bool:
                 'battery_health': 'health',
                 'safety_events': 'safety',
                 'app_battery_usage': 'app_battery_usage',
-                'app_drain_ranks': 'app_drain_ranks'
+                'app_drain_ranks': 'app_drain_ranks',
+                'cpu_gpu_load_samples': 'cpu_gpu_load_samples'
             }
             key = key_map.get(table_name, table_name)
             new_data[key] = transformed

@@ -1,1 +1,82 @@
 
+2026-01-18 20:37:35,598 [INFO] Device disconnected
+2026-01-19 17:09:33,074 [INFO] ADB path: C:\Users\sutha\AppData\Local\Android\Sdk\platform-tools\adb.exe
+2026-01-19 17:09:33,074 [INFO] Backend URL: http://127.0.0.1:8000
+2026-01-19 17:09:33,075 [INFO] Check interval: 5s
+2026-01-19 17:09:33,098 [INFO] ========================================
+2026-01-19 17:09:33,099 [INFO] DEVICE CONNECTED - Starting auto-sync...
+2026-01-19 17:09:33,099 [INFO] ========================================
+2026-01-19 17:09:33,355 [INFO] Device ID: a6a9f331d869db9e
+2026-01-19 17:09:33,355 [INFO] Device Model: I2302
+2026-01-19 17:09:35,357 [INFO] Pulling database from device...
+2026-01-19 17:09:36,542 [INFO] Database pulled successfully: 3989504 bytes -> sync_data\hexnil_battery_db
+2026-01-19 17:09:36,552 [INFO] Found 144 new records in battery_snapshots
+2026-01-19 17:09:36,553 [INFO] Found 5 new records in charging_sessions
+2026-01-19 17:09:36,553 [INFO] Found 1 new records in thermal_events
+2026-01-19 17:09:36,555 [INFO] Found 112 new records in battery_health
+2026-01-19 17:09:36,582 [INFO] Found 2622 new records in app_battery_usage
+2026-01-19 17:09:36,584 [INFO] Found 100 new records in app_drain_ranks
+2026-01-19 17:09:36,584 [INFO] Found 5 new records in refresh_rate_sessions
+2026-01-19 17:09:36,585 [INFO] Found 179 new records in refresh_rate_anomalies
+2026-01-19 17:09:36,586 [INFO] Found 44 new records in anomaly_records
+2026-01-19 17:09:36,587 [INFO] Found 1 new records in thermal_heat_buckets
+2026-01-19 17:09:36,587 [INFO] Found 12 new records in calibration_data
+2026-01-19 17:09:36,588 [INFO] Found 49 new records in ai_analysis_results
+2026-01-19 17:09:36,591 [INFO] Syncing 3274 records to backend...
+2026-01-19 17:09:38,661 [ERROR] Backend server not running. Start it with: python run_hexnil_backend.py
+2026-01-19 17:09:38,662 [ERROR] Auto-sync failed!
+2026-01-19 17:09:51,441 [INFO] 
+Auto-sync stopped by user
+2026-01-19 22:21:14,797 [INFO] ADB path: C:\Users\sutha\AppData\Local\Android\Sdk\platform-tools\adb.exe
+2026-01-19 22:21:14,798 [INFO] Backend URL: http://127.0.0.1:8000
+2026-01-19 22:21:14,798 [INFO] Check interval: 5s
+2026-01-19 22:21:14,838 [INFO] ========================================
+2026-01-19 22:21:14,839 [INFO] DEVICE CONNECTED - Starting auto-sync...
+2026-01-19 22:21:14,839 [INFO] ========================================
+2026-01-19 22:21:15,176 [INFO] Device ID: a6a9f331d869db9e
+2026-01-19 22:21:15,177 [INFO] Device Model: I2302
+2026-01-19 22:21:17,178 [INFO] Pulling database from device...
+2026-01-19 22:21:18,858 [INFO] Database pulled successfully: 4214784 bytes -> sync_data\hexnil_battery_db
+2026-01-19 22:21:18,894 [INFO] Found 183 new records in battery_snapshots
+2026-01-19 22:21:18,896 [INFO] Found 6 new records in charging_sessions
+2026-01-19 22:21:18,898 [INFO] Found 1 new records in thermal_events
+2026-01-19 22:21:18,903 [INFO] Found 143 new records in battery_health
+2026-01-19 22:21:18,960 [INFO] Found 3359 new records in app_battery_usage
+2026-01-19 22:21:18,961 [INFO] Found 150 new records in app_drain_ranks
+2026-01-19 22:21:18,963 [INFO] Found 7 new records in refresh_rate_sessions
+2026-01-19 22:21:18,965 [INFO] Found 180 new records in refresh_rate_anomalies
+2026-01-19 22:21:18,965 [INFO] Found 63 new records in anomaly_records
+2026-01-19 22:21:18,967 [INFO] Found 1 new records in thermal_heat_buckets
+2026-01-19 22:21:18,968 [INFO] Found 16 new records in calibration_data
+2026-01-19 22:21:18,972 [INFO] Found 69 new records in ai_analysis_results
+2026-01-19 22:21:18,975 [INFO] Syncing 4178 records to backend...
+2026-01-19 22:21:19,201 [INFO] Sync successful: {'success': True, 'message': 'Accepted for processing', 'device_id': 'a6a9f331d869db9e', 'records_received': {'battery_snapshots': 183, 'charging_sessions': 6, 'thermal_events': 1, 'drain_events': 0, 'idle_drain_sessions': 0, 'battery_health': 143, 'safety_events': 0, 'calibration_data': 16, 'ai_analysis_results': 69, 'app_battery_usage': 3359, 'app_drain_ranks': 150}, 'records_stored': {'battery_snapshots': 0, 'charging_sessions': 0, 'thermal_events': 0, 'drain_events': 0, 'idle_drain_sessions': 0, 'battery_health': 0, 'safety_events': 0, 'calibration_data': 0, 'ai_analysis_results': 0, 'app_battery_usage': 0, 'app_drain_ranks': 0}, 'errors': [], 'sync_id': 27}
+2026-01-19 22:21:19,204 [INFO] Sync state saved
+2026-01-19 22:21:19,206 [INFO] Auto-sync completed successfully!
+2026-01-19 22:21:56,739 [INFO] Device disconnected
+2026-01-22 22:14:59,400 [INFO] ADB path: C:\Users\sutha\AppData\Local\Android\Sdk\platform-tools\adb.exe
+2026-01-22 22:14:59,400 [INFO] Backend URL: http://127.0.0.1:8000
+2026-01-22 22:14:59,400 [INFO] Check interval: 5s
+2026-01-22 22:14:59,417 [INFO] ========================================
+2026-01-22 22:14:59,417 [INFO] DEVICE CONNECTED - Starting auto-sync...
+2026-01-22 22:14:59,417 [INFO] ========================================
+2026-01-22 22:14:59,444 [ERROR] Could not get device ID
+2026-01-22 22:16:31,993 [INFO] 
+Auto-sync stopped by user
+2026-01-22 23:12:58,135 [INFO] ADB path: C:\Users\sutha\AppData\Local\Android\Sdk\platform-tools\adb.exe
+2026-01-22 23:12:58,135 [INFO] Backend URL: http://127.0.0.1:8000
+2026-01-22 23:12:58,135 [INFO] Check interval: 5s
+2026-01-22 23:12:58,168 [INFO] ========================================
+2026-01-22 23:12:58,168 [INFO] DEVICE CONNECTED - Starting auto-sync...
+2026-01-22 23:12:58,168 [INFO] ========================================
+2026-01-22 23:12:58,362 [INFO] Device ID: a6a9f331d869db9e
+2026-01-22 23:12:58,362 [INFO] Device Model: I2302
+2026-01-22 23:13:00,365 [INFO] Pulling database from device...
+2026-01-22 23:13:00,729 [INFO] Database pulled successfully: 638976 bytes -> sync_data\hexnil_battery_db
+2026-01-22 23:13:00,742 [INFO] Found 86 new records in cpu_gpu_load_samples
+2026-01-22 23:13:00,744 [INFO] Syncing 86 records to backend...
+2026-01-22 23:13:00,779 [INFO] Sync successful: {'success': True, 'message': 'Accepted for processing', 'device_id': 'a6a9f331d869db9e', 'records_received': {'battery_snapshots': 0, 'charging_sessions': 0, 'thermal_events': 0, 'drain_events': 0, 'idle_drain_sessions': 0, 'battery_health': 0, 'safety_events': 0, 'calibration_data': 0, 'ai_analysis_results': 0, 'app_battery_usage': 0, 'app_drain_ranks': 0}, 'records_stored': {'battery_snapshots': 0, 'charging_sessions': 0, 'thermal_events': 0, 'drain_events': 0, 'idle_drain_sessions': 0, 'battery_health': 0, 'safety_events': 0, 'calibration_data': 0, 'ai_analysis_results': 0, 'app_battery_usage': 0, 'app_drain_ranks': 0}, 'errors': [], 'sync_id': 28}
+2026-01-22 23:13:00,784 [INFO] Sync state saved
+2026-01-22 23:13:00,785 [INFO] Auto-sync completed successfully!
+2026-01-22 23:14:31,706 [INFO] 
+Auto-sync stopped by user

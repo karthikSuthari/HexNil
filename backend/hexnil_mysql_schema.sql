@@ -1009,6 +1009,69 @@ CREATE TABLE IF NOT EXISTS refresh_rate_anomalies (
     FOREIGN KEY (device_id) REFERENCES devices(device_id) ON DELETE CASCADE
 ) ENGINE=InnoDB;
 
+-- ============================================================================
+-- CPU/GPU LOAD SAMPLES (Continuous stress monitoring)
+-- ============================================================================
+
+CREATE TABLE IF NOT EXISTS cpu_gpu_load_samples (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    device_id VARCHAR(64) NOT NULL,
+    timestamp BIGINT NOT NULL,
+    received_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    
+    -- App Attribution
+    app_name VARCHAR(128),
+    package_name VARCHAR(256),
+    pid INT DEFAULT 0,
+    uid INT DEFAULT 0,
+    is_system_app BOOLEAN DEFAULT FALSE,
+    
+    -- CPU Metrics
+    system_cpu_percent INT DEFAULT -1,
+    app_cpu_percent INT DEFAULT -1,
+    
+    -- GPU Metrics
+    gpu_percent INT DEFAULT -1,
+    is_gpu_available BOOLEAN DEFAULT TRUE,
+    
+    -- System Load
+    load_1m FLOAT DEFAULT 0,
+    load_5m FLOAT DEFAULT 0,
+    load_15m FLOAT DEFAULT 0,
+    runnable_processes INT DEFAULT 0,
+    
+    -- Context
+    temperature FLOAT DEFAULT 0,
+    battery_level INT DEFAULT 0,
+    drain_rate_per_hour FLOAT DEFAULT 0,
+    is_throttled BOOLEAN DEFAULT FALSE,
+    throttle_level INT DEFAULT 0,
+    thermal_status INT DEFAULT 0,
+    
+    -- Stress Analysis
+    stress_score FLOAT DEFAULT 0,
+    stress_category VARCHAR(16) DEFAULT 'LOW',
+    stress_explanation TEXT,
+    inferred_load VARCHAR(16) DEFAULT 'LOW',
+    confidence_level VARCHAR(16) DEFAULT 'LOW',
+    detection_method VARCHAR(64) DEFAULT 'Direct hardware counters',
+    observed_signals TEXT,
+    
+    -- Sample Metadata
+    source_type VARCHAR(32) DEFAULT 'system',
+    validation_status VARCHAR(16) DEFAULT 'unchecked',
+    validation_notes TEXT,
+    is_active BOOLEAN DEFAULT TRUE,
+    
+    -- Indices
+    INDEX idx_cpu_gpu_device_timestamp (device_id, timestamp),
+    INDEX idx_cpu_gpu_timestamp (timestamp),
+    INDEX idx_cpu_gpu_package_name (package_name(100)),
+    INDEX idx_cpu_gpu_stress_category (stress_category),
+    INDEX idx_cpu_gpu_source_type_timestamp (source_type, timestamp),
+    FOREIGN KEY (device_id) REFERENCES devices(device_id) ON DELETE CASCADE
+) ENGINE=InnoDB;
+
 -- Grant permissions for new tables
 GRANT SELECT, INSERT ON hexnil.thermal_heat_buckets TO 'hexnil_backend'@'localhost';
 GRANT SELECT, INSERT ON hexnil.stress_test_results TO 'hexnil_backend'@'localhost';
@@ -1019,6 +1082,7 @@ GRANT SELECT, INSERT ON hexnil.device_info_sync TO 'hexnil_backend'@'localhost';
 GRANT SELECT, INSERT ON hexnil.anomaly_records TO 'hexnil_backend'@'localhost';
 GRANT SELECT, INSERT ON hexnil.refresh_rate_sessions TO 'hexnil_backend'@'localhost';
 GRANT SELECT, INSERT ON hexnil.refresh_rate_anomalies TO 'hexnil_backend'@'localhost';
+GRANT SELECT, INSERT ON hexnil.cpu_gpu_load_samples TO 'hexnil_backend'@'localhost';
 
 -- Same grants for wildcard host
 GRANT SELECT, INSERT ON hexnil.thermal_heat_buckets TO 'hexnil_backend'@'%';
@@ -1030,6 +1094,7 @@ GRANT SELECT, INSERT ON hexnil.device_info_sync TO 'hexnil_backend'@'%';
 GRANT SELECT, INSERT ON hexnil.anomaly_records TO 'hexnil_backend'@'%';
 GRANT SELECT, INSERT ON hexnil.refresh_rate_sessions TO 'hexnil_backend'@'%';
 GRANT SELECT, INSERT ON hexnil.refresh_rate_anomalies TO 'hexnil_backend'@'%';
+GRANT SELECT, INSERT ON hexnil.cpu_gpu_load_samples TO 'hexnil_backend'@'%';
 
 GRANT SELECT ON hexnil.thermal_heat_buckets TO 'hexnil_ai'@'localhost';
 GRANT SELECT ON hexnil.stress_test_results TO 'hexnil_ai'@'localhost';
@@ -1040,6 +1105,7 @@ GRANT SELECT ON hexnil.device_info_sync TO 'hexnil_ai'@'localhost';
 GRANT SELECT ON hexnil.anomaly_records TO 'hexnil_ai'@'localhost';
 GRANT SELECT ON hexnil.refresh_rate_sessions TO 'hexnil_ai'@'localhost';
 GRANT SELECT ON hexnil.refresh_rate_anomalies TO 'hexnil_ai'@'localhost';
+GRANT SELECT ON hexnil.cpu_gpu_load_samples TO 'hexnil_ai'@'localhost';
 
 -- Same grants for wildcard host
 GRANT SELECT ON hexnil.thermal_heat_buckets TO 'hexnil_ai'@'%';
@@ -1051,6 +1117,7 @@ GRANT SELECT ON hexnil.device_info_sync TO 'hexnil_ai'@'%';
 GRANT SELECT ON hexnil.anomaly_records TO 'hexnil_ai'@'%';
 GRANT SELECT ON hexnil.refresh_rate_sessions TO 'hexnil_ai'@'%';
 GRANT SELECT ON hexnil.refresh_rate_anomalies TO 'hexnil_ai'@'%';
+GRANT SELECT ON hexnil.cpu_gpu_load_samples TO 'hexnil_ai'@'%';
 
 FLUSH PRIVILEGES;
 

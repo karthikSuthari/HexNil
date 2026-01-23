@@ -644,6 +644,41 @@ class RefreshRateAnomalyRecord(BaseModel):
     was_charging: bool = False
     screen_on: bool = True
 
+class CpuGpuLoadSampleRecord(BaseModel):
+    """CPU/GPU load sample data from Room DB cpu_gpu_load_samples table."""
+    device_id: str = Field(..., min_length=1, max_length=64)
+    timestamp: int = Field(..., gt=0)
+    app_name: Optional[str] = None
+    package_name: Optional[str] = None
+    pid: int = 0
+    uid: int = 0
+    is_system_app: bool = False
+    system_cpu_percent: int = -1
+    app_cpu_percent: int = -1
+    gpu_percent: int = -1
+    is_gpu_available: bool = True
+    load_1m: float = 0
+    load_5m: float = 0
+    load_15m: float = 0
+    runnable_processes: int = 0
+    temperature: float = 0
+    battery_level: int = 0
+    drain_rate_per_hour: float = 0
+    is_throttled: bool = False
+    throttle_level: int = 0
+    thermal_status: int = 0
+    stress_score: float = 0
+    stress_category: str = "LOW"
+    stress_explanation: Optional[str] = None
+    inferred_load: str = "LOW"
+    confidence_level: str = "LOW"
+    detection_method: str = "Direct hardware counters"
+    observed_signals: Optional[str] = None
+    source_type: str = "system"
+    validation_status: str = "unchecked"
+    validation_notes: Optional[str] = None
+    is_active: bool = True
+
 class BatchSyncRequest(BaseModel):
     """Batch sync request containing multiple data types."""
     device_info: DeviceInfo
@@ -670,6 +705,8 @@ class BatchSyncRequest(BaseModel):
     # Refresh rate intelligence (new tables)
     refresh_rate_sessions: Optional[List[RefreshRateSessionRecord]] = []
     refresh_rate_anomalies: Optional[List[RefreshRateAnomalyRecord]] = []
+    # CPU/GPU load stress monitoring
+    cpu_gpu_load_samples: Optional[List[CpuGpuLoadSampleRecord]] = []
 
 
 class SyncResponse(BaseModel):
@@ -1427,6 +1464,45 @@ def insert_refresh_rate_anomalies(conn, records: List['RefreshRateAnomalyRecord'
     finally:
         cursor.close()
 
+def insert_cpu_gpu_load_samples(conn, records: List['CpuGpuLoadSampleRecord']) -> int:
+    """Insert CPU/GPU load sample records."""
+    if not records:
+        return 0
+    
+    cursor = conn.cursor()
+    try:
+        sql = """
+            INSERT IGNORE INTO cpu_gpu_load_samples 
+            (device_id, timestamp, app_name, package_name, pid, uid, is_system_app,
+             system_cpu_percent, app_cpu_percent, gpu_percent, is_gpu_available,
+             load_1m, load_5m, load_15m, runnable_processes,
+             temperature, battery_level, drain_rate_per_hour,
+             is_throttled, throttle_level, thermal_status, stress_score, stress_category,
+             stress_explanation, inferred_load, confidence_level, detection_method, 
+             observed_signals, source_type, validation_status, validation_notes, is_active)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s,
+                    %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+        """
+        data = [
+            (r.device_id, r.timestamp, r.app_name, r.package_name, r.pid, r.uid, r.is_system_app,
+             r.system_cpu_percent, r.app_cpu_percent, r.gpu_percent, r.is_gpu_available,
+             r.load_1m, r.load_5m, r.load_15m, r.runnable_processes,
+             r.temperature, r.battery_level, r.drain_rate_per_hour,
+             r.is_throttled, r.throttle_level, r.thermal_status, r.stress_score, r.stress_category,
+             r.stress_explanation, r.inferred_load, r.confidence_level, r.detection_method,
+             r.observed_signals, r.source_type, r.validation_status, r.validation_notes, r.is_active)
+            for r in records
+        ]
+        cursor.executemany(sql, data)
+        conn.commit()
+        return cursor.rowcount
+    except Exception as e:
+        logger.error(f"Error inserting cpu_gpu_load_samples: {e}")
+        conn.rollback()
+        raise
+    finally:
+        cursor.close()
+
 def log_sync(conn, device_id: str, data_type: str, records_synced: int, 
              status: str, error_message: Optional[str] = None) -> Optional[int]:
     """Log sync operation to database."""
@@ -1504,6 +1580,8 @@ async def lifespan(app: FastAPI):
                             # Refresh rate intelligence
                             ("refresh_rate_sessions", batch.refresh_rate_sessions, insert_refresh_rate_sessions),
                             ("refresh_rate_anomalies", batch.refresh_rate_anomalies, insert_refresh_rate_anomalies),
+                            # CPU/GPU load stress monitoring
+                            ("cpu_gpu_load_samples", batch.cpu_gpu_load_samples, insert_cpu_gpu_load_samples),
                         ]
 
                         total_received = 0

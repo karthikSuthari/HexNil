@@ -28,6 +28,7 @@ import com.example.hexnil.model.UpdateComparison;
 import com.example.hexnil.model.AnomalyRecord;
 import com.example.hexnil.model.RefreshRateSession;
 import com.example.hexnil.model.RefreshRateAnomaly;
+import com.example.hexnil.model.CpuGpuLoadSample;
 
 /**
  * Main Room Database for HexNil Battery Analysis
@@ -53,8 +54,9 @@ import com.example.hexnil.model.RefreshRateAnomaly;
                 ComplianceEvidence.class,
                 AnomalyRecord.class,
                 RefreshRateSession.class,
-                RefreshRateAnomaly.class
-}, version = 21, exportSchema = true)
+                RefreshRateAnomaly.class,
+                CpuGpuLoadSample.class
+}, version = 24, exportSchema = true)
 public abstract class HexNilDatabase extends RoomDatabase {
 
         private static final String DATABASE_NAME = "hexnil_battery_db";
@@ -93,6 +95,8 @@ public abstract class HexNilDatabase extends RoomDatabase {
 
         public abstract RefreshRateAnomalyDao refreshRateAnomalyDao();
 
+        public abstract CpuGpuLoadSampleDao cpuGpuLoadSampleDao();
+
         public static HexNilDatabase getInstance(Context context) {
                 if (INSTANCE == null) {
                         synchronized (HexNilDatabase.class) {
@@ -109,7 +113,10 @@ public abstract class HexNilDatabase extends RoomDatabase {
                                                                         MIGRATION_14_15, MIGRATION_15_16,
                                                                         MIGRATION_16_17, MIGRATION_17_18,
                                                                         MIGRATION_18_19, MIGRATION_19_20,
-                                                                        MIGRATION_20_21)
+                                                                        MIGRATION_20_21,
+                                                                        MIGRATION_21_22,
+                                                                        MIGRATION_22_23,
+                                                                        MIGRATION_23_24)
                                                         .build();
                                 }
                         }
@@ -1140,6 +1147,67 @@ public abstract class HexNilDatabase extends RoomDatabase {
                 @Override
                 public void migrate(SupportSQLiteDatabase db) {
                         db.execSQL("ALTER TABLE refresh_rate_anomalies ADD COLUMN appName TEXT DEFAULT ''");
+                }
+        };
+
+        // Migration: Add CPU/GPU load samples table for continuous stress monitoring
+        static final Migration MIGRATION_21_22 = new Migration(21, 22) {
+                @Override
+                public void migrate(SupportSQLiteDatabase db) {
+                        // Create CPU/GPU load samples table
+                        db.execSQL("CREATE TABLE IF NOT EXISTS `cpu_gpu_load_samples` (" +
+                                        "`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, " +
+                                        "`timestamp` INTEGER NOT NULL, " +
+                                        "`appName` TEXT, " +
+                                        "`packageName` TEXT, " +
+                                        "`pid` INTEGER NOT NULL DEFAULT 0, " +
+                                        "`uid` INTEGER NOT NULL DEFAULT 0, " +
+                                        "`isSystemApp` INTEGER NOT NULL DEFAULT 0, " +
+                                        "`systemCpuPercent` INTEGER NOT NULL DEFAULT -1, " +
+                                        "`appCpuPercent` INTEGER NOT NULL DEFAULT -1, " +
+                                        "`gpuPercent` INTEGER NOT NULL DEFAULT -1, " +
+                                        "`isGpuAvailable` INTEGER NOT NULL DEFAULT 1, " +
+                                        "`load1m` REAL NOT NULL DEFAULT 0, " +
+                                        "`load5m` REAL NOT NULL DEFAULT 0, " +
+                                        "`load15m` REAL NOT NULL DEFAULT 0, " +
+                                        "`runnableProcesses` INTEGER NOT NULL DEFAULT 0, " +
+                                        "`temperature` REAL NOT NULL DEFAULT 0, " +
+                                        "`batteryLevel` INTEGER NOT NULL DEFAULT 0, " +
+                                        "`drainRatePerHour` REAL NOT NULL DEFAULT 0, " +
+                                        "`isThrottled` INTEGER NOT NULL DEFAULT 0, " +
+                                        "`throttleLevel` INTEGER NOT NULL DEFAULT 0, " +
+                                        "`stressScore` REAL NOT NULL DEFAULT 0, " +
+                                        "`stressCategory` TEXT DEFAULT 'LOW', " +
+                                        "`stressExplanation` TEXT, " +
+                                        "`sourceType` TEXT DEFAULT 'system', " +
+                                        "`validationStatus` TEXT DEFAULT 'unchecked', " +
+                                        "`validationNotes` TEXT, " +
+                                        "`isActive` INTEGER NOT NULL DEFAULT 1)");
+
+                        // Create indices for efficient querying
+                        db.execSQL("CREATE INDEX IF NOT EXISTS index_cpu_gpu_load_samples_timestamp ON cpu_gpu_load_samples(timestamp)");
+                        db.execSQL("CREATE INDEX IF NOT EXISTS index_cpu_gpu_load_samples_packageName ON cpu_gpu_load_samples(packageName)");
+                        db.execSQL("CREATE INDEX IF NOT EXISTS index_cpu_gpu_load_samples_stressCategory ON cpu_gpu_load_samples(stressCategory)");
+                        db.execSQL("CREATE INDEX IF NOT EXISTS index_cpu_gpu_load_samples_sourceType_timestamp ON cpu_gpu_load_samples(sourceType, timestamp)");
+                }
+        };
+
+        // Migration: Add thermalStatus to cpu_gpu_load_samples
+        static final Migration MIGRATION_22_23 = new Migration(22, 23) {
+                @Override
+                public void migrate(SupportSQLiteDatabase db) {
+                        db.execSQL("ALTER TABLE cpu_gpu_load_samples ADD COLUMN thermalStatus INTEGER NOT NULL DEFAULT 0");
+                }
+        };
+
+        // Migration: Add inference fields to cpu_gpu_load_samples
+        static final Migration MIGRATION_23_24 = new Migration(23, 24) {
+                @Override
+                public void migrate(SupportSQLiteDatabase db) {
+                        db.execSQL("ALTER TABLE cpu_gpu_load_samples ADD COLUMN inferredLoad TEXT DEFAULT 'LOW'");
+                        db.execSQL("ALTER TABLE cpu_gpu_load_samples ADD COLUMN confidenceLevel TEXT DEFAULT 'LOW'");
+                        db.execSQL("ALTER TABLE cpu_gpu_load_samples ADD COLUMN detectionMethod TEXT DEFAULT 'Direct hardware counters'");
+                        db.execSQL("ALTER TABLE cpu_gpu_load_samples ADD COLUMN observedSignals TEXT DEFAULT ''");
                 }
         };
 }

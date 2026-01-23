@@ -40,6 +40,11 @@ import com.example.hexnil.manager.RefreshRateMonitor;
 import com.example.hexnil.model.BatterySnapshot;
 import com.example.hexnil.model.AppBatteryUsage;
 import com.example.hexnil.model.AIAnalysisResult;
+import com.example.hexnil.model.CpuGpuLoadSample;
+import com.example.hexnil.manager.CpuGpuCollector;
+import com.example.hexnil.manager.SystemLoadCollector;
+import com.example.hexnil.manager.StressAnalyzer;
+import com.example.hexnil.validation.CpuGpuValidator;
 
 import java.util.List;
 
@@ -136,6 +141,13 @@ public class BatteryMonitorService extends Service {
     private AppIntelligenceCollector appIntelligenceCollector;
     private ThermalPerformanceIntelligence thermalPerfIntelligence;
     private RefreshRateMonitor refreshRateMonitor;
+    private PowerManager powerManager;
+
+    // CPU/GPU/Stress collectors
+    private CpuGpuCollector cpuGpuCollector;
+    private SystemLoadCollector systemLoadCollector;
+    private StressAnalyzer stressAnalyzer;
+    private CpuGpuValidator cpuGpuValidator;
 
     // AI Analysis tracking
     private volatile long lastPhase2AnalysisTime = 0;
@@ -249,11 +261,16 @@ public class BatteryMonitorService extends Service {
         thermalPerfIntelligence = new ThermalPerformanceIntelligence(database);
         refreshRateMonitor = new RefreshRateMonitor(this, database);
 
+        // Initialize CPU/GPU/Stress collectors
+        cpuGpuCollector = new CpuGpuCollector();
+        systemLoadCollector = new SystemLoadCollector(this);
+        stressAnalyzer = new StressAnalyzer();
+        cpuGpuValidator = new CpuGpuValidator();
         // Track service start time for AI analysis periods
         serviceStartTime = System.currentTimeMillis();
 
         // Acquire wake lock for reliable monitoring
-        PowerManager powerManager = (PowerManager) getSystemService(POWER_SERVICE);
+        powerManager = (PowerManager) getSystemService(POWER_SERVICE);
         wakeLock = powerManager.newWakeLock(
                 PowerManager.PARTIAL_WAKE_LOCK,
                 "HexNil:BatteryMonitor");
@@ -678,6 +695,132 @@ public class BatteryMonitorService extends Service {
 
         // Run periodic AI analysis
         checkAndRunAIAnalysis();
+
+        // Collect CPU/GPU/Stress samples
+        collectCpuGpuSample(snapshot);
+    }
+
+    /**
+     * Collect CPU/GPU metrics and stress analysis, save to database.
+     */
+    private void collectCpuGpuSample(BatterySnapshot snapshot) {
+        try {
+            // Collect CPU/GPU metrics
+            CpuGpuCollector.CpuGpuMetrics metrics = cpuGpuCollector.collectAll();
+            SystemLoadCollector.SystemLoad load = systemLoadCollector.collect();
+
+            // Create sample
+            CpuGpuLoadSample sample = new CpuGpuLoadSample();
+            sample.timestamp = System.currentTimeMillis();
+
+            // CPU metrics - use collector value, or derive from load average if unavailable
+            // Note: On Android 10+, /proc/stat is restricted, so we use load average as
+            // proxy
+            int cpuPercent = metrics.systemCpuPercent;
+            if (cpuPercent < 0 && snapshot.cpuLoadTotal > 0) {
+                cpuPercent = snapshot.cpuLoadTotal;
+            }
+            if (cpuPercent < 0 && load.load1m > 0) {
+                // Derive CPU% from load average: load / numCPUs * 100, capped at 100
+                int numCores = Runtime.getRuntime().availableProcessors();
+                cpuPercent = (int) Math.min(100, (load.load1m / numCores) * 100);
+            }
+            sample.systemCpuPercent = cpuPercent;
+
+            // GPU metrics - fallback to snapshot's gpuLoad
+            sample.gpuPercent = metrics.gpuPercent >= 0
+                    ? metrics.gpuPercent
+                    : snapshot.gpuLoad;
+            sample.isGpuAvailable = metrics.isGpuAvailable;
+
+            // System load
+            sample.load1m = load.load1m;
+            sample.load5m = load.load5m;
+            sample.load15m = load.load15m;
+            sample.runnableProcesses = load.runnableProcesses;
+            sample.isThrottled = load.isThrottled;
+            sample.throttleLevel = load.throttleLevel;
+
+            // System thermal status (Android 10+)
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q && powerManager != null) {
+                sample.thermalStatus = powerManager.getCurrentThermalStatus();
+                // If system reports throttling but our collector missed it, sync them
+                if (sample.thermalStatus >= PowerManager.THERMAL_STATUS_LIGHT) {
+                    sample.isThrottled = true;
+                    if (sample.throttleLevel == 0) {
+                        sample.throttleLevel = sample.thermalStatus;
+                    }
+                }
+            }
+
+            // Context from battery snapshot
+            sample.temperature = snapshot.getTemperatureCelsius();
+            sample.batteryLevel = snapshot.level;
+            sample.drainRatePerHour = snapshot.dischargeRate;
+
+            // App attribution (top foreground app)
+            sample.packageName = snapshot.topAppPackage;
+            sample.appName = snapshot.topAppPackage; // Will be resolved later
+            sample.sourceType = isScreenOn ? "foreground" : "background";
+            sample.isActive = isScreenOn;
+
+            // Add to stress analyzer for trending
+            StressAnalyzer.StressSample stressSample = new StressAnalyzer.StressSample(
+                    sample.systemCpuPercent, sample.gpuPercent,
+                    sample.temperature, sample.batteryLevel,
+                    sample.drainRatePerHour, sample.isThrottled, sample.throttleLevel,
+                    sample.thermalStatus,
+                    snapshot.screenOn, snapshot.screenBrightness, snapshot.topAppPackage, snapshot.isCharging);
+            stressAnalyzer.addSample(stressSample);
+
+            // Get stress analysis
+            StressAnalyzer.StressResult stressResult = stressAnalyzer.analyze();
+
+            // Join observed signals with semicolon for DB storage
+            String signals = "";
+            if (stressResult.observedSignals != null && !stressResult.observedSignals.isEmpty()) {
+                if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
+                    signals = String.join("; ", stressResult.observedSignals);
+                } else {
+                    StringBuilder sb = new StringBuilder();
+                    for (int i = 0; i < stressResult.observedSignals.size(); i++) {
+                        sb.append(stressResult.observedSignals.get(i));
+                        if (i < stressResult.observedSignals.size() - 1)
+                            sb.append("; ");
+                    }
+                    signals = sb.toString();
+                }
+            }
+
+            sample.setStressResult(stressResult.stressScore, stressResult.stressCategory, stressResult.explanation,
+                    stressResult.inferredLoad, stressResult.confidenceLevel,
+                    stressResult.detectionMethod, signals);
+
+            // Validate before insert
+            CpuGpuValidator.ValidationResult validation = cpuGpuValidator.validate(sample);
+
+            // Save to database (even if warnings, for diagnostics)
+            if (validation.isValid || "warning".equals(validation.status)) {
+                long insertedId = database.cpuGpuLoadSampleDao().insert(sample);
+
+                // Log high stress situations
+                if (stressResult.stressScore >= 50) {
+                    Log.w(TAG, "High stress detected: score=" + stressResult.stressScore +
+                            " category=" + stressResult.stressCategory +
+                            " cause=" + stressResult.explanation);
+                } else {
+                    Log.d(TAG, "CPU/GPU sample: cpu=" + sample.systemCpuPercent + "%" +
+                            ", gpu=" + sample.gpuPercent + "%" +
+                            ", stress=" + String.format("%.0f", stressResult.stressScore) +
+                            " (" + stressResult.stressCategory + ")");
+                }
+            } else {
+                Log.w(TAG, "CPU/GPU sample rejected: " + validation.notes);
+            }
+
+        } catch (Exception e) {
+            Log.e(TAG, "Error collecting CPU/GPU sample", e);
+        }
     }
 
     /**
