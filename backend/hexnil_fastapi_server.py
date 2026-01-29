@@ -136,15 +136,18 @@ class BaseDataRecord(BaseModel):
     payload: Optional[Dict[str, Any]] = None
 
 class BatterySnapshot(BaseDataRecord):
-    """Battery snapshot data."""
+    """Battery snapshot data. screen_on/current_now: None = UNAVAILABLE (do not coerce to 0)."""
     battery_level: int = Field(..., ge=0, le=100)
     temperature: Optional[float] = None
     voltage: Optional[float] = None
     current_now: Optional[float] = None
     is_charging: bool = False
     charge_type: Optional[str] = None
-    screen_on: bool = False
+    screen_on: Optional[bool] = None  # True/False/None; NULL preserved in DB
     power_save_mode: bool = False
+    snapshot_trigger: Optional[str] = None  # FOREGROUND|PERIODIC|SCREEN_ON|...
+    data_source: Optional[str] = None       # EVENT|POLLED|INFERRED
+    confidence: Optional[float] = None      # 0.0-1.0
 
 class ChargingSession(BaseDataRecord):
     """Charging session data."""
@@ -798,6 +801,173 @@ class RegressionEventRecord(BaseModel):
     deviation_percent: float = 0
     is_resolved: bool = False
 
+# ============================================================================
+# NETWORK & CONNECTIVITY MODELS
+# ============================================================================
+
+class NetworkCellularSnapshotRecord(BaseModel):
+    """Network cellular snapshot data from Room DB."""
+    device_id: str = Field(..., min_length=1, max_length=64)
+    timestamp: int = Field(..., gt=0)
+    sequence_number: int = 0
+    elapsed_realtime_ms: int = 0
+    session_id: int = 0
+    radio_technology: Optional[str] = None
+    network_type: Optional[int] = None
+    signal_strength_dbm: Optional[int] = None
+    rsrp: Optional[int] = None
+    rsrq: Optional[int] = None
+    sinr: Optional[int] = None
+    rssi: Optional[int] = None
+    signal_level: Optional[int] = None
+    asu: Optional[int] = None
+    band: Optional[int] = None
+    arfcn: Optional[int] = None
+    pci: Optional[int] = None
+    cell_id: Optional[int] = None
+    tac: Optional[int] = None
+    carrier_id: Optional[int] = None
+    mcc: Optional[str] = None
+    mnc: Optional[str] = None
+    network_operator_name: Optional[str] = None
+    plmn: Optional[str] = None
+    data_registration_state: Optional[int] = None
+    voice_registration_state: Optional[int] = None
+    is_roaming: Optional[bool] = None
+    roaming_type: Optional[str] = None
+    emergency_only: Optional[bool] = None
+    data_state: Optional[int] = None
+    data_activity: Optional[int] = None
+    modem_firmware_version: Optional[str] = None
+    baseband_version: Optional[str] = None
+    snapshot_context: Optional[str] = None
+    snapshot_trigger: Optional[str] = None
+    data_source: Optional[str] = None
+    confidence: Optional[float] = None
+    validation_status: str = "unchecked"
+    quality_score: int = -1
+    validation_flags: int = 0
+    validation_notes: Optional[str] = None
+    signal_data_changed: bool = True
+
+class NetworkWifiSnapshotRecord(BaseModel):
+    """Network Wi-Fi snapshot data from Room DB."""
+    device_id: str = Field(..., min_length=1, max_length=64)
+    timestamp: int = Field(..., gt=0)
+    sequence_number: int = 0
+    elapsed_realtime_ms: int = 0
+    session_id: int = 0
+    ssid_hash: Optional[str] = None
+    bssid_hash: Optional[str] = None
+    frequency: Optional[int] = None
+    frequency_band: Optional[str] = None
+    channel: Optional[int] = None
+    link_speed_mbps: Optional[int] = None
+    tx_link_speed_mbps: Optional[int] = None
+    rx_link_speed_mbps: Optional[int] = None
+    max_tx_link_speed_mbps: Optional[int] = None
+    max_rx_link_speed_mbps: Optional[int] = None
+    rssi: Optional[int] = None
+    signal_level: Optional[int] = None
+    wifi_standard: Optional[int] = None
+    wifi_standard_name: Optional[str] = None
+    security_type: Optional[str] = None
+    connection_state: Optional[str] = None
+    network_id: Optional[int] = None
+    is_metered: Optional[bool] = None
+    is_passpoint: Optional[bool] = None
+    disconnect_reason: Optional[int] = None
+    reconnect_count: Optional[int] = None
+    dhcp_latency_ms: Optional[int] = None
+    time_since_auth_ms: Optional[int] = None
+    association_attempts: Optional[int] = None
+    association_failures: Optional[int] = None
+    has_ipv4: Optional[bool] = None
+    has_ipv6: Optional[bool] = None
+    gateway_latency_ms: Optional[int] = None
+    snapshot_context: Optional[str] = None
+    snapshot_trigger: Optional[str] = None
+    data_source: Optional[str] = None
+    confidence: Optional[float] = None
+    validation_status: str = "unchecked"
+    quality_score: int = -1
+    validation_flags: int = 0
+    validation_notes: Optional[str] = None
+    signal_data_changed: bool = True
+
+class NetworkBluetoothSnapshotRecord(BaseModel):
+    """Network Bluetooth snapshot data from Room DB."""
+    device_id: str = Field(..., min_length=1, max_length=64)
+    timestamp: int = Field(..., gt=0)
+    sequence_number: int = 0
+    elapsed_realtime_ms: int = 0
+    session_id: int = 0
+    adapter_state: Optional[int] = None
+    adapter_state_name: Optional[str] = None
+    scan_mode: Optional[int] = None
+    is_enabled: Optional[bool] = None
+    is_discovering: Optional[bool] = None
+    paired_device_count: Optional[int] = None
+    connected_device_count: Optional[int] = None
+    profile_type: Optional[str] = None
+    profile_type_constant: Optional[int] = None
+    connection_state: Optional[int] = None
+    connection_state_name: Optional[str] = None
+    codec_type: Optional[str] = None
+    codec_type_constant: Optional[int] = None
+    sample_rate: Optional[int] = None
+    bits_per_sample: Optional[int] = None
+    channel_mode: Optional[str] = None
+    codec_quality: Optional[int] = None
+    is_playing: Optional[bool] = None
+    le_connection_interval: Optional[int] = None
+    le_latency: Optional[int] = None
+    rssi: Optional[int] = None
+    tx_power_level: Optional[int] = None
+    packet_error_count: Optional[int] = None
+    reconnect_count: Optional[int] = None
+    connection_duration_ms: Optional[int] = None
+    remote_address_hash: Optional[str] = None
+    remote_device_type: Optional[int] = None
+    remote_device_class: Optional[int] = None
+    remote_device_name: Optional[str] = None
+    snapshot_context: Optional[str] = None
+    snapshot_trigger: Optional[str] = None
+    data_source: Optional[str] = None
+    confidence: Optional[float] = None
+    validation_status: str = "unchecked"
+    quality_score: int = -1
+    validation_flags: int = 0
+    validation_notes: Optional[str] = None
+
+class ModemFirmwareEventRecord(BaseModel):
+    """Modem firmware event data from Room DB."""
+    device_id: str = Field(..., min_length=1, max_length=64)
+    timestamp: int = Field(..., gt=0)
+    elapsed_realtime_ms: int = 0
+    previous_version: Optional[str] = None
+    current_version: Optional[str] = None
+    previous_baseband_version: Optional[str] = None
+    current_baseband_version: Optional[str] = None
+    event_type: Optional[str] = None
+    detection_source: Optional[str] = None
+    android_version: Optional[str] = None
+    android_sdk_level: Optional[int] = None
+    security_patch: Optional[str] = None
+    build_fingerprint: Optional[str] = None
+    build_number: Optional[str] = None
+    manufacturer: Optional[str] = None
+    model: Optional[str] = None
+    product: Optional[str] = None
+    bootloader_version: Optional[str] = None
+    hardware: Optional[str] = None
+    board: Optional[str] = None
+    is_version_change: Optional[bool] = None
+    is_ota_update: Optional[bool] = None
+    time_since_last_event_ms: Optional[int] = None
+    session_id: int = 0
+    notes: Optional[str] = None
+
 class BatchSyncRequest(BaseModel):
     """Batch sync request containing multiple data types."""
     device_info: DeviceInfo
@@ -834,6 +1004,11 @@ class BatchSyncRequest(BaseModel):
     anr_events: Optional[List[AnrEventRecord]] = []
     daily_aggregates: Optional[List[DailyAggregateRecord]] = []
     regression_events: Optional[List[RegressionEventRecord]] = []
+    # Network & Connectivity (4G/5G, Wi-Fi, Bluetooth, Modem)
+    network_cellular_snapshots: Optional[List[NetworkCellularSnapshotRecord]] = []
+    network_wifi_snapshots: Optional[List[NetworkWifiSnapshotRecord]] = []
+    network_bluetooth_snapshots: Optional[List[NetworkBluetoothSnapshotRecord]] = []
+    modem_firmware_events: Optional[List[ModemFirmwareEventRecord]] = []
 
 
 class SyncResponse(BaseModel):
@@ -888,13 +1063,16 @@ def insert_battery_snapshots(conn, records: List[BatterySnapshot]) -> int:
         sql = """
             INSERT IGNORE INTO battery_snapshots 
             (device_id, timestamp, battery_level, temperature, voltage, current_now,
-             is_charging, charge_type, screen_on, power_save_mode, payload)
-            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+             is_charging, charge_type, screen_on, power_save_mode,
+             snapshot_trigger, data_source, confidence, payload)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
         """
         data = [
             (r.device_id, r.timestamp, r.battery_level, r.temperature, r.voltage,
-             r.current_now, r.is_charging, r.charge_type, r.screen_on, 
-             r.power_save_mode, json.dumps(r.payload) if r.payload else None)
+             r.current_now, r.is_charging, r.charge_type, r.screen_on,
+             r.power_save_mode, getattr(r, 'snapshot_trigger', None),
+             getattr(r, 'data_source', None), getattr(r, 'confidence', None),
+             json.dumps(r.payload) if r.payload else None)
             for r in records
         ]
         cursor.executemany(sql, data)
@@ -1789,6 +1967,132 @@ def insert_regression_events(conn, records: List[RegressionEventRecord]) -> int:
         logger.error(f"Error inserting regression events: {e}"); conn.rollback(); raise
     finally: cursor.close()
 
+def insert_network_cellular_snapshots(conn, records: List[NetworkCellularSnapshotRecord]) -> int:
+    """Insert network cellular snapshot records."""
+    if not records: return 0
+    cursor = conn.cursor()
+    try:
+        sql = """
+            INSERT IGNORE INTO network_cellular_snapshots 
+            (device_id, timestamp, sequence_number, elapsed_realtime_ms, session_id,
+             radio_technology, network_type, signal_strength_dbm, rsrp, rsrq, sinr, rssi,
+             signal_level, asu, band, arfcn, pci, cell_id, tac, carrier_id, mcc, mnc,
+             network_operator_name, plmn, data_registration_state, voice_registration_state,
+             is_roaming, roaming_type, emergency_only, data_state, data_activity,
+             modem_firmware_version, baseband_version, snapshot_context, snapshot_trigger,
+             data_source, confidence, validation_status, quality_score, validation_flags,
+             validation_notes, signal_data_changed)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+        """
+        data = [(r.device_id, r.timestamp, r.sequence_number, r.elapsed_realtime_ms, r.session_id,
+                 r.radio_technology, r.network_type, r.signal_strength_dbm, r.rsrp, r.rsrq, r.sinr, r.rssi,
+                 r.signal_level, r.asu, r.band, r.arfcn, r.pci, r.cell_id, r.tac, r.carrier_id, r.mcc, r.mnc,
+                 r.network_operator_name, r.plmn, r.data_registration_state, r.voice_registration_state,
+                 r.is_roaming, r.roaming_type, r.emergency_only, r.data_state, r.data_activity,
+                 r.modem_firmware_version, r.baseband_version, r.snapshot_context, r.snapshot_trigger,
+                 r.data_source, r.confidence, r.validation_status, r.quality_score, r.validation_flags,
+                 r.validation_notes, r.signal_data_changed) for r in records]
+        cursor.executemany(sql, data)
+        conn.commit()
+        return cursor.rowcount
+    except Exception as e:
+        logger.error(f"Error inserting network cellular snapshots: {e}"); conn.rollback(); raise
+    finally: cursor.close()
+
+def insert_network_wifi_snapshots(conn, records: List[NetworkWifiSnapshotRecord]) -> int:
+    """Insert network Wi-Fi snapshot records."""
+    if not records: return 0
+    cursor = conn.cursor()
+    try:
+        sql = """
+            INSERT IGNORE INTO network_wifi_snapshots 
+            (device_id, timestamp, sequence_number, elapsed_realtime_ms, session_id,
+             ssid_hash, bssid_hash, frequency, frequency_band, channel, link_speed_mbps,
+             tx_link_speed_mbps, rx_link_speed_mbps, max_tx_link_speed_mbps, max_rx_link_speed_mbps,
+             rssi, signal_level, wifi_standard, wifi_standard_name, security_type,
+             connection_state, network_id, is_metered, is_passpoint, disconnect_reason,
+             reconnect_count, dhcp_latency_ms, time_since_auth_ms, association_attempts,
+             association_failures, has_ipv4, has_ipv6, gateway_latency_ms, snapshot_context,
+             snapshot_trigger, data_source, confidence, validation_status, quality_score,
+             validation_flags, validation_notes, signal_data_changed)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+        """
+        data = [(r.device_id, r.timestamp, r.sequence_number, r.elapsed_realtime_ms, r.session_id,
+                 r.ssid_hash, r.bssid_hash, r.frequency, r.frequency_band, r.channel, r.link_speed_mbps,
+                 r.tx_link_speed_mbps, r.rx_link_speed_mbps, r.max_tx_link_speed_mbps, r.max_rx_link_speed_mbps,
+                 r.rssi, r.signal_level, r.wifi_standard, r.wifi_standard_name, r.security_type,
+                 r.connection_state, r.network_id, r.is_metered, r.is_passpoint, r.disconnect_reason,
+                 r.reconnect_count, r.dhcp_latency_ms, r.time_since_auth_ms, r.association_attempts,
+                 r.association_failures, r.has_ipv4, r.has_ipv6, r.gateway_latency_ms, r.snapshot_context,
+                 r.snapshot_trigger, r.data_source, r.confidence, r.validation_status, r.quality_score,
+                 r.validation_flags, r.validation_notes, r.signal_data_changed) for r in records]
+        cursor.executemany(sql, data)
+        conn.commit()
+        return cursor.rowcount
+    except Exception as e:
+        logger.error(f"Error inserting network wifi snapshots: {e}"); conn.rollback(); raise
+    finally: cursor.close()
+
+def insert_network_bluetooth_snapshots(conn, records: List[NetworkBluetoothSnapshotRecord]) -> int:
+    """Insert network Bluetooth snapshot records."""
+    if not records: return 0
+    cursor = conn.cursor()
+    try:
+        sql = """
+            INSERT IGNORE INTO network_bluetooth_snapshots 
+            (device_id, timestamp, sequence_number, elapsed_realtime_ms, session_id,
+             adapter_state, adapter_state_name, scan_mode, is_enabled, is_discovering,
+             paired_device_count, connected_device_count, profile_type, profile_type_constant,
+             connection_state, connection_state_name, codec_type, codec_type_constant,
+             sample_rate, bits_per_sample, channel_mode, codec_quality, is_playing,
+             le_connection_interval, le_latency, rssi, tx_power_level, packet_error_count,
+             reconnect_count, connection_duration_ms, remote_address_hash, remote_device_type,
+             remote_device_class, remote_device_name, snapshot_context, snapshot_trigger,
+             data_source, confidence, validation_status, quality_score, validation_flags, validation_notes)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+        """
+        data = [(r.device_id, r.timestamp, r.sequence_number, r.elapsed_realtime_ms, r.session_id,
+                 r.adapter_state, r.adapter_state_name, r.scan_mode, r.is_enabled, r.is_discovering,
+                 r.paired_device_count, r.connected_device_count, r.profile_type, r.profile_type_constant,
+                 r.connection_state, r.connection_state_name, r.codec_type, r.codec_type_constant,
+                 r.sample_rate, r.bits_per_sample, r.channel_mode, r.codec_quality, r.is_playing,
+                 r.le_connection_interval, r.le_latency, r.rssi, r.tx_power_level, r.packet_error_count,
+                 r.reconnect_count, r.connection_duration_ms, r.remote_address_hash, r.remote_device_type,
+                 r.remote_device_class, r.remote_device_name, r.snapshot_context, r.snapshot_trigger,
+                 r.data_source, r.confidence, r.validation_status, r.quality_score, r.validation_flags, r.validation_notes) for r in records]
+        cursor.executemany(sql, data)
+        conn.commit()
+        return cursor.rowcount
+    except Exception as e:
+        logger.error(f"Error inserting network bluetooth snapshots: {e}"); conn.rollback(); raise
+    finally: cursor.close()
+
+def insert_modem_firmware_events(conn, records: List[ModemFirmwareEventRecord]) -> int:
+    """Insert modem firmware event records."""
+    if not records: return 0
+    cursor = conn.cursor()
+    try:
+        sql = """
+            INSERT IGNORE INTO modem_firmware_events 
+            (device_id, timestamp, elapsed_realtime_ms, previous_version, current_version,
+             previous_baseband_version, current_baseband_version, event_type, detection_source,
+             android_version, android_sdk_level, security_patch, build_fingerprint, build_number,
+             manufacturer, model, product, bootloader_version, hardware, board,
+             is_version_change, is_ota_update, time_since_last_event_ms, session_id, notes)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+        """
+        data = [(r.device_id, r.timestamp, r.elapsed_realtime_ms, r.previous_version, r.current_version,
+                 r.previous_baseband_version, r.current_baseband_version, r.event_type, r.detection_source,
+                 r.android_version, r.android_sdk_level, r.security_patch, r.build_fingerprint, r.build_number,
+                 r.manufacturer, r.model, r.product, r.bootloader_version, r.hardware, r.board,
+                 r.is_version_change, r.is_ota_update, r.time_since_last_event_ms, r.session_id, r.notes) for r in records]
+        cursor.executemany(sql, data)
+        conn.commit()
+        return cursor.rowcount
+    except Exception as e:
+        logger.error(f"Error inserting modem firmware events: {e}"); conn.rollback(); raise
+    finally: cursor.close()
+
 def log_sync(conn, device_id: str, data_type: str, records_synced: int, 
              status: str, error_message: Optional[str] = None) -> Optional[int]:
     """Log sync operation to database."""
@@ -1876,6 +2180,11 @@ async def lifespan(app: FastAPI):
                             ("anr_events", batch.anr_events, insert_anr_events),
                             ("daily_aggregates", batch.daily_aggregates, insert_daily_aggregates),
                             ("regression_events", batch.regression_events, insert_regression_events),
+                            # Network & Connectivity (4G/5G, Wi-Fi, Bluetooth, Modem)
+                            ("network_cellular_snapshots", batch.network_cellular_snapshots, insert_network_cellular_snapshots),
+                            ("network_wifi_snapshots", batch.network_wifi_snapshots, insert_network_wifi_snapshots),
+                            ("network_bluetooth_snapshots", batch.network_bluetooth_snapshots, insert_network_bluetooth_snapshots),
+                            ("modem_firmware_events", batch.modem_firmware_events, insert_modem_firmware_events),
                         ]
 
                         total_received = 0

@@ -1,5 +1,6 @@
 package com.example.hexnil.model;
 
+import androidx.annotation.Nullable;
 import androidx.room.Entity;
 import androidx.room.Ignore;
 import androidx.room.Index;
@@ -18,6 +19,10 @@ import androidx.room.PrimaryKey;
  * 4. Validation metadata enables quality filtering
  * 
  * Used for: Historical analysis, trend detection, OEM validation, QA reporting
+ *
+ * THREE-STATE SEMANTICS (v26+):
+ * - 1 = TRUE/ACTIVE/MEASURED; 0 = FALSE/INACTIVE/ZERO; null = UNAVAILABLE/RESTRICTED.
+ * - Do not collapse null into 0. Use {@code isScreenOn()}, {@code getCurrentMilliampsSafe()} etc. for null-safe access.
  */
 @Entity(
     tableName = "battery_snapshots",
@@ -63,10 +68,10 @@ public class BatterySnapshot {
     // Capacity & voltage
     public int voltage;                  // millivolts
     public int temperature;              // tenths of degree Celsius
-    public long chargeCounter;           // microampere-hours (actual charge)
-    public int currentNow;               // microamperes (instant current)
-    public int currentAverage;           // microamperes (average current)
-    public long energyCounter;           // nanowatt-hours
+    public Long chargeCounter;           // microampere-hours; null if unsupported
+    public Integer currentNow;           // microamperes (instant); null if unsupported
+    public Integer currentAverage;       // microamperes (average); null if unsupported
+    public Long energyCounter;           // nanowatt-hours; null if unsupported
     
     // Calculated fields
     public float capacityMah;            // Estimated capacity in mAh
@@ -79,16 +84,16 @@ public class BatterySnapshot {
     // DEVICE STATE CONTEXT
     // =====================================================================
     
-    // Screen state
-    public boolean screenOn;
-    public int screenBrightness;         // 0-255
+    // Screen state (1=on, 0=off, null=unavailable)
+    public Integer screenOn;
+    public Integer screenBrightness;     // 0-255; null if unreadable
     
-    // Connectivity state
-    public boolean wifiEnabled;
-    public boolean mobileDataEnabled;
-    public boolean bluetoothEnabled;
-    public boolean gpsEnabled;
-    public int signalStrength;           // dBm
+    // Connectivity state (1=active, 0=inactive, null=unavailable)
+    public Integer wifiEnabled;
+    public Integer mobileDataEnabled;
+    public Integer bluetoothEnabled;
+    public Integer gpsEnabled;
+    public Integer signalStrength;       // dBm; null if unknown
     
     // System state
     public boolean isCharging;
@@ -98,13 +103,13 @@ public class BatterySnapshot {
     public int cpuUsage;                 // percentage
     public int memoryUsage;              // percentage
 
-    // Enhanced diagnostics
-    public int cpuLoadTotal;             // total CPU load %
+    // Enhanced diagnostics (null when blocked/unavailable)
+    public Integer cpuLoadTotal;         // total CPU load %
     public String topAppPackage;         // top package at sampling time
-    public int gpuLoad;                  // GPU load % if available, else -1
+    public Integer gpuLoad;              // GPU load %; null if unavailable
     public String networkState;          // wifi/mobile/none
-    public int chargerVendorId;          // USB vendor id if available
-    public int chargerProductId;         // USB product id if available
+    public Integer chargerVendorId;      // USB vendor id; null for AC/wireless
+    public Integer chargerProductId;     // USB product id; null for AC/wireless
     public String voltageSamplesJson;    // JSON array of voltage samples
     public String currentSamplesJson;    // JSON array of current samples
     
@@ -181,6 +186,13 @@ public class BatterySnapshot {
      */
     public long sessionId;
     
+    /** FOREGROUND | BACKGROUND | PERIODIC | CHARGING | SCREEN_ON | SCREEN_OFF | etc. */
+    public String snapshotTrigger;
+    /** EVENT | POLLED | INFERRED */
+    public String dataSource;
+    /** 0.0–1.0; 1.0 = high confidence */
+    public Float confidence;
+    
     // =====================================================================
     // CONSTRUCTORS
     // =====================================================================
@@ -220,12 +232,44 @@ public class BatterySnapshot {
         return voltage / 1000.0f;
     }
     
+    /** Current in A; 0 if unavailable (null). Prefer {@code currentNow != null} checks. */
     public float getCurrentAmps() {
-        return currentNow / 1000000.0f;
+        return currentNow != null ? currentNow / 1000000.0f : 0f;
     }
     
+    /** Current in mA; 0 if unavailable (null). Use only for display; never treat 0 as "measured zero" without checking null. */
     public float getCurrentMilliamps() {
-        return currentNow / 1000.0f;
+        return currentNow != null ? currentNow / 1000.0f : 0f;
+    }
+    
+    /** True if screen known on; false if off; null if unavailable. */
+    @Nullable
+    public Boolean isScreenOn() {
+        if (screenOn == null) return null;
+        return screenOn != 0;
+    }
+    
+    /** True if wifi known active; false if inactive; null if unavailable. */
+    @Nullable
+    public Boolean isWifiEnabled() {
+        if (wifiEnabled == null) return null;
+        return wifiEnabled != 0;
+    }
+    
+    /** True if mobile data known active; false if inactive; null if unavailable. */
+    @Nullable
+    public Boolean isMobileDataEnabled() {
+        if (mobileDataEnabled == null) return null;
+        return mobileDataEnabled != 0;
+    }
+
+    /**
+     * Legacy helper: true iff screen known on; false when off or null.
+     * Use only where boolean is required (e.g. downstream APIs). Prefer isScreenOn() and explicit null handling.
+     */
+    @Ignore
+    public boolean isScreenOnOrFalse() {
+        return Boolean.TRUE.equals(isScreenOn());
     }
     
     /**
@@ -261,8 +305,9 @@ public class BatterySnapshot {
      */
     @Ignore
     public String getFingerprint() {
-        return level + ":" + voltage + ":" + temperature + ":" + 
-               currentNow + ":" + chargeCounter + ":" + status;
+        return level + ":" + voltage + ":" + temperature + ":" +
+               (currentNow != null ? currentNow : "n") + ":" +
+               (chargeCounter != null ? chargeCounter : "n") + ":" + status;
     }
     
     /**
@@ -274,8 +319,8 @@ public class BatterySnapshot {
         return this.level == other.level &&
                this.voltage == other.voltage &&
                this.temperature == other.temperature &&
-               this.currentNow == other.currentNow &&
-               this.chargeCounter == other.chargeCounter;
+               java.util.Objects.equals(this.currentNow, other.currentNow) &&
+               java.util.Objects.equals(this.chargeCounter, other.chargeCounter);
     }
     
     @Override
@@ -287,8 +332,9 @@ public class BatterySnapshot {
                 ", level=" + level + "%" +
                 ", voltage=" + voltage + "mV" +
                 ", temp=" + getTemperatureCelsius() + "°C" +
-                ", current=" + getCurrentMilliamps() + "mA" +
+                ", current=" + (currentNow != null ? getCurrentMilliamps() + "mA" : "null") +
                 ", charging=" + isCharging +
+                ", screenOn=" + screenOn +
                 ", context=" + samplingContext +
                 ", quality=" + qualityScore +
                 ", valid=" + validationStatus +

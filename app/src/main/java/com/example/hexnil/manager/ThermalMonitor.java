@@ -100,14 +100,16 @@ public class ThermalMonitor {
         activeEvent.peakTemperature = tempC;
         activeEvent.temperatureRise = tempC - WARNING_TEMP_C;
         activeEvent.foregroundApp = snapshot.topAppPackage != null ? snapshot.topAppPackage : snapshot.foregroundApp;
-        activeEvent.cpuUsage = snapshot.cpuLoadTotal > 0 ? snapshot.cpuLoadTotal : snapshot.cpuUsage;
-        activeEvent.gpuUsage = snapshot.gpuLoad;
+        int cpu = (snapshot.cpuLoadTotal != null && snapshot.cpuLoadTotal > 0) ? snapshot.cpuLoadTotal : snapshot.cpuUsage;
+        int gpu = snapshot.gpuLoad != null ? snapshot.gpuLoad : 0;
+        activeEvent.cpuUsage = cpu;
+        activeEvent.gpuUsage = gpu;
         activeEvent.isCharging = snapshot.isCharging;
-        activeEvent.screenOn = snapshot.screenOn;
+        activeEvent.screenOn = snapshot.isScreenOnOrFalse();
         activeEvent.batteryLevel = snapshot.level;
         activeEvent.currentDraw = snapshot.dischargeRate;
         activeEvent.networkType = snapshot.networkState;
-        activeEvent.triggerActivity = snapshot.screenOn ? "display_load" : "background_load";
+        activeEvent.triggerActivity = snapshot.isScreenOnOrFalse() ? "display_load" : "background_load";
         
         // Set spike detection fields from analysis
         activeEvent.isSpike = analysis.isSpike;
@@ -167,11 +169,12 @@ public class ThermalMonitor {
         activeEvent.peakTemperature = Math.max(activeEvent.peakTemperature, tempC);
         activeEvent.temperatureRise = activeEvent.peakTemperature - WARNING_TEMP_C;
         activeEvent.duration = snapshot.timestamp - activeEvent.timestamp;
-        activeEvent.cpuUsage = Math.max(activeEvent.cpuUsage, 
-            snapshot.cpuLoadTotal > 0 ? snapshot.cpuLoadTotal : snapshot.cpuUsage);
-        activeEvent.gpuUsage = Math.max(activeEvent.gpuUsage, snapshot.gpuLoad);
+        int cpu = (snapshot.cpuLoadTotal != null && snapshot.cpuLoadTotal > 0) ? snapshot.cpuLoadTotal : snapshot.cpuUsage;
+        int gpu = snapshot.gpuLoad != null ? snapshot.gpuLoad : 0;
+        activeEvent.cpuUsage = Math.max(activeEvent.cpuUsage, cpu);
+        activeEvent.gpuUsage = Math.max(activeEvent.gpuUsage, gpu);
         activeEvent.isCharging = activeEvent.isCharging || snapshot.isCharging;
-        activeEvent.screenOn = activeEvent.screenOn || snapshot.screenOn;
+        activeEvent.screenOn = activeEvent.screenOn || snapshot.isScreenOnOrFalse();
         activeEvent.networkType = snapshot.networkState;
         activeEvent.batteryLevel = snapshot.level;
         activeEvent.currentDraw = snapshot.dischargeRate;
@@ -301,25 +304,23 @@ public class ThermalMonitor {
             activeBucket.avgTempCharging = chargingSamples > 0 ? chargingTempSum / chargingSamples : 0;
             activeBucket.avgTempNotCharging = notChargingSamples > 0 ? notChargingTempSum / notChargingSamples : 0;
             
-            // CPU/GPU correlation
-            int cpuLoad = snapshot.cpuLoadTotal > 0 ? snapshot.cpuLoadTotal : snapshot.cpuUsage;
+            int cpuLoad = (snapshot.cpuLoadTotal != null && snapshot.cpuLoadTotal > 0) ? snapshot.cpuLoadTotal : snapshot.cpuUsage;
+            int gpuLoad = snapshot.gpuLoad != null ? snapshot.gpuLoad : 0;
             if (cpuLoad >= 60) {
                 activeBucket.highCpuCount++;
                 highCpuSamples++;
                 highCpuTempSum += tempC;
             }
-            if (snapshot.gpuLoad >= 60) {
+            if (gpuLoad >= 60) {
                 activeBucket.highGpuCount++;
                 highGpuSamples++;
                 highGpuTempSum += tempC;
             }
             activeBucket.avgCpuLoad = (activeBucket.avgCpuLoad * (activeBucket.sampleCount - 1) + cpuLoad) / activeBucket.sampleCount;
-            activeBucket.avgGpuLoad = (activeBucket.avgGpuLoad * (activeBucket.sampleCount - 1) + snapshot.gpuLoad) / activeBucket.sampleCount;
+            activeBucket.avgGpuLoad = (activeBucket.avgGpuLoad * (activeBucket.sampleCount - 1) + gpuLoad) / activeBucket.sampleCount;
             activeBucket.avgTempHighCpu = highCpuSamples > 0 ? highCpuTempSum / highCpuSamples : 0;
             activeBucket.avgTempHighGpu = highGpuSamples > 0 ? highGpuTempSum / highGpuSamples : 0;
-            
-            // Screen and app tracking
-            if (snapshot.screenOn) {
+            if (snapshot.isScreenOnOrFalse()) {
                 screenOnSamples++;
             }
             activeBucket.screenOnCount = screenOnSamples;

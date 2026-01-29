@@ -238,7 +238,7 @@ public class AnomalyDetector {
                 if (maxTempSnapshot != null) {
                     anomaly.batteryLevel = maxTempSnapshot.level;
                     anomaly.wasCharging = maxTempSnapshot.isCharging;
-                    anomaly.screenOn = maxTempSnapshot.screenOn;
+                    anomaly.screenOn = maxTempSnapshot.isScreenOnOrFalse();
                 }
 
                 anomaly.technicalDetails = String.format(

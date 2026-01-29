@@ -238,12 +238,10 @@ public class DrainIntelligence {
      * Determine the current screen state category
      */
     private String determineScreenState(BatterySnapshot snapshot) {
-        if (snapshot.screenOn) {
-            int brightness = snapshot.screenBrightness;
-            if (brightness > 200)
-                return "screen_on_bright";
-            if (brightness > 100)
-                return "screen_on_medium";
+        if (snapshot.isScreenOnOrFalse()) {
+            int brightness = snapshot.screenBrightness != null ? snapshot.screenBrightness : 0;
+            if (brightness > 200) return "screen_on_bright";
+            if (brightness > 100) return "screen_on_medium";
             return "screen_on_dim";
         } else if (snapshot.isDozeMode) {
             return "doze";
@@ -304,21 +302,17 @@ public class DrainIntelligence {
     public float calculateExpectedDrainRate(BatterySnapshot snapshot) {
         float baseDrain = 0;
 
-        // Base drain by screen state
-        if (snapshot.screenOn) {
+        if (snapshot.isScreenOnOrFalse()) {
             baseDrain = emaScreenOnDrainRate;
-
-            // Brightness adjustment (0-255)
-            float brightnessMultiplier = 0.7f + (snapshot.screenBrightness / 255f) * 0.6f;
+            int bright = snapshot.screenBrightness != null ? snapshot.screenBrightness : 0;
+            float brightnessMultiplier = 0.7f + (bright / 255f) * 0.6f;
             baseDrain *= brightnessMultiplier;
         } else if (snapshot.isDozeMode) {
             baseDrain = emaDozeDrainRate;
         } else {
             baseDrain = emaScreenOffDrainRate;
         }
-
-        // CPU load adjustment
-        if (snapshot.cpuLoadTotal > 50) {
+        if (snapshot.cpuLoadTotal != null && snapshot.cpuLoadTotal > 50) {
             baseDrain *= 1.0f + (snapshot.cpuLoadTotal - 50) / 100f;
         }
 
@@ -332,26 +326,20 @@ public class DrainIntelligence {
             baseDrain *= 1.15f; // Mobile data uses more power
         }
 
-        // Signal strength adjustment - poor signal increases drain
-        if (snapshot.signalStrength < -100) {
-            baseDrain *= 1.2f; // Poor signal
-        } else if (snapshot.signalStrength < -85) {
-            baseDrain *= 1.1f; // Weak signal
+        Integer sig = snapshot.signalStrength;
+        if (sig != null && sig < -100) {
+            baseDrain *= 1.2f;
+        } else if (sig != null && sig < -85) {
+            baseDrain *= 1.1f;
         }
-
-        // GPS adjustment
-        if (snapshot.gpsEnabled) {
-            baseDrain += 3.0f; // GPS adds significant drain
+        if (snapshot.gpsEnabled != null && snapshot.gpsEnabled != 0) {
+            baseDrain += 3.0f;
         }
-
-        // Bluetooth adjustment
-        if (snapshot.bluetoothEnabled) {
-            baseDrain += 0.3f; // Bluetooth adds minor drain
+        if (snapshot.bluetoothEnabled != null && snapshot.bluetoothEnabled != 0) {
+            baseDrain += 0.3f;
         }
-
-        // WiFi adjustment
-        if (snapshot.wifiEnabled && !snapshot.screenOn) {
-            baseDrain += 0.1f; // WiFi scanning in background
+        if (Boolean.TRUE.equals(snapshot.isWifiEnabled()) && !snapshot.isScreenOnOrFalse()) {
+            baseDrain += 0.1f;
         }
 
         return baseDrain;
@@ -382,11 +370,8 @@ public class DrainIntelligence {
                 break;
         }
 
-        // Adjust for device state if snapshot available
-        if (snapshot != null) {
-            if (snapshot.cpuLoadTotal > 50) {
-                baseRate *= 1.0f + (snapshot.cpuLoadTotal - 50) / 100f;
-            }
+        if (snapshot != null && snapshot.cpuLoadTotal != null && snapshot.cpuLoadTotal > 50) {
+            baseRate *= 1.0f + (snapshot.cpuLoadTotal - 50) / 100f;
         }
 
         return baseRate * durationHours;
@@ -539,11 +524,10 @@ public class DrainIntelligence {
      * Estimate display component drain percentage
      */
     private float estimateDisplayDrain(BatterySnapshot snapshot, DrainEvent event) {
-        if (!snapshot.screenOn)
+        if (!snapshot.isScreenOnOrFalse())
             return 0;
-
-        // Display typically 30-50% of drain when screen on
-        float brightness = snapshot.screenBrightness / 255f;
+        int bright = snapshot.screenBrightness != null ? snapshot.screenBrightness : 0;
+        float brightness = bright / 255f;
         float baseDisplayDrain = 35f + brightness * 15f; // 35-50%
 
         // Adjust for screen on time
@@ -559,8 +543,7 @@ public class DrainIntelligence {
      * Estimate CPU component drain percentage
      */
     private float estimateCpuDrain(BatterySnapshot snapshot, DrainEvent event) {
-        // CPU typically 10-30% depending on load
-        float cpuLoad = snapshot.cpuLoadTotal;
+        float cpuLoad = snapshot.cpuLoadTotal != null ? snapshot.cpuLoadTotal : 0;
         float baseCpuDrain = 10f + (cpuLoad / 100f) * 20f; // 10-30%
 
         return Math.min(40f, Math.max(5f, baseCpuDrain));
@@ -576,9 +559,8 @@ public class DrainIntelligence {
         if ("mobile".equals(snapshot.networkState)) {
             networkDrain = 15f;
 
-            // Poor signal increases drain
-            if (snapshot.signalStrength < -100) {
-                networkDrain *= 1.5f; // Poor signal
+            if (snapshot.signalStrength != null && snapshot.signalStrength < -100) {
+                networkDrain *= 1.5f;
             }
         } else if ("wifi".equals(snapshot.networkState)) {
             networkDrain = 8f;
@@ -593,11 +575,10 @@ public class DrainIntelligence {
     private float estimateSensorDrain(BatterySnapshot snapshot, DrainEvent event) {
         float sensorDrain = 2f; // Base sensor drain
 
-        if (snapshot.gpsEnabled) {
-            sensorDrain += 15f; // GPS is power hungry
+        if (snapshot.gpsEnabled != null && snapshot.gpsEnabled != 0) {
+            sensorDrain += 15f;
         }
-
-        if (snapshot.bluetoothEnabled) {
+        if (snapshot.bluetoothEnabled != null && snapshot.bluetoothEnabled != 0) {
             sensorDrain += 3f;
         }
 
@@ -639,23 +620,17 @@ public class DrainIntelligence {
      * Calculate deep sleep effectiveness
      */
     public float calculateDeepSleepEffectiveness(BatterySnapshot snapshot) {
-        if (snapshot.screenOn)
+        if (snapshot.isScreenOnOrFalse())
             return 0;
-
-        float effectiveness = 50f; // Base effectiveness
-
-        // Doze mode active is good
+        float effectiveness = 50f;
         if (snapshot.isDozeMode) {
             effectiveness += 30f;
         }
-
-        // Low CPU is good for sleep
-        if (snapshot.cpuLoadTotal < 5) {
-            effectiveness += 10f;
-        } else if (snapshot.cpuLoadTotal < 15) {
-            effectiveness += 5f;
-        } else if (snapshot.cpuLoadTotal > 30) {
-            effectiveness -= 15f;
+        Integer cpu = snapshot.cpuLoadTotal;
+        if (cpu != null) {
+            if (cpu < 5) effectiveness += 10f;
+            else if (cpu < 15) effectiveness += 5f;
+            else if (cpu > 30) effectiveness -= 15f;
         }
 
         // No active apps is good
@@ -759,8 +734,7 @@ public class DrainIntelligence {
         if (event.isExcessiveDrain())
             return;
 
-        if (snapshot.screenOn) {
-            // Update screen-on baseline
+        if (snapshot.isScreenOnOrFalse()) {
             emaScreenOnDrainRate = emaScreenOnDrainRate * (1 - EMA_SLOW_ALPHA)
                     + event.drainRatePerHour * EMA_SLOW_ALPHA;
         } else if (snapshot.isDozeMode) {
@@ -791,7 +765,8 @@ public class DrainIntelligence {
 
         // High screen-on drain
         if (result.isScreenOn && result.drainRatePerHour > SCREEN_ON_AVERAGE) {
-            if (snapshot.screenBrightness > 150) {
+            int bright = snapshot.screenBrightness != null ? snapshot.screenBrightness : 0;
+            if (bright > 150) {
                 recs.append("• Reduce screen brightness to save battery\n");
             }
             if ("mobile".equals(snapshot.networkState)) {
@@ -821,8 +796,7 @@ public class DrainIntelligence {
             }
         }
 
-        // GPS active
-        if (snapshot.gpsEnabled && !result.isScreenOn) {
+        if (snapshot.gpsEnabled != null && snapshot.gpsEnabled != 0 && !result.isScreenOn) {
             recs.append("• GPS is active in background - check location permissions\n");
         }
 

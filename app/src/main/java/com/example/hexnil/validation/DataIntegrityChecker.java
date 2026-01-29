@@ -268,7 +268,7 @@ public class DataIntegrityChecker {
                a.temperature == b.temperature &&
                a.status == b.status &&
                a.isCharging == b.isCharging &&
-               a.screenOn == b.screenOn;
+               java.util.Objects.equals(a.screenOn, b.screenOn);
     }
     
     // ═══════════════════════════════════════════════════════════════════════════════

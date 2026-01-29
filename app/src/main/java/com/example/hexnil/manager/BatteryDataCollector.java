@@ -5,7 +5,6 @@ import android.app.usage.UsageStatsManager;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
-import android.hardware.display.DisplayManager;
 import android.hardware.usb.UsbDevice;
 import android.hardware.usb.UsbManager;
 import android.net.ConnectivityManager;
@@ -18,9 +17,10 @@ import android.os.SystemClock;
 import android.provider.Settings;
 import android.util.JsonWriter;
 import android.util.Log;
-import android.view.Display;
 
 import com.example.hexnil.model.BatterySnapshot;
+import com.example.hexnil.oem.LimitationsRegistry;
+import com.example.hexnil.state.DeviceStateCache;
 import com.example.hexnil.validation.SnapshotValidator;
 
 import java.io.BufferedReader;
@@ -44,6 +44,9 @@ import java.util.concurrent.atomic.AtomicLong;
  * 
  * This collector fixes the critical bug where snapshots were being reused
  * or contained stale/frozen data.
+ *
+ * THREE-STATE (v26+): Screen/network/charging from DeviceStateCache (event-driven).
+ * Never poll PowerManager.isInteractive, WifiManager, etc. Store null when unavailable.
  */
 public class BatteryDataCollector {
 
@@ -64,11 +67,28 @@ public class BatteryDataCollector {
     private final Context context;
     private final BatteryManager batteryManager;
     private final PowerManager powerManager;
+    private LimitationsRegistry limitationsRegistry;
+    private volatile DeviceStateCache stateCache;
 
     public BatteryDataCollector(Context context) {
         this.context = context.getApplicationContext();
         this.batteryManager = (BatteryManager) this.context.getSystemService(Context.BATTERY_SERVICE);
         this.powerManager = (PowerManager) this.context.getSystemService(Context.POWER_SERVICE);
+    }
+
+    /**
+     * Sets the event-driven state cache. Must be set before collectSnapshot when using
+     * event-driven screen/network. If null, those fields will be stored as null (unavailable).
+     */
+    public void setDeviceStateCache(DeviceStateCache cache) {
+        this.stateCache = cache;
+    }
+
+    /**
+     * Sets the limitations registry for nulling unsupported metrics (current, energy, etc.).
+     */
+    public void setLimitationsRegistry(LimitationsRegistry registry) {
+        this.limitationsRegistry = registry;
     }
 
     /**
@@ -120,6 +140,11 @@ public class BatteryDataCollector {
         // Collect enhanced diagnostics
         collectEnhancedDiagnostics(snapshot);
         
+        // Snapshot context metadata (explainable data)
+        snapshot.snapshotTrigger = inferTrigger(samplingContext);
+        snapshot.dataSource = inferDataSource(samplingContext);
+        snapshot.confidence = inferConfidence(samplingContext);
+        
         // Detect sensor changes
         detectSensorChanges(snapshot);
         
@@ -146,18 +171,41 @@ public class BatteryDataCollector {
 
     /**
      * Collects core battery data from BatteryManager.
-     * ALL data is freshly read - no caching.
+     * Stores null for current/energy/charge when device does not support (per LimitationsRegistry).
      */
     private void collectBatteryManagerData(BatterySnapshot snapshot) {
-        // Read from BatteryManager API (direct sensor values)
         snapshot.level = batteryManager.getIntProperty(BatteryManager.BATTERY_PROPERTY_CAPACITY);
-        snapshot.chargeCounter = batteryManager.getLongProperty(BatteryManager.BATTERY_PROPERTY_CHARGE_COUNTER);
-        snapshot.currentNow = batteryManager.getIntProperty(BatteryManager.BATTERY_PROPERTY_CURRENT_NOW);
-        snapshot.currentAverage = batteryManager.getIntProperty(BatteryManager.BATTERY_PROPERTY_CURRENT_AVERAGE);
-        snapshot.energyCounter = batteryManager.getLongProperty(BatteryManager.BATTERY_PROPERTY_ENERGY_COUNTER);
+        long rawCharge = batteryManager.getLongProperty(BatteryManager.BATTERY_PROPERTY_CHARGE_COUNTER);
+        int rawCurrentNow = batteryManager.getIntProperty(BatteryManager.BATTERY_PROPERTY_CURRENT_NOW);
+        int rawCurrentAvg = batteryManager.getIntProperty(BatteryManager.BATTERY_PROPERTY_CURRENT_AVERAGE);
+        long rawEnergy = batteryManager.getLongProperty(BatteryManager.BATTERY_PROPERTY_ENERGY_COUNTER);
 
-        // Read from sticky broadcast (additional details)
-        // IMPORTANT: registerReceiver returns the LAST broadcast, not a cached value
+        LimitationsRegistry.DeviceCapabilities caps = limitationsRegistry != null
+                ? limitationsRegistry.checkDeviceCapabilities() : null;
+        boolean hasCurrent = caps == null || caps.hasCurrentMeasurement;
+        boolean hasCharge = caps == null || caps.hasChargeCounter;
+
+        if (hasCharge && rawCharge != Long.MIN_VALUE && rawCharge != 0) {
+            snapshot.chargeCounter = rawCharge;
+        } else {
+            snapshot.chargeCounter = null;
+        }
+        if (hasCurrent && rawCurrentNow != Integer.MIN_VALUE) {
+            snapshot.currentNow = rawCurrentNow;
+        } else {
+            snapshot.currentNow = null;
+        }
+        if (hasCurrent && rawCurrentAvg != Integer.MIN_VALUE) {
+            snapshot.currentAverage = rawCurrentAvg;
+        } else {
+            snapshot.currentAverage = null;
+        }
+        if (rawEnergy != Long.MIN_VALUE && rawEnergy != 0) {
+            snapshot.energyCounter = rawEnergy;
+        } else {
+            snapshot.energyCounter = null;
+        }
+
         Intent battery = context.registerReceiver(null, new IntentFilter(Intent.ACTION_BATTERY_CHANGED));
         if (battery != null) {
             snapshot.voltage = battery.getIntExtra(BatteryManager.EXTRA_VOLTAGE, 0);
@@ -167,26 +215,19 @@ public class BatteryDataCollector {
             snapshot.plugged = battery.getIntExtra(BatteryManager.EXTRA_PLUGGED, 0);
         }
 
-        // Derive charging state
         snapshot.isCharging = snapshot.status == BatteryManager.BATTERY_STATUS_CHARGING
             || snapshot.status == BatteryManager.BATTERY_STATUS_FULL;
         snapshot.chargingType = resolveChargingType(snapshot.plugged);
-        
-        // Fast charging detection with multiple heuristics
         snapshot.isFastCharging = detectFastCharging(snapshot);
 
-        // Calculate capacity values
         snapshot.designCapacityMah = getDesignCapacity();
-        snapshot.capacityMah = snapshot.chargeCounter > 0 ? snapshot.chargeCounter / 1000f : 0;
-        
+        snapshot.capacityMah = snapshot.chargeCounter != null && snapshot.chargeCounter > 0
+                ? snapshot.chargeCounter / 1000f : 0;
         if (snapshot.capacityMah > 0 && snapshot.designCapacityMah > 0) {
             snapshot.healthPercentage = (snapshot.capacityMah / snapshot.designCapacityMah) * 100f;
         }
 
-        // Calculate charge/discharge rates (mA)
-        // Note: Current sign convention varies by device
-        // Positive = charging on most devices, but some report negative
-        int absCurrentMa = Math.abs(snapshot.currentNow) / 1000;
+        int absCurrentMa = snapshot.currentNow != null ? Math.abs(snapshot.currentNow) / 1000 : 0;
         if (snapshot.isCharging) {
             snapshot.chargeRate = absCurrentMa;
             snapshot.dischargeRate = 0;
@@ -197,61 +238,69 @@ public class BatteryDataCollector {
     }
 
     /**
-     * Collects system context (screen, doze, etc.)
+     * Collects system context from DeviceStateCache (event-driven). No polling.
+     * Screen/network: 1/0 from cache, null if unavailable.
      */
     private void collectSystemContext(BatterySnapshot snapshot) {
-        // Screen state - use DisplayManager for accurate reading
-        snapshot.screenOn = isScreenOn();
-        snapshot.screenBrightness = getScreenBrightness();
-        
-        // Doze mode detection
+        if (stateCache != null) {
+            snapshot.screenOn = stateCache.getScreenOnAsTernary();
+            snapshot.wifiEnabled = stateCache.getWifiActiveAsTernary();
+            snapshot.mobileDataEnabled = stateCache.getMobileActiveAsTernary();
+        } else {
+            snapshot.screenOn = null;
+            snapshot.wifiEnabled = null;
+            snapshot.mobileDataEnabled = null;
+        }
+        snapshot.bluetoothEnabled = null;
+        snapshot.gpsEnabled = null;
+        snapshot.signalStrength = null;
+
+        int bright = getScreenBrightness();
+        snapshot.screenBrightness = (bright >= 0 && bright <= 255) ? bright : null;
+
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M && powerManager != null) {
             snapshot.isDozeMode = powerManager.isDeviceIdleMode();
         }
     }
 
     /**
-     * Collects enhanced diagnostics for OEM analysis.
+     * Collects enhanced diagnostics. CPU/GPU: null when unavailable (-1). Charger IDs: null for AC.
      */
     private void collectEnhancedDiagnostics(BatterySnapshot snapshot) {
-        snapshot.cpuLoadTotal = readCpuLoadPercent();
+        int cpu = readCpuLoadPercent();
+        snapshot.cpuLoadTotal = (cpu >= 0) ? cpu : null;
         snapshot.topAppPackage = readTopAppPackage();
-        snapshot.foregroundApp = snapshot.topAppPackage; // Sync for compatibility
-        snapshot.gpuLoad = readGpuLoadPercent();
+        snapshot.foregroundApp = snapshot.topAppPackage;
+        int gpu = readGpuLoadPercent();
+        snapshot.gpuLoad = (gpu >= 0) ? gpu : null;
         snapshot.networkState = readNetworkState();
-        
-        // Charger fingerprinting
         readChargerFingerprint(snapshot);
-        
-        // Voltage/current sampling for signal analysis
         snapshot.voltageSamplesJson = collectVoltageSamples();
         snapshot.currentSamplesJson = collectCurrentSamples();
     }
 
     /**
      * Detects if sensor values changed from previous snapshot.
-     * Critical for identifying frozen/stuck sensors.
      */
     private void detectSensorChanges(BatterySnapshot snapshot) {
         if (previousSnapshot == null) {
             snapshot.sensorDataChanged = true;
             return;
         }
-        
-        // Check if key sensor values changed
-        boolean changed = 
-            snapshot.level != previousSnapshot.level ||
-            snapshot.voltage != previousSnapshot.voltage ||
-            snapshot.temperature != previousSnapshot.temperature ||
-            Math.abs(snapshot.currentNow - previousSnapshot.currentNow) > 1000 || // 1mA tolerance
-            snapshot.chargeCounter != previousSnapshot.chargeCounter;
-        
+        boolean changed = snapshot.level != previousSnapshot.level
+                || snapshot.voltage != previousSnapshot.voltage
+                || snapshot.temperature != previousSnapshot.temperature;
+        if (snapshot.currentNow != null && previousSnapshot.currentNow != null) {
+            changed = changed || Math.abs(snapshot.currentNow - previousSnapshot.currentNow) > 1000;
+        } else if (snapshot.currentNow != null || previousSnapshot.currentNow != null) {
+            changed = true;
+        }
+        if (!java.util.Objects.equals(snapshot.chargeCounter, previousSnapshot.chargeCounter)) {
+            changed = true;
+        }
         snapshot.sensorDataChanged = changed;
-        
-        // Log warning if sensors appear frozen
         if (!changed && snapshot.timeSincePreviousMs > 60000) {
-            Log.w(TAG, "Sensor values unchanged for " + (snapshot.timeSincePreviousMs / 1000) + 
-                    " seconds - possible sensor freeze");
+            Log.w(TAG, "Sensor values unchanged for " + (snapshot.timeSincePreviousMs / 1000) + " s - possible freeze");
         }
     }
 
@@ -305,23 +354,36 @@ public class BatteryDataCollector {
     // HELPER METHODS
     // =========================================================================
 
-    private boolean isScreenOn() {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT_WATCH) {
-            DisplayManager dm = (DisplayManager) context.getSystemService(Context.DISPLAY_SERVICE);
-            if (dm != null) {
-                for (Display display : dm.getDisplays()) {
-                    if (display.getState() == Display.STATE_ON) {
-                        return true;
-                    }
-                }
-            }
-            return false;
+    private static String inferTrigger(String samplingContext) {
+        if (samplingContext == null) return "PERIODIC";
+        switch (samplingContext) {
+            case "screen_on": case "screen_off": return samplingContext.toUpperCase();
+            case "charging_start": case "charging_end": case "power_connected": case "power_disconnected":
+            case "battery_low": case "level_change": case "temp_change": case "thermal_high": case "thermal_normal":
+            case "doze_exit": case "service_start": case "service_stop":
+                return samplingContext.toUpperCase();
+            default: return "PERIODIC";
         }
-        // Fallback for older APIs
-        if (powerManager != null) {
-            return powerManager.isInteractive();
+    }
+
+    private static String inferDataSource(String samplingContext) {
+        if (samplingContext == null) return "POLLED";
+        switch (samplingContext) {
+            case "screen_on": case "screen_off": case "charging_start": case "charging_end":
+            case "power_connected": case "power_disconnected": case "battery_low": case "doze_exit":
+                return "EVENT";
+            default: return "POLLED";
         }
-        return true; // Assume on if we can't detect
+    }
+
+    private static float inferConfidence(String samplingContext) {
+        if (samplingContext == null) return 0.8f;
+        switch (samplingContext) {
+            case "screen_on": case "screen_off": case "charging_start": case "charging_end":
+            case "power_connected": case "power_disconnected": case "battery_low": case "doze_exit":
+                return 1.0f;
+            default: return 0.85f;
+        }
     }
 
     private int getScreenBrightness() {
@@ -334,20 +396,10 @@ public class BatteryDataCollector {
 
     private boolean detectFastCharging(BatterySnapshot snapshot) {
         if (!snapshot.isCharging) return false;
-        
-        // Multiple heuristics for fast charging detection
-        // 1. High current (>1.5A is typically fast charging)
-        int currentMa = Math.abs(snapshot.currentNow) / 1000;
+        int currentMa = snapshot.currentNow != null ? Math.abs(snapshot.currentNow) / 1000 : 0;
         if (currentMa > 1500) return true;
-        
-        // 2. USB Power Delivery or Quick Charge usually reports higher voltage
-        if (snapshot.voltage > 5500) return true; // >5.5V suggests QC/PD
-        
-        // 3. AC charging is typically faster than USB
-        if (snapshot.plugged == BatteryManager.BATTERY_PLUGGED_AC && currentMa > 1000) {
-            return true;
-        }
-        
+        if (snapshot.voltage > 5500) return true;
+        if (snapshot.plugged == BatteryManager.BATTERY_PLUGGED_AC && currentMa > 1000) return true;
         return false;
     }
 
@@ -460,21 +512,25 @@ public class BatteryDataCollector {
     }
 
     private void readChargerFingerprint(BatterySnapshot snapshot) {
+        if (snapshot.plugged != BatteryManager.BATTERY_PLUGGED_USB) {
+            snapshot.chargerVendorId = null;
+            snapshot.chargerProductId = null;
+            return;
+        }
         try {
             UsbManager usbManager = (UsbManager) context.getSystemService(Context.USB_SERVICE);
             if (usbManager == null) return;
-            
             Map<String, UsbDevice> deviceList = usbManager.getDeviceList();
             if (deviceList != null) {
                 for (UsbDevice device : deviceList.values()) {
                     snapshot.chargerVendorId = device.getVendorId();
                     snapshot.chargerProductId = device.getProductId();
-                    break; // Take first device
+                    return;
                 }
             }
-        } catch (Exception ignored) {
-            // Best-effort
-        }
+        } catch (Exception ignored) { }
+        snapshot.chargerVendorId = null;
+        snapshot.chargerProductId = null;
     }
 
     private String collectVoltageSamples() {

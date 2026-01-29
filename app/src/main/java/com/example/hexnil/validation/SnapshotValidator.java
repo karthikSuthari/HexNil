@@ -230,15 +230,14 @@ public class SnapshotValidator {
     }
     
     private static void validateCurrent(BatterySnapshot snapshot, ValidationResult result) {
+        if (snapshot.currentNow == null) {
+            result.flags.currentInRange = true; // null = unavailable, not invalid
+            return;
+        }
         if (snapshot.currentNow < MIN_VALID_CURRENT_UA || snapshot.currentNow > MAX_VALID_CURRENT_UA) {
             result.deduct(10, "Current out of range: " + snapshot.currentNow + "µA");
             result.flags.currentInRange = false;
-        }
-        
-        // Consistency check: charging state should match current direction
-        if (snapshot.isCharging && snapshot.currentNow < 0) {
-            // Some devices report negative current even when charging (convention varies)
-            // This is a soft warning, not a hard failure
+        } else if (snapshot.isCharging && snapshot.currentNow < 0) {
             result.deduct(5, "Charging but current negative (device convention may vary)");
         }
     }
@@ -264,14 +263,14 @@ public class SnapshotValidator {
     }
     
     private static void validateChargeCounter(BatterySnapshot snapshot, ValidationResult result) {
-        // Charge counter should be positive if available
-        if (snapshot.chargeCounter < 0 && snapshot.chargeCounter != Long.MIN_VALUE) {
+        if (snapshot.chargeCounter == null) {
+            result.flags.chargeCounterValid = true;
+            return;
+        }
+        if (snapshot.chargeCounter < 0) {
             result.deduct(10, "Negative charge counter: " + snapshot.chargeCounter);
             result.flags.chargeCounterValid = false;
-        }
-        
-        // Extremely large values might indicate overflow or sensor error
-        if (snapshot.chargeCounter > 100000000) { // > 100000 mAh
+        } else if (snapshot.chargeCounter > 100000000) {
             result.deduct(5, "Unusually large charge counter");
             result.flags.chargeCounterValid = false;
         }
@@ -285,13 +284,11 @@ public class SnapshotValidator {
             return;
         }
         
-        // Check if all key values are identical (sensor frozen)
-        boolean allIdentical = 
-                current.level == previous.level &&
-                current.voltage == previous.voltage &&
-                current.temperature == previous.temperature &&
-                current.currentNow == previous.currentNow &&
-                current.chargeCounter == previous.chargeCounter;
+        boolean allIdentical = current.level == previous.level
+                && current.voltage == previous.voltage
+                && current.temperature == previous.temperature
+                && java.util.Objects.equals(current.currentNow, previous.currentNow)
+                && java.util.Objects.equals(current.chargeCounter, previous.chargeCounter);
         
         if (allIdentical) {
             // Values can legitimately be identical for short periods, but flag it
@@ -307,11 +304,10 @@ public class SnapshotValidator {
         
         // For intervals > 1 minute, we expect SOME change in readings
         if (timeDelta > 60000) {
-            // At least voltage or current should show some variance
             boolean voltageChanged = Math.abs(current.voltage - previous.voltage) > 0;
-            boolean currentChanged = Math.abs(current.currentNow - previous.currentNow) > 0;
+            boolean currentChanged = current.currentNow != null && previous.currentNow != null
+                    && Math.abs(current.currentNow - previous.currentNow) > 0;
             boolean tempChanged = Math.abs(current.temperature - previous.temperature) > 0;
-            
             if (!voltageChanged && !currentChanged && !tempChanged) {
                 result.deduct(20, "No sensor variance over " + (timeDelta / 1000) + " seconds");
                 result.flags.sensorResponsive = false;

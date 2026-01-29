@@ -347,3 +347,5 @@ This UI is designed for **OEM engineers, QA teams, and certification reviewers**
 - Work for extended analysis sessions
 
 **Remember**: This is diagnostic software, not a consumer product. Clarity and precision over visual appeal.
+
+

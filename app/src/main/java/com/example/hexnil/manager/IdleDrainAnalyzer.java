@@ -44,7 +44,7 @@ public class IdleDrainAnalyzer {
     }
 
     public synchronized void beginIdleIfNeeded(BatterySnapshot snapshot) {
-        if (snapshot == null || snapshot.screenOn || snapshot.isCharging)
+        if (snapshot == null || snapshot.isScreenOnOrFalse() || snapshot.isCharging)
             return;
         if (activeSession != null && activeSession.endTime == 0)
             return;
@@ -70,7 +70,7 @@ public class IdleDrainAnalyzer {
         if (snapshot == null)
             return;
 
-        if (snapshot.screenOn || snapshot.isCharging) {
+        if (snapshot.isScreenOnOrFalse() || snapshot.isCharging) {
             closeIfNeeded(snapshot);
             return;
         }

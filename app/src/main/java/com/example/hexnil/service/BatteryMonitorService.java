@@ -9,6 +9,7 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.net.ConnectivityManager;
 import android.os.BatteryManager;
 import android.os.Build;
 import android.os.Handler;
@@ -23,6 +24,9 @@ import androidx.core.app.NotificationCompat;
 import com.example.hexnil.MainActivity;
 import com.example.hexnil.R;
 import com.example.hexnil.database.HexNilDatabase;
+import com.example.hexnil.oem.LimitationsRegistry;
+import com.example.hexnil.state.DefaultNetworkTracker;
+import com.example.hexnil.state.DeviceStateCache;
 import com.example.hexnil.manager.BatteryDataCollector;
 import com.example.hexnil.manager.BatteryHealthManager;
 import com.example.hexnil.manager.ChargingAnalyzer;
@@ -55,6 +59,14 @@ import com.example.hexnil.manager.CrashAnrCollector;
 import com.example.hexnil.manager.PerformanceAggregator;
 import com.example.hexnil.manager.RegressionDetector;
 import com.example.hexnil.worker.PerformanceAggregationWorker;
+import com.example.hexnil.manager.CellularCollector;
+import com.example.hexnil.manager.WifiCollector;
+import com.example.hexnil.manager.BluetoothCollector;
+import com.example.hexnil.manager.ModemFirmwareTracker;
+import com.example.hexnil.model.NetworkCellularSnapshot;
+import com.example.hexnil.model.NetworkWifiSnapshot;
+import com.example.hexnil.model.NetworkBluetoothSnapshot;
+import com.example.hexnil.model.ModemFirmwareEvent;
 
 import androidx.work.Constraints;
 import androidx.work.ExistingPeriodicWorkPolicy;
@@ -159,6 +171,11 @@ public class BatteryMonitorService extends Service {
     private RefreshRateMonitor refreshRateMonitor;
     private PowerManager powerManager;
 
+    // Event-driven state cache (screen, network, charging) — no background polling
+    private DeviceStateCache stateCache;
+    private DefaultNetworkTracker networkTracker;
+    private LimitationsRegistry limitationsRegistry;
+
     // CPU/GPU/Stress collectors
     private CpuGpuCollector cpuGpuCollector;
     private SystemLoadCollector systemLoadCollector;
@@ -171,6 +188,12 @@ public class BatteryMonitorService extends Service {
     private CrashAnrCollector crashAnrCollector;
     private PerformanceAggregator performanceAggregator;
     private RegressionDetector regressionDetector;
+
+    // Network & Connectivity collectors
+    private CellularCollector cellularCollector;
+    private WifiCollector wifiCollector;
+    private BluetoothCollector bluetoothCollector;
+    private ModemFirmwareTracker modemFirmwareTracker;
 
     // AI Analysis tracking
     private volatile long lastPhase2AnalysisTime = 0;
@@ -266,9 +289,18 @@ public class BatteryMonitorService extends Service {
         handler = new Handler(Looper.getMainLooper());
         executor = Executors.newFixedThreadPool(4);
 
-        // Initialize managers
+        stateCache = new DeviceStateCache();
+        ConnectivityManager cm = (ConnectivityManager) getSystemService(Context.CONNECTIVITY_SERVICE);
+        if (cm != null) {
+            networkTracker = new DefaultNetworkTracker(cm, stateCache);
+            networkTracker.register();
+        }
+        limitationsRegistry = new LimitationsRegistry(this);
+
         dataCollector = new BatteryDataCollector(this);
-        dataCollector.resetSession(); // Start fresh session
+        dataCollector.setDeviceStateCache(stateCache);
+        dataCollector.setLimitationsRegistry(limitationsRegistry);
+        dataCollector.resetSession();
 
         batteryHealthManager = new BatteryHealthManager(this, database);
         chargingAnalyzer = new ChargingAnalyzer(this, database);
@@ -297,6 +329,13 @@ public class BatteryMonitorService extends Service {
         performanceAggregator = new PerformanceAggregator(this, database);
         regressionDetector = new RegressionDetector(this, database);
         Log.d(TAG, "Performance monitoring collectors initialized");
+
+        // Initialize Network & Connectivity collectors
+        cellularCollector = new CellularCollector(this);
+        wifiCollector = new WifiCollector(this);
+        bluetoothCollector = new BluetoothCollector(this);
+        modemFirmwareTracker = new ModemFirmwareTracker(this, database);
+        Log.d(TAG, "Network & Connectivity collectors initialized");
 
         // Track service start time for AI analysis periods
         serviceStartTime = System.currentTimeMillis();
@@ -406,10 +445,10 @@ public class BatteryMonitorService extends Service {
                 .setRequiresCharging(true)
                 .build();
 
-        // Schedule for every 24 hours
+        // Schedule for every 6 hours
         PeriodicWorkRequest workRequest = new PeriodicWorkRequest.Builder(
                 PerformanceAggregationWorker.class,
-                24, TimeUnit.HOURS)
+                6, TimeUnit.HOURS)
                 .setConstraints(constraints)
                 .addTag("performance_aggregation")
                 .build();
@@ -433,7 +472,9 @@ public class BatteryMonitorService extends Service {
         // Stop snapshots
         handler.removeCallbacks(snapshotRunnable);
 
-        // Unregister receivers
+        if (networkTracker != null) {
+            networkTracker.unregister();
+        }
         try {
             unregisterReceiver(batteryReceiver);
         } catch (Exception e) {
@@ -664,6 +705,9 @@ public class BatteryMonitorService extends Service {
                     runAnalysis(snapshot);
                 }
 
+                // Collect network data (cellular/wifi/bluetooth/modem)
+                collectNetworkData(context);
+
             } catch (Exception e) {
                 Log.e(TAG, "Error capturing snapshot", e);
             }
@@ -750,7 +794,7 @@ public class BatteryMonitorService extends Service {
             refreshRateMonitor.sampleRefreshRate();
             refreshRateMonitor.addContextFromSnapshot(
                     snapshot.getTemperatureCelsius(),
-                    snapshot.currentNow,
+                    snapshot.getCurrentMilliamps(),
                     snapshot.isCharging);
         }
 
@@ -770,7 +814,7 @@ public class BatteryMonitorService extends Service {
                     snapshot.level,
                     snapshot.getTemperatureCelsius(),
                     snapshot.isCharging,
-                    snapshot.screenOn);
+                    snapshot.isScreenOnOrFalse());
         }
 
         // Collect crash/ANR events (Android 11+)
@@ -802,20 +846,18 @@ public class BatteryMonitorService extends Service {
             // Note: On Android 10+, /proc/stat is restricted, so we use load average as
             // proxy
             int cpuPercent = metrics.systemCpuPercent;
-            if (cpuPercent < 0 && snapshot.cpuLoadTotal > 0) {
+            if (cpuPercent < 0 && snapshot.cpuLoadTotal != null && snapshot.cpuLoadTotal > 0) {
                 cpuPercent = snapshot.cpuLoadTotal;
             }
             if (cpuPercent < 0 && load.load1m > 0) {
-                // Derive CPU% from load average: load / numCPUs * 100, capped at 100
                 int numCores = Runtime.getRuntime().availableProcessors();
                 cpuPercent = (int) Math.min(100, (load.load1m / numCores) * 100);
             }
             sample.systemCpuPercent = cpuPercent;
 
-            // GPU metrics - fallback to snapshot's gpuLoad
-            sample.gpuPercent = metrics.gpuPercent >= 0
-                    ? metrics.gpuPercent
-                    : snapshot.gpuLoad;
+            int gpuVal = metrics.gpuPercent >= 0 ? metrics.gpuPercent
+                    : (snapshot.gpuLoad != null ? snapshot.gpuLoad : -1);
+            sample.gpuPercent = gpuVal;
             sample.isGpuAvailable = metrics.isGpuAvailable;
 
             // System load
@@ -850,12 +892,13 @@ public class BatteryMonitorService extends Service {
             sample.isActive = isScreenOn;
 
             // Add to stress analyzer for trending
+            int bright = snapshot.screenBrightness != null ? snapshot.screenBrightness : 0;
             StressAnalyzer.StressSample stressSample = new StressAnalyzer.StressSample(
                     sample.systemCpuPercent, sample.gpuPercent,
                     sample.temperature, sample.batteryLevel,
                     sample.drainRatePerHour, sample.isThrottled, sample.throttleLevel,
                     sample.thermalStatus,
-                    snapshot.screenOn, snapshot.screenBrightness, snapshot.topAppPackage, snapshot.isCharging);
+                    snapshot.isScreenOnOrFalse(), bright, snapshot.topAppPackage, snapshot.isCharging);
             stressAnalyzer.addSample(stressSample);
 
             // Get stress analysis
@@ -914,7 +957,7 @@ public class BatteryMonitorService extends Service {
 
     // Last time we ran daily aggregation
     private volatile long lastDailyAggregationTime = 0;
-    private static final long DAILY_AGGREGATION_INTERVAL = 24 * 60 * 60 * 1000; // 24 hours
+    private static final long DAILY_AGGREGATION_INTERVAL = 6 * 60 * 60 * 1000; // 6 hours
 
     /**
      * Collect app launch metrics periodically.
@@ -1222,6 +1265,7 @@ public class BatteryMonitorService extends Service {
     private void handlePowerConnected() {
         Log.d(TAG, "Power connected");
         isCharging = true;
+        stateCache.setCharging(true);
         captureSnapshot("power_connected");
         executor.execute(() -> chargingAnalyzer.startChargingSession());
         updateSamplingInterval();
@@ -1232,6 +1276,7 @@ public class BatteryMonitorService extends Service {
         Log.d(TAG, "Power disconnected");
         isCharging = false;
         isFastCharging = false;
+        stateCache.setCharging(false);
         captureSnapshot("power_disconnected");
         executor.execute(() -> {
             chargingAnalyzer.endChargingSession();
@@ -1273,12 +1318,84 @@ public class BatteryMonitorService extends Service {
     private void handleScreenOff() {
         Log.d(TAG, "Screen off");
         isScreenOn = false;
+        stateCache.setScreenOn(false);
         captureSnapshot("screen_off");
         updateSamplingInterval();
 
         // Notify refresh rate monitor of screen state change
         if (refreshRateMonitor != null) {
             refreshRateMonitor.onScreenStateChanged(false);
+        }
+    }
+
+    // =========================================================================
+    // NETWORK DATA COLLECTION
+    // =========================================================================
+
+    /**
+     * Collects network data (cellular, wifi, bluetooth, modem firmware) and saves
+     * to database.
+     * Each collector is independent - failures in one don't affect others.
+     */
+    private void collectNetworkData(String context) {
+        try {
+            // Cellular snapshot (4G/5G signal metrics)
+            if (cellularCollector != null) {
+                NetworkCellularSnapshot cellularSnapshot = cellularCollector.collectSnapshot(context);
+                if (cellularSnapshot != null) {
+                    long cellId = database.networkCellularSnapshotDao().insert(cellularSnapshot);
+                    Log.d(TAG, "Cellular snapshot saved: id=" + cellId +
+                            ", rsrp=" + cellularSnapshot.rsrp +
+                            ", tech=" + cellularSnapshot.radioTechnology);
+                }
+            }
+        } catch (Exception e) {
+            Log.w(TAG, "Failed to collect cellular snapshot", e);
+        }
+
+        try {
+            // Wi-Fi snapshot
+            if (wifiCollector != null) {
+                NetworkWifiSnapshot wifiSnapshot = wifiCollector.collectSnapshot(context);
+                if (wifiSnapshot != null) {
+                    long wifiId = database.networkWifiSnapshotDao().insert(wifiSnapshot);
+                    Log.d(TAG, "Wi-Fi snapshot saved: id=" + wifiId +
+                            ", rssi=" + wifiSnapshot.rssi +
+                            ", std=" + wifiSnapshot.wifiStandardName);
+                }
+            }
+        } catch (Exception e) {
+            Log.w(TAG, "Failed to collect Wi-Fi snapshot", e);
+        }
+
+        try {
+            // Bluetooth snapshot
+            if (bluetoothCollector != null) {
+                NetworkBluetoothSnapshot btSnapshot = bluetoothCollector.collectSnapshot(context);
+                if (btSnapshot != null) {
+                    long btId = database.networkBluetoothSnapshotDao().insert(btSnapshot);
+                    Log.d(TAG, "Bluetooth snapshot saved: id=" + btId +
+                            ", state=" + btSnapshot.adapterStateName +
+                            ", codec=" + btSnapshot.codecType);
+                }
+            }
+        } catch (Exception e) {
+            Log.w(TAG, "Failed to collect Bluetooth snapshot", e);
+        }
+
+        try {
+            // Modem firmware check (only logs changes)
+            if (modemFirmwareTracker != null) {
+                ModemFirmwareEvent modemEvent = modemFirmwareTracker.checkAndRecordVersion("PERIODIC");
+                if (modemEvent != null) {
+                    long modemId = database.modemFirmwareEventDao().insert(modemEvent);
+                    Log.i(TAG, "Modem firmware event saved: id=" + modemId +
+                            ", type=" + modemEvent.eventType +
+                            ", ver=" + modemEvent.currentVersion);
+                }
+            }
+        } catch (Exception e) {
+            Log.w(TAG, "Failed to check modem firmware", e);
         }
     }
 

@@ -741,7 +741,7 @@ public class DeterministicAnalyzer {
                 dischargingTime += interval;
             }
             
-            if (prev.screenOn) {
+            if (prev.isScreenOnOrFalse()) {
                 screenOnTime += interval;
             } else {
                 screenOffTime += interval;

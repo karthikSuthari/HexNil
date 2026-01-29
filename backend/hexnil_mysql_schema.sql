@@ -1251,6 +1251,277 @@ CREATE TABLE IF NOT EXISTS cpu_gpu_load_samples (
     FOREIGN KEY (device_id) REFERENCES devices(device_id) ON DELETE CASCADE
 ) ENGINE=InnoDB;
 
+-- ============================================================================
+-- NETWORK & CONNECTIVITY TABLES (4G/5G, Wi-Fi, Bluetooth, Modem Firmware)
+-- ============================================================================
+
+-- Network Cellular Snapshots (4G/5G signal metrics)
+CREATE TABLE IF NOT EXISTS network_cellular_snapshots (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    device_id VARCHAR(64) NOT NULL,
+    timestamp BIGINT NOT NULL,
+    received_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    sequence_number BIGINT DEFAULT 0,
+    elapsed_realtime_ms BIGINT DEFAULT 0,
+    session_id BIGINT DEFAULT 0,
+    
+    -- Radio Technology
+    radio_technology VARCHAR(16),
+    network_type INT,
+    
+    -- Signal Metrics
+    signal_strength_dbm INT,
+    rsrp INT,
+    rsrq INT,
+    sinr INT,
+    rssi INT,
+    signal_level INT,
+    asu INT,
+    
+    -- Cell Identity
+    band INT,
+    arfcn INT,
+    pci INT,
+    cell_id BIGINT,
+    tac INT,
+    
+    -- Carrier Info
+    carrier_id INT,
+    mcc VARCHAR(4),
+    mnc VARCHAR(4),
+    network_operator_name VARCHAR(64),
+    plmn VARCHAR(8),
+    
+    -- Registration State
+    data_registration_state INT,
+    voice_registration_state INT,
+    is_roaming BOOLEAN,
+    roaming_type VARCHAR(16),
+    emergency_only BOOLEAN,
+    data_state INT,
+    data_activity INT,
+    
+    -- Modem Info
+    modem_firmware_version VARCHAR(128),
+    baseband_version VARCHAR(128),
+    
+    -- Context
+    snapshot_context VARCHAR(32),
+    snapshot_trigger VARCHAR(32),
+    data_source VARCHAR(32),
+    confidence FLOAT,
+    
+    -- Validation
+    validation_status VARCHAR(16) DEFAULT 'unchecked',
+    quality_score INT DEFAULT -1,
+    validation_flags INT DEFAULT 0,
+    validation_notes TEXT,
+    signal_data_changed BOOLEAN DEFAULT TRUE,
+    
+    INDEX idx_cellular_device_timestamp (device_id, timestamp),
+    INDEX idx_cellular_timestamp (timestamp),
+    INDEX idx_cellular_radio_tech (radio_technology),
+    INDEX idx_cellular_validation (validation_status),
+    FOREIGN KEY (device_id) REFERENCES devices(device_id) ON DELETE CASCADE
+) ENGINE=InnoDB;
+
+-- Network Wi-Fi Snapshots (Wi-Fi diagnostics)
+CREATE TABLE IF NOT EXISTS network_wifi_snapshots (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    device_id VARCHAR(64) NOT NULL,
+    timestamp BIGINT NOT NULL,
+    received_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    sequence_number BIGINT DEFAULT 0,
+    elapsed_realtime_ms BIGINT DEFAULT 0,
+    session_id BIGINT DEFAULT 0,
+    
+    -- Network Identity (hashed for privacy)
+    ssid_hash VARCHAR(64),
+    bssid_hash VARCHAR(64),
+    
+    -- Frequency/Channel
+    frequency INT,
+    frequency_band VARCHAR(8),
+    channel INT,
+    
+    -- Link Speed
+    link_speed_mbps INT,
+    tx_link_speed_mbps INT,
+    rx_link_speed_mbps INT,
+    max_tx_link_speed_mbps INT,
+    max_rx_link_speed_mbps INT,
+    
+    -- Signal
+    rssi INT,
+    signal_level INT,
+    
+    -- Wi-Fi Standard
+    wifi_standard INT,
+    wifi_standard_name VARCHAR(16),
+    security_type VARCHAR(32),
+    
+    -- Connection State
+    connection_state VARCHAR(16),
+    network_id INT,
+    is_metered BOOLEAN,
+    is_passpoint BOOLEAN,
+    
+    -- Stability Metrics
+    disconnect_reason INT,
+    reconnect_count INT,
+    dhcp_latency_ms INT,
+    time_since_auth_ms BIGINT,
+    association_attempts INT,
+    association_failures INT,
+    
+    -- IP Info
+    has_ipv4 BOOLEAN,
+    has_ipv6 BOOLEAN,
+    gateway_latency_ms INT,
+    
+    -- Context
+    snapshot_context VARCHAR(32),
+    snapshot_trigger VARCHAR(32),
+    data_source VARCHAR(32),
+    confidence FLOAT,
+    
+    -- Validation
+    validation_status VARCHAR(16) DEFAULT 'unchecked',
+    quality_score INT DEFAULT -1,
+    validation_flags INT DEFAULT 0,
+    validation_notes TEXT,
+    signal_data_changed BOOLEAN DEFAULT TRUE,
+    
+    INDEX idx_wifi_device_timestamp (device_id, timestamp),
+    INDEX idx_wifi_timestamp (timestamp),
+    INDEX idx_wifi_connection_state (connection_state),
+    INDEX idx_wifi_standard (wifi_standard),
+    INDEX idx_wifi_validation (validation_status),
+    FOREIGN KEY (device_id) REFERENCES devices(device_id) ON DELETE CASCADE
+) ENGINE=InnoDB;
+
+-- Network Bluetooth Snapshots (BT protocol tracking)
+CREATE TABLE IF NOT EXISTS network_bluetooth_snapshots (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    device_id VARCHAR(64) NOT NULL,
+    timestamp BIGINT NOT NULL,
+    received_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    sequence_number BIGINT DEFAULT 0,
+    elapsed_realtime_ms BIGINT DEFAULT 0,
+    session_id BIGINT DEFAULT 0,
+    
+    -- Adapter State
+    adapter_state INT,
+    adapter_state_name VARCHAR(16),
+    scan_mode INT,
+    is_enabled BOOLEAN,
+    is_discovering BOOLEAN,
+    
+    -- Device Counts
+    paired_device_count INT,
+    connected_device_count INT,
+    
+    -- Profile Info
+    profile_type VARCHAR(16),
+    profile_type_constant INT,
+    connection_state INT,
+    connection_state_name VARCHAR(16),
+    
+    -- A2DP Codec
+    codec_type VARCHAR(16),
+    codec_type_constant INT,
+    sample_rate INT,
+    bits_per_sample INT,
+    channel_mode VARCHAR(8),
+    codec_quality INT,
+    is_playing BOOLEAN,
+    
+    -- BLE Metrics
+    le_connection_interval INT,
+    le_latency INT,
+    
+    -- Signal Metrics
+    rssi INT,
+    tx_power_level INT,
+    packet_error_count INT,
+    reconnect_count INT,
+    connection_duration_ms BIGINT,
+    
+    -- Remote Device (hashed for privacy)
+    remote_address_hash VARCHAR(64),
+    remote_device_type INT,
+    remote_device_class INT,
+    remote_device_name VARCHAR(64),
+    
+    -- Context
+    snapshot_context VARCHAR(32),
+    snapshot_trigger VARCHAR(32),
+    data_source VARCHAR(32),
+    confidence FLOAT,
+    
+    -- Validation
+    validation_status VARCHAR(16) DEFAULT 'unchecked',
+    quality_score INT DEFAULT -1,
+    validation_flags INT DEFAULT 0,
+    validation_notes TEXT,
+    
+    INDEX idx_bt_device_timestamp (device_id, timestamp),
+    INDEX idx_bt_timestamp (timestamp),
+    INDEX idx_bt_adapter_state (adapter_state),
+    INDEX idx_bt_profile_type (profile_type),
+    INDEX idx_bt_validation (validation_status),
+    FOREIGN KEY (device_id) REFERENCES devices(device_id) ON DELETE CASCADE
+) ENGINE=InnoDB;
+
+-- Modem Firmware Events (baseband version tracking)
+CREATE TABLE IF NOT EXISTS modem_firmware_events (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    device_id VARCHAR(64) NOT NULL,
+    timestamp BIGINT NOT NULL,
+    received_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    elapsed_realtime_ms BIGINT DEFAULT 0,
+    
+    -- Version Info
+    previous_version VARCHAR(128),
+    current_version VARCHAR(128),
+    previous_baseband_version VARCHAR(128),
+    current_baseband_version VARCHAR(128),
+    
+    -- Event Classification
+    event_type VARCHAR(32),
+    detection_source VARCHAR(32),
+    
+    -- System Info
+    android_version VARCHAR(16),
+    android_sdk_level INT,
+    security_patch VARCHAR(16),
+    build_fingerprint VARCHAR(256),
+    build_number VARCHAR(64),
+    manufacturer VARCHAR(32),
+    model VARCHAR(64),
+    product VARCHAR(64),
+    
+    -- Bootloader/Hardware
+    bootloader_version VARCHAR(64),
+    hardware VARCHAR(32),
+    board VARCHAR(32),
+    
+    -- Change Analysis
+    is_version_change BOOLEAN,
+    is_ota_update BOOLEAN,
+    time_since_last_event_ms BIGINT,
+    
+    -- Metadata
+    session_id BIGINT DEFAULT 0,
+    notes TEXT,
+    
+    INDEX idx_modem_device_timestamp (device_id, timestamp),
+    INDEX idx_modem_timestamp (timestamp),
+    INDEX idx_modem_event_type (event_type),
+    INDEX idx_modem_current_version (current_version(64)),
+    FOREIGN KEY (device_id) REFERENCES devices(device_id) ON DELETE CASCADE
+) ENGINE=InnoDB;
+
 -- Grant permissions for new tables
 GRANT SELECT, INSERT ON hexnil.thermal_heat_buckets TO 'hexnil_backend'@'localhost';
 GRANT SELECT, INSERT ON hexnil.stress_test_results TO 'hexnil_backend'@'localhost';
@@ -1289,6 +1560,15 @@ GRANT SELECT, INSERT ON hexnil.anr_events TO 'hexnil_backend'@'%';
 GRANT SELECT, INSERT ON hexnil.daily_aggregates TO 'hexnil_backend'@'%';
 GRANT SELECT, INSERT ON hexnil.regression_events TO 'hexnil_backend'@'%';
 
+-- Network Cellular Snapshots (4G/5G signal metrics)
+GRANT SELECT, INSERT ON hexnil.network_cellular_snapshots TO 'hexnil_backend'@'%';
+-- Network Wi-Fi Snapshots (Wi-Fi diagnostics)
+GRANT SELECT, INSERT ON hexnil.network_wifi_snapshots TO 'hexnil_backend'@'%';
+-- Network Bluetooth Snapshots (BT protocol tracking)
+GRANT SELECT, INSERT ON hexnil.network_bluetooth_snapshots TO 'hexnil_backend'@'%';
+-- Modem Firmware Events (baseband version tracking)
+GRANT SELECT, INSERT ON hexnil.modem_firmware_events TO 'hexnil_backend'@'%';
+
 GRANT SELECT ON hexnil.thermal_heat_buckets TO 'hexnil_ai'@'localhost';
 GRANT SELECT ON hexnil.stress_test_results TO 'hexnil_ai'@'localhost';
 GRANT SELECT ON hexnil.update_comparisons TO 'hexnil_ai'@'localhost';
@@ -1306,6 +1586,10 @@ GRANT SELECT ON hexnil.crash_events TO 'hexnil_ai'@'localhost';
 GRANT SELECT ON hexnil.anr_events TO 'hexnil_ai'@'localhost';
 GRANT SELECT ON hexnil.daily_aggregates TO 'hexnil_ai'@'localhost';
 GRANT SELECT ON hexnil.regression_events TO 'hexnil_ai'@'localhost';
+GRANT SELECT ON hexnil.network_cellular_snapshots TO 'hexnil_ai'@'localhost';
+GRANT SELECT ON hexnil.network_wifi_snapshots TO 'hexnil_ai'@'localhost';
+GRANT SELECT ON hexnil.network_bluetooth_snapshots TO 'hexnil_ai'@'localhost';
+GRANT SELECT ON hexnil.modem_firmware_events TO 'hexnil_ai'@'localhost';
 
 -- Same grants for wildcard host
 GRANT SELECT ON hexnil.thermal_heat_buckets TO 'hexnil_ai'@'%';
@@ -1325,6 +1609,10 @@ GRANT SELECT ON hexnil.crash_events TO 'hexnil_ai'@'%';
 GRANT SELECT ON hexnil.anr_events TO 'hexnil_ai'@'%';
 GRANT SELECT ON hexnil.daily_aggregates TO 'hexnil_ai'@'%';
 GRANT SELECT ON hexnil.regression_events TO 'hexnil_ai'@'%';
+GRANT SELECT ON hexnil.network_cellular_snapshots TO 'hexnil_ai'@'%';
+GRANT SELECT ON hexnil.network_wifi_snapshots TO 'hexnil_ai'@'%';
+GRANT SELECT ON hexnil.network_bluetooth_snapshots TO 'hexnil_ai'@'%';
+GRANT SELECT ON hexnil.modem_firmware_events TO 'hexnil_ai'@'%';
 
 FLUSH PRIVILEGES;
 

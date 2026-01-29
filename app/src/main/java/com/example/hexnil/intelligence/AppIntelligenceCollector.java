@@ -182,7 +182,7 @@ public class AppIntelligenceCollector {
                 // Set context
                 attr.chargingState = snapshot.isCharging ? "charging" : "discharging";
                 attr.networkType = lastNetworkType;
-                attr.screenState = snapshot.screenOn ? "on" : "off";
+                attr.screenState = snapshot.isScreenOnOrFalse() ? "on" : "off";
 
                 // Calculate scores
                 attr.calculateScores();
@@ -336,9 +336,9 @@ public class AppIntelligenceCollector {
         impact.temperatureRiseC = 0; // Would need historical data
 
         // Set load metrics
-        impact.avgCpuLoad = snapshot.cpuLoadTotal;
-        impact.maxCpuLoad = snapshot.cpuLoadTotal;
-        impact.avgGpuLoad = snapshot.gpuLoad;
+        impact.avgCpuLoad = snapshot.cpuLoadTotal != null ? snapshot.cpuLoadTotal : 0;
+        impact.maxCpuLoad = snapshot.cpuLoadTotal != null ? snapshot.cpuLoadTotal : 0;
+        impact.avgGpuLoad = snapshot.gpuLoad != null ? snapshot.gpuLoad : 0;
 
         // Check thresholds
         if (lastTemperature >= HIGH_TEMP_THRESHOLD) {

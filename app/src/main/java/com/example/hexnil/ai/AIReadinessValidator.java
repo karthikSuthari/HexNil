@@ -628,12 +628,13 @@ public class AIReadinessValidator {
         boolean first = true;
         
         for (BatterySnapshot snapshot : snapshots) {
+            boolean on = snapshot.isScreenOnOrFalse();
             if (first) {
-                lastScreenOn = snapshot.screenOn;
+                lastScreenOn = on;
                 first = false;
-            } else if (snapshot.screenOn != lastScreenOn) {
+            } else if (on != lastScreenOn) {
                 transitions++;
-                lastScreenOn = snapshot.screenOn;
+                lastScreenOn = on;
             }
         }
         

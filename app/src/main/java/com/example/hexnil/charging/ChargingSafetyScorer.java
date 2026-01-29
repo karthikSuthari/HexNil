@@ -341,7 +341,7 @@ public class ChargingSafetyScorer {
         
         if (snapshot.getTemperatureCelsius() >= TEMP_WARNING) {
             rec.append("Reduce thermal load: ");
-            if (snapshot.screenOn) {
+            if (snapshot.isScreenOnOrFalse()) {
                 rec.append("Turn off screen. ");
             }
             rec.append("Move to cooler location. ");

@@ -107,13 +107,31 @@ SOLUTION:
   - On phone, revoke USB debugging authorizations (Developer Options)
   - Reconnect and accept the authorization prompt on phone
 
-ISSUE: Connection drops frequently
-SOLUTION:
-  - Keep phone display on during development
-  - Disable battery optimization for "Wireless debugging"
-  - Use a stable Wi-Fi connection
+================================================================================
+MANUAL STEPS & PATHS (Your Machine)
+================================================================================
+
+ADB LOCATION:
+C:\Users\sutha\AppData\Local\Android\Sdk\platform-tools\
+
+To run ADB manually, you MUST use the full path or add it to PATH.
+
+RUNNING COMMANDS IN TERMINAL (PowerShell STYLE):
+1. Open Terminal (Alt+F12 in Android Studio)
+2. Run this to check devices:
+   & "C:\Users\sutha\AppData\Local\Android\Sdk\platform-tools\adb.exe" devices
+
+3. Run this to connect wirelessly (Method 2 style):
+   & "C:\Users\sutha\AppData\Local\Android\Sdk\platform-tools\adb.exe" tcpip 5555
+   # (Unplug USB cable now)
+   & "C:\Users\sutha\AppData\Local\Android\Sdk\platform-tools\adb.exe" connect <YOUR_PHONE_IP>:5555
+
+4. Run this for Wireless Debugging Pairing (Method 1 style):
+   & "C:\Users\sutha\AppData\Local\Android\Sdk\platform-tools\adb.exe" pair <IP>:<PAIR_PORT>
+   & "C:\Users\sutha\AppData\Local\Android\Sdk\platform-tools\adb.exe" connect <IP>:<CONNECT_PORT>
 
 ================================================================================
+TROUBLESHOOTING
 WHERE TO RUN THESE COMMANDS
 ================================================================================
 

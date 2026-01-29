@@ -358,10 +358,11 @@ public class ChargingAnalyzer {
         evaluateRealTimeSafety(snapshot);
         
         // Charger fingerprint
-        activeSession.chargerFingerprint = snapshot.chargerVendorId + ":" + snapshot.chargerProductId;
+        activeSession.chargerFingerprint = (snapshot.chargerVendorId != null ? snapshot.chargerVendorId : "") + ":"
+                + (snapshot.chargerProductId != null ? snapshot.chargerProductId : "");
         
         // Screen tracking
-        if (snapshot.screenOn) {
+        if (snapshot.isScreenOnOrFalse()) {
             screenWasOnDuringCharge = true;
         }
         

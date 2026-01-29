@@ -400,7 +400,7 @@ public class RemoteMonitorServer extends Service {
                 live.put("level", latest.level);
                 live.put("temperature", latest.temperature / 10.0);
                 live.put("voltage", latest.voltage);
-                live.put("current", latest.currentNow);
+                live.put("current", latest.currentNow != null ? latest.currentNow : (Object) null);
                 live.put("isCharging", latest.isCharging);
                 live.put("plugType", getPlugTypeName(latest.plugged));
                 live.put("status", latest.status);

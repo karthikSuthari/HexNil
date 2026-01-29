@@ -71,15 +71,15 @@ public class DrainAnalyzer {
         // Update basic metrics
         activeEvent.endLevel = snapshot.level;
         activeEvent.endTime = snapshot.timestamp;
-        activeEvent.screenOn = snapshot.screenOn;
+        activeEvent.screenOn = snapshot.isScreenOnOrFalse();
         activeEvent.foregroundApp = snapshot.foregroundApp;
         activeEvent.isCharging = false;
         activeEvent.drainAmount = Math.max(0, activeEvent.startLevel - activeEvent.endLevel);
         activeEvent.drainRatePerHour = activeEvent.getDurationHours() > 0
                 ? activeEvent.drainAmount / activeEvent.getDurationHours()
                 : 0;
-        activeEvent.screenState = snapshot.isDozeMode ? "doze" : snapshot.screenOn ? "on" : "off";
-        activeEvent.isIdle = !snapshot.screenOn;
+        activeEvent.screenState = snapshot.isDozeMode ? "doze" : snapshot.isScreenOnOrFalse() ? "on" : "off";
+        activeEvent.isIdle = !snapshot.isScreenOnOrFalse();
 
         // Classify basic drain properties
         classifyDrain(snapshot);
@@ -113,7 +113,7 @@ public class DrainAnalyzer {
         // =====================================================================
         event.screenStateDetailed = result.screenState;
         event.screenStateGrade = result.screenStateGrade;
-        event.brightnessCategory = categorizeBrightness(snapshot.screenBrightness);
+        event.brightnessCategory = categorizeBrightness(snapshot.screenBrightness != null ? snapshot.screenBrightness : 0);
 
         // =====================================================================
         // EXPECTED VS ACTUAL DRAIN MODEL
@@ -221,7 +221,7 @@ public class DrainAnalyzer {
     }
 
     private void classifyDrain(BatterySnapshot snapshot) {
-        if (snapshot.screenOn) {
+        if (snapshot.isScreenOnOrFalse()) {
             activeEvent.drainType = activeEvent.drainRatePerHour > 18 ? "heavy" : "normal";
             activeEvent.drainCategory = "display";
         } else if (snapshot.isDozeMode) {
@@ -236,13 +236,14 @@ public class DrainAnalyzer {
         activeEvent.networkType = snapshot.networkState;
         activeEvent.networkDrainEstimate = "mobile".equals(snapshot.networkState) ? activeEvent.drainRatePerHour * 0.4f
                 : activeEvent.drainRatePerHour * 0.2f;
-        activeEvent.displayDrainEstimate = snapshot.screenOn
-                ? (snapshot.screenBrightness / 255f) * activeEvent.drainRatePerHour
+        int bright = snapshot.screenBrightness != null ? snapshot.screenBrightness : 0;
+        activeEvent.displayDrainEstimate = snapshot.isScreenOnOrFalse()
+                ? (bright / 255f) * activeEvent.drainRatePerHour
                 : 0f;
-        activeEvent.cpuDrainEstimate = snapshot.cpuLoadTotal > 0
+        activeEvent.cpuDrainEstimate = (snapshot.cpuLoadTotal != null && snapshot.cpuLoadTotal > 0)
                 ? (snapshot.cpuLoadTotal / 100f) * activeEvent.drainRatePerHour
                 : 0f;
-        activeEvent.avgBrightness = snapshot.screenBrightness;
+        activeEvent.avgBrightness = bright;
         activeEvent.screenOnTime = activeEvent.screenOn
                 ? Math.max(0, snapshot.timestamp - activeEvent.startTime)
                 : activeEvent.screenOnTime;

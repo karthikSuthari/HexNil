@@ -31,7 +31,8 @@ import java.util.concurrent.Executors;
 
 /**
  * OEM-Grade Dashboard with real-time battery monitoring display.
- * Shows live battery stats, service status, remote access, and database statistics.
+ * Shows live battery stats, service status, remote access, and database
+ * statistics.
  */
 public class DashboardFragment extends Fragment {
 
@@ -40,7 +41,7 @@ public class DashboardFragment extends Fragment {
     private ExecutorService executor;
     private Handler handler;
     private Runnable refreshRunnable;
-    
+
     // UI Elements
     private TextView tvServiceStatus;
     private TextView tvUptime;
@@ -59,7 +60,7 @@ public class DashboardFragment extends Fragment {
     private SwitchMaterial switchRemote;
     private View statusIndicator;
     private View remoteStatusIndicator;
-    
+
     private static long serviceStartTime = System.currentTimeMillis();
     private static final int REFRESH_INTERVAL_MS = 3000;
 
@@ -73,21 +74,22 @@ public class DashboardFragment extends Fragment {
 
     @Nullable
     @Override
-    public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
+    public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container,
+            @Nullable Bundle savedInstanceState) {
         View root = inflater.inflate(R.layout.fragment_dashboard, container, false);
-        
+
         database = HexNilDatabase.getInstance(requireContext());
         executor = Executors.newSingleThreadExecutor();
         handler = new Handler(Looper.getMainLooper());
-        
+
         initViews(root);
         setupNavButtons(root);
         setupRemoteSwitch();
-        
+
         // Start periodic refresh
         refreshRunnable = this::refreshData;
         handler.post(refreshRunnable);
-        
+
         return root;
     }
 
@@ -109,7 +111,7 @@ public class DashboardFragment extends Fragment {
         switchRemote = root.findViewById(R.id.switch_remote);
         statusIndicator = root.findViewById(R.id.status_indicator);
         remoteStatusIndicator = root.findViewById(R.id.remote_status_indicator);
-        
+
         ImageButton btnRefresh = root.findViewById(R.id.btn_refresh);
         if (btnRefresh != null) {
             btnRefresh.setOnClickListener(v -> refreshData());
@@ -131,16 +133,17 @@ public class DashboardFragment extends Fragment {
         MaterialButton btn = root.findViewById(buttonId);
         if (btn != null) {
             btn.setOnClickListener(v -> {
-                if (navigator != null) navigator.openModule(tag);
+                if (navigator != null)
+                    navigator.openModule(tag);
             });
         }
     }
-    
+
     private void setupRemoteSwitch() {
         // Check current remote server state
         switchRemote.setChecked(RemoteMonitorServer.isRunning());
         updateRemoteStatus();
-        
+
         switchRemote.setOnCheckedChangeListener((buttonView, isChecked) -> {
             if (isChecked) {
                 RemoteMonitorServer.start(requireContext());
@@ -151,7 +154,7 @@ public class DashboardFragment extends Fragment {
             handler.postDelayed(this::updateRemoteStatus, 500);
         });
     }
-    
+
     private void updateRemoteStatus() {
         if (RemoteMonitorServer.isRunning()) {
             RemoteMonitorServer.ServerInfo info = RemoteMonitorServer.getServerInfo();
@@ -164,16 +167,17 @@ public class DashboardFragment extends Fragment {
             remoteStatusIndicator.setBackgroundResource(R.drawable.status_indicator_off);
         }
     }
-    
+
     private void refreshData() {
-        if (!isAdded()) return;
-        
+        if (!isAdded())
+            return;
+
         executor.execute(() -> {
             try {
                 // Get latest snapshot
                 BatterySnapshot snapshot = database.batterySnapshotDao().getLatest();
                 BatteryHealth health = database.batteryHealthDao().getLatest();
-                
+
                 // Get counts
                 int snapshotCount = database.batterySnapshotDao().getCount();
                 int sessionCount = database.chargingSessionDao().getCount();
@@ -181,35 +185,36 @@ public class DashboardFragment extends Fragment {
                 int drainCount = database.drainEventDao().getCount();
                 int safetyCount = database.safetyEventDao().getCount();
                 int totalEvents = thermalCount + drainCount + safetyCount;
-                
+
                 // Update UI on main thread
                 handler.post(() -> updateUI(snapshot, health, snapshotCount, sessionCount, totalEvents));
             } catch (Exception e) {
                 e.printStackTrace();
             }
         });
-        
+
         // Schedule next refresh
         handler.postDelayed(refreshRunnable, REFRESH_INTERVAL_MS);
     }
-    
-    private void updateUI(BatterySnapshot snapshot, BatteryHealth health, 
-                          int snapshotCount, int sessionCount, int eventCount) {
-        if (!isAdded()) return;
-        
+
+    private void updateUI(BatterySnapshot snapshot, BatteryHealth health,
+            int snapshotCount, int sessionCount, int eventCount) {
+        if (!isAdded())
+            return;
+
         // Service status
         tvServiceStatus.setText("MONITORING ACTIVE");
         statusIndicator.setBackgroundResource(R.drawable.status_indicator_green);
-        
+
         // Uptime
         long uptimeMs = System.currentTimeMillis() - serviceStartTime;
         tvUptime.setText("Uptime: " + formatUptime(uptimeMs));
-        
+
         if (snapshot != null) {
             // Battery level
             tvBatteryLevel.setText(String.valueOf(snapshot.level));
             progressBattery.setProgress(snapshot.level);
-            
+
             // Charging status
             if (snapshot.isCharging) {
                 String chargeType = snapshot.isFastCharging ? "FAST CHARGING" : "CHARGING";
@@ -219,7 +224,7 @@ public class DashboardFragment extends Fragment {
                 tvChargingStatus.setText("DISCHARGING");
                 tvChargingStatus.setTextColor(ContextCompat.getColor(requireContext(), R.color.oem_text_secondary));
             }
-            
+
             // Temperature
             float tempC = snapshot.temperature / 10.0f;
             tvTemperature.setText(String.format(Locale.US, "%.1f°C", tempC));
@@ -230,15 +235,19 @@ public class DashboardFragment extends Fragment {
             } else {
                 tvTemperature.setTextColor(ContextCompat.getColor(requireContext(), R.color.oem_text_primary));
             }
-            
+
             // Voltage
             tvVoltage.setText(String.format(Locale.US, "%d mV", snapshot.voltage));
-            
+
             // Current
-            int currentMa = snapshot.currentNow / 1000; // Convert µA to mA
-            tvCurrent.setText(String.format(Locale.US, "%d mA", Math.abs(currentMa)));
+            if (snapshot.currentNow != null) {
+                int currentMa = snapshot.currentNow / 1000;
+                tvCurrent.setText(String.format(Locale.US, "%d mA", Math.abs(currentMa)));
+            } else {
+                tvCurrent.setText("—");
+            }
         }
-        
+
         // Health
         if (health != null) {
             tvHealth.setText(String.format(Locale.US, "%.0f%%", health.healthPercentage));
@@ -250,25 +259,25 @@ public class DashboardFragment extends Fragment {
                 tvHealth.setTextColor(ContextCompat.getColor(requireContext(), R.color.oem_status_safe));
             }
         }
-        
+
         // Database stats
         tvSnapshotCount.setText(formatCount(snapshotCount));
         tvSessionCount.setText(formatCount(sessionCount));
         tvEventCount.setText(formatCount(eventCount));
-        
+
         // Active monitors
         tvMonitors.setText(getMonitorsStatus());
-        
+
         // Update remote status
         updateRemoteStatus();
     }
-    
+
     private String formatUptime(long ms) {
         long seconds = ms / 1000;
         long minutes = seconds / 60;
         long hours = minutes / 60;
         long days = hours / 24;
-        
+
         if (days > 0) {
             return String.format(Locale.US, "%dd %dh %dm", days, hours % 24, minutes % 60);
         } else if (hours > 0) {
@@ -279,7 +288,7 @@ public class DashboardFragment extends Fragment {
             return String.format(Locale.US, "%ds", seconds);
         }
     }
-    
+
     private String formatCount(int count) {
         if (count >= 1000000) {
             return String.format(Locale.US, "%.1fM", count / 1000000.0);
@@ -289,7 +298,7 @@ public class DashboardFragment extends Fragment {
             return String.valueOf(count);
         }
     }
-    
+
     private String getMonitorsStatus() {
         StringBuilder sb = new StringBuilder();
         sb.append("• Battery Snapshots (adaptive intervals)\n");

@@ -504,24 +504,21 @@ public class ThermalPerformanceIntelligence {
 
         for (BatterySnapshot snap : snapshots) {
             float tempC = snap.temperature / 10.0f;
-
-            if (snap.screenOn) {
+            boolean on = snap.isScreenOnOrFalse();
+            if (on) {
                 sumScreenOn += tempC;
                 countScreenOn++;
                 if (lastScreenState != null && !lastScreenState) {
-                    // Screen just turned on
                     lastScreenOnTs = snap.timestamp;
                 }
             } else {
                 sumScreenOff += tempC;
                 countScreenOff++;
                 if (lastScreenState != null && lastScreenState) {
-                    // Screen just turned off
                     lastScreenOffTs = snap.timestamp;
                 }
             }
-
-            lastScreenState = snap.screenOn;
+            lastScreenState = on;
         }
 
         metrics.avgTempScreenOn = countScreenOn > 0 ? sumScreenOn / countScreenOn : 0;

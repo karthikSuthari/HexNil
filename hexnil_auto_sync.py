@@ -139,7 +139,11 @@ def load_sync_state() -> Dict[str, Any]:
         'last_crash_events_id': 0,
         'last_anr_events_id': 0,
         'last_daily_aggregates_id': 0,
-        'last_regression_events_id': 0
+        'last_regression_events_id': 0,
+        'last_network_cellular_snapshots_id': 0,
+        'last_network_wifi_snapshots_id': 0,
+        'last_network_bluetooth_snapshots_id': 0,
+        'last_modem_firmware_events_id': 0
     }
 
 
@@ -165,27 +169,44 @@ def read_new_data(conn: sqlite3.Connection, table: str, last_id: int) -> List[Di
 
 
 def transform_snapshot(row: Dict, device_id: str) -> Dict:
-    """Transform battery snapshot for API - matches BatterySnapshot Pydantic model."""
+    """Transform battery snapshot for API. Preserves NULL for three-state (0/1/NULL)."""
     status = row.get('status', 0)
-    is_charging = status == 2 or bool(row.get('isCharging', 0))  # STATUS_CHARGING
+    is_charging = status == 2 or bool(row.get('isCharging', 0))
     plugged = row.get('plugged', 0)
-    
-    # Get charge type from chargingType field or derive from plugged
     charge_type = row.get('chargingType', row.get('chargeType'))
     if not charge_type:
         charge_type = 'ac' if plugged == 1 else ('usb' if plugged == 2 else ('wireless' if plugged == 4 else None))
-    
+
+    raw_current = row.get('currentNow', row.get('current_now', row.get('current')))
+    current_now = None if raw_current is None else (float(raw_current) if isinstance(raw_current, (int, float)) else None)
+
+    raw_screen = row.get('screenOn', row.get('screen_on'))
+    if raw_screen is None:
+        screen_on = None  # UNAVAILABLE
+    else:
+        screen_on = bool(int(raw_screen)) if raw_screen != '' else None
+
+    raw_trigger = row.get('snapshotTrigger', row.get('snapshot_trigger'))
+    raw_source = row.get('dataSource', row.get('data_source'))
+    raw_conf = row.get('confidence')
+    try:
+        confidence = float(raw_conf) if raw_conf is not None else None
+    except (TypeError, ValueError):
+        confidence = None
     return {
         'device_id': device_id,
         'timestamp': row.get('timestamp'),
         'battery_level': row.get('level', 0),
-        'temperature': row.get('temperature', 0) / 10.0 if row.get('temperature') else None,  # Convert from tenths
-        'voltage': row.get('voltage', 0) / 1000.0 if row.get('voltage') else None,  # Convert to volts
-        'current_now': row.get('currentNow', row.get('current_now', row.get('current'))),
+        'temperature': (row.get('temperature', 0) or 0) / 10.0 if row.get('temperature') is not None else None,
+        'voltage': (row.get('voltage', 0) or 0) / 1000.0 if row.get('voltage') is not None else None,
+        'current_now': current_now,
         'is_charging': is_charging,
         'charge_type': charge_type,
-        'screen_on': bool(row.get('screenOn', row.get('screen_on', 0))),
+        'screen_on': screen_on,
         'power_save_mode': bool(row.get('powerSaveMode', row.get('power_save_mode', False)) or False),
+        'snapshot_trigger': raw_trigger if raw_trigger else None,
+        'data_source': raw_source if raw_source else None,
+        'confidence': confidence,
     }
 
 
@@ -685,6 +706,181 @@ def transform_regression_event(row: Dict, device_id: str) -> Dict:
     }
 
 
+def transform_network_cellular_snapshot(row: Dict, device_id: str) -> Dict:
+    """Transform network cellular snapshot for API."""
+    return {
+        'device_id': device_id,
+        'timestamp': row.get('timestamp', 0),
+        'sequence_number': row.get('sequenceNumber', 0),
+        'elapsed_realtime_ms': row.get('elapsedRealtimeMs', 0),
+        'session_id': row.get('sessionId', 0),
+        'radio_technology': row.get('radioTechnology'),
+        'network_type': row.get('networkType'),
+        'signal_strength_dbm': row.get('signalStrengthDbm'),
+        'rsrp': row.get('rsrp'),
+        'rsrq': row.get('rsrq'),
+        'sinr': row.get('sinr'),
+        'rssi': row.get('rssi'),
+        'signal_level': row.get('signalLevel'),
+        'asu': row.get('asu'),
+        'band': row.get('band'),
+        'arfcn': row.get('arfcn'),
+        'pci': row.get('pci'),
+        'cell_id': row.get('cellId'),
+        'tac': row.get('tac'),
+        'carrier_id': row.get('carrierId'),
+        'mcc': row.get('mcc'),
+        'mnc': row.get('mnc'),
+        'network_operator_name': row.get('networkOperatorName'),
+        'plmn': row.get('plmn'),
+        'data_registration_state': row.get('dataRegistrationState'),
+        'voice_registration_state': row.get('voiceRegistrationState'),
+        'is_roaming': bool(row.get('isRoaming', 0)) if row.get('isRoaming') is not None else None,
+        'roaming_type': row.get('roamingType'),
+        'emergency_only': bool(row.get('emergencyOnly', 0)) if row.get('emergencyOnly') is not None else None,
+        'data_state': row.get('dataState'),
+        'data_activity': row.get('dataActivity'),
+        'modem_firmware_version': row.get('modemFirmwareVersion'),
+        'baseband_version': row.get('basebandVersion'),
+        'snapshot_context': row.get('snapshotContext'),
+        'snapshot_trigger': row.get('snapshotTrigger'),
+        'data_source': row.get('dataSource'),
+        'confidence': row.get('confidence'),
+        'validation_status': row.get('validationStatus', 'unchecked'),
+        'quality_score': row.get('qualityScore', -1),
+        'validation_flags': row.get('validationFlags', 0),
+        'validation_notes': row.get('validationNotes'),
+        'signal_data_changed': bool(row.get('signalDataChanged', 1))
+    }
+
+
+def transform_network_wifi_snapshot(row: Dict, device_id: str) -> Dict:
+    """Transform network Wi-Fi snapshot for API."""
+    return {
+        'device_id': device_id,
+        'timestamp': row.get('timestamp', 0),
+        'sequence_number': row.get('sequenceNumber', 0),
+        'elapsed_realtime_ms': row.get('elapsedRealtimeMs', 0),
+        'session_id': row.get('sessionId', 0),
+        'ssid_hash': row.get('ssidHash'),
+        'bssid_hash': row.get('bssidHash'),
+        'frequency': row.get('frequency'),
+        'frequency_band': row.get('frequencyBand'),
+        'channel': row.get('channel'),
+        'link_speed_mbps': row.get('linkSpeedMbps'),
+        'tx_link_speed_mbps': row.get('txLinkSpeedMbps'),
+        'rx_link_speed_mbps': row.get('rxLinkSpeedMbps'),
+        'max_tx_link_speed_mbps': row.get('maxTxLinkSpeedMbps'),
+        'max_rx_link_speed_mbps': row.get('maxRxLinkSpeedMbps'),
+        'rssi': row.get('rssi'),
+        'signal_level': row.get('signalLevel'),
+        'wifi_standard': row.get('wifiStandard'),
+        'wifi_standard_name': row.get('wifiStandardName'),
+        'security_type': row.get('securityType'),
+        'connection_state': row.get('connectionState'),
+        'network_id': row.get('networkId'),
+        'is_metered': bool(row.get('isMetered', 0)) if row.get('isMetered') is not None else None,
+        'is_passpoint': bool(row.get('isPasspoint', 0)) if row.get('isPasspoint') is not None else None,
+        'disconnect_reason': row.get('disconnectReason'),
+        'reconnect_count': row.get('reconnectCount'),
+        'dhcp_latency_ms': row.get('dhcpLatencyMs'),
+        'time_since_auth_ms': row.get('timeSinceAuthMs'),
+        'association_attempts': row.get('associationAttempts'),
+        'association_failures': row.get('associationFailures'),
+        'has_ipv4': bool(row.get('hasIpv4', 0)) if row.get('hasIpv4') is not None else None,
+        'has_ipv6': bool(row.get('hasIpv6', 0)) if row.get('hasIpv6') is not None else None,
+        'gateway_latency_ms': row.get('gatewayLatencyMs'),
+        'snapshot_context': row.get('snapshotContext'),
+        'snapshot_trigger': row.get('snapshotTrigger'),
+        'data_source': row.get('dataSource'),
+        'confidence': row.get('confidence'),
+        'validation_status': row.get('validationStatus', 'unchecked'),
+        'quality_score': row.get('qualityScore', -1),
+        'validation_flags': row.get('validationFlags', 0),
+        'validation_notes': row.get('validationNotes'),
+        'signal_data_changed': bool(row.get('signalDataChanged', 1))
+    }
+
+
+def transform_network_bluetooth_snapshot(row: Dict, device_id: str) -> Dict:
+    """Transform network Bluetooth snapshot for API."""
+    return {
+        'device_id': device_id,
+        'timestamp': row.get('timestamp', 0),
+        'sequence_number': row.get('sequenceNumber', 0),
+        'elapsed_realtime_ms': row.get('elapsedRealtimeMs', 0),
+        'session_id': row.get('sessionId', 0),
+        'adapter_state': row.get('adapterState'),
+        'adapter_state_name': row.get('adapterStateName'),
+        'scan_mode': row.get('scanMode'),
+        'is_enabled': bool(row.get('isEnabled', 0)) if row.get('isEnabled') is not None else None,
+        'is_discovering': bool(row.get('isDiscovering', 0)) if row.get('isDiscovering') is not None else None,
+        'paired_device_count': row.get('pairedDeviceCount'),
+        'connected_device_count': row.get('connectedDeviceCount'),
+        'profile_type': row.get('profileType'),
+        'profile_type_constant': row.get('profileTypeConstant'),
+        'connection_state': row.get('connectionState'),
+        'connection_state_name': row.get('connectionStateName'),
+        'codec_type': row.get('codecType'),
+        'codec_type_constant': row.get('codecTypeConstant'),
+        'sample_rate': row.get('sampleRate'),
+        'bits_per_sample': row.get('bitsPerSample'),
+        'channel_mode': row.get('channelMode'),
+        'codec_quality': row.get('codecQuality'),
+        'is_playing': bool(row.get('isPlaying', 0)) if row.get('isPlaying') is not None else None,
+        'le_connection_interval': row.get('leConnectionInterval'),
+        'le_latency': row.get('leLatency'),
+        'rssi': row.get('rssi'),
+        'tx_power_level': row.get('txPowerLevel'),
+        'packet_error_count': row.get('packetErrorCount'),
+        'reconnect_count': row.get('reconnectCount'),
+        'connection_duration_ms': row.get('connectionDurationMs'),
+        'remote_address_hash': row.get('remoteAddressHash'),
+        'remote_device_type': row.get('remoteDeviceType'),
+        'remote_device_class': row.get('remoteDeviceClass'),
+        'remote_device_name': row.get('remoteDeviceName'),
+        'snapshot_context': row.get('snapshotContext'),
+        'snapshot_trigger': row.get('snapshotTrigger'),
+        'data_source': row.get('dataSource'),
+        'confidence': row.get('confidence'),
+        'validation_status': row.get('validationStatus', 'unchecked'),
+        'quality_score': row.get('qualityScore', -1),
+        'validation_flags': row.get('validationFlags', 0),
+        'validation_notes': row.get('validationNotes')
+    }
+
+
+def transform_modem_firmware_event(row: Dict, device_id: str) -> Dict:
+    """Transform modem firmware event for API."""
+    return {
+        'device_id': device_id,
+        'timestamp': row.get('timestamp', 0),
+        'elapsed_realtime_ms': row.get('elapsedRealtimeMs', 0),
+        'previous_version': row.get('previousVersion'),
+        'current_version': row.get('currentVersion'),
+        'previous_baseband_version': row.get('previousBasebandVersion'),
+        'current_baseband_version': row.get('currentBasebandVersion'),
+        'event_type': row.get('eventType'),
+        'detection_source': row.get('detectionSource'),
+        'android_version': row.get('androidVersion'),
+        'android_sdk_level': row.get('androidSdkLevel'),
+        'security_patch': row.get('securityPatch'),
+        'build_fingerprint': row.get('buildFingerprint'),
+        'build_number': row.get('buildNumber'),
+        'manufacturer': row.get('manufacturer'),
+        'model': row.get('model'),
+        'product': row.get('product'),
+        'bootloader_version': row.get('bootloaderVersion'),
+        'hardware': row.get('hardware'),
+        'board': row.get('board'),
+        'is_version_change': bool(row.get('isVersionChange', 0)) if row.get('isVersionChange') is not None else None,
+        'is_ota_update': bool(row.get('isOtaUpdate', 0)) if row.get('isOtaUpdate') is not None else None,
+        'time_since_last_event_ms': row.get('timeSinceLastEventMs'),
+        'session_id': row.get('sessionId', 0),
+        'notes': row.get('notes')
+    }
+
+
 def sync_to_backend(device_id: str, data: Dict[str, List], device_model: str = None) -> bool:
     """Sync collected data to the backend server."""
     payload = {
@@ -698,6 +894,7 @@ def sync_to_backend(device_id: str, data: Dict[str, List], device_model: str = N
         'charging_sessions': data.get('charging', []),
         'thermal_events': data.get('thermal', []),
         'drain_events': data.get('drain', []),
+        'idle_drain_sessions': data.get('idle_drain_sessions', []),
         'battery_health': data.get('health', []),
         'safety_events': data.get('safety', []),
         'app_battery_usage': data.get('app_battery_usage', []),
@@ -709,7 +906,18 @@ def sync_to_backend(device_id: str, data: Dict[str, List], device_model: str = N
         'calibration_data': data.get('calibration_data', []),
         'device_info_sync': data.get('device_info', []),
         'ai_analysis_results': data.get('ai_analysis_results', []),
-        'cpu_gpu_load_samples': data.get('cpu_gpu_load_samples', [])
+        'cpu_gpu_load_samples': data.get('cpu_gpu_load_samples', []),
+        'memory_snapshots': data.get('memory_snapshots', []),
+        'app_launch_metrics': data.get('app_launch_metrics', []),
+        'frame_metrics': data.get('frame_metrics', []),
+        'crash_events': data.get('crash_events', []),
+        'anr_events': data.get('anr_events', []),
+        'daily_aggregates': data.get('daily_aggregates', []),
+        'regression_events': data.get('regression_events', []),
+        'network_cellular_snapshots': data.get('network_cellular_snapshots', []),
+        'network_wifi_snapshots': data.get('network_wifi_snapshots', []),
+        'network_bluetooth_snapshots': data.get('network_bluetooth_snapshots', []),
+        'modem_firmware_events': data.get('modem_firmware_events', [])
     }
     
     total_records = sum(len(v) for v in data.values())
@@ -779,6 +987,10 @@ def process_sync(device_id: str, device_model: str = None) -> bool:
         ('anr_events', 'last_anr_events_id', transform_anr_event),
         ('daily_aggregates', 'last_daily_aggregates_id', transform_daily_aggregate),
         ('regression_events', 'last_regression_events_id', transform_regression_event),
+        ('network_cellular_snapshots', 'last_network_cellular_snapshots_id', transform_network_cellular_snapshot),
+        ('network_wifi_snapshots', 'last_network_wifi_snapshots_id', transform_network_wifi_snapshot),
+        ('network_bluetooth_snapshots', 'last_network_bluetooth_snapshots_id', transform_network_bluetooth_snapshot),
+        ('modem_firmware_events', 'last_modem_firmware_events_id', transform_modem_firmware_event),
     ]
     
     # Read new data from each table
@@ -799,16 +1011,36 @@ def process_sync(device_id: str, device_model: str = None) -> bool:
                 continue
                 
             # Map table names to payload keys
+            # Mapping from Room DB table name -> payload key in BatchSyncRequest
             key_map = {
-                'battery_snapshots': 'snapshots',
-                'charging_sessions': 'charging',
-                'thermal_events': 'thermal',
-                'drain_events': 'drain',
-                'battery_health': 'health',
-                'safety_events': 'safety',
+                'battery_snapshots': 'battery_snapshots',
+                'charging_sessions': 'charging_sessions',
+                'thermal_events': 'thermal_events',
+                'drain_events': 'drain_events',
+                'idle_drain_sessions': 'idle_drain_sessions',
+                'battery_health': 'battery_health',
+                'safety_events': 'safety_events',
                 'app_battery_usage': 'app_battery_usage',
                 'app_drain_ranks': 'app_drain_ranks',
-                'cpu_gpu_load_samples': 'cpu_gpu_load_samples'
+                'refresh_rate_sessions': 'refresh_rate_sessions',
+                'refresh_rate_anomalies': 'refresh_rate_anomalies',
+                'anomaly_records': 'anomaly_records',
+                'thermal_heat_buckets': 'thermal_heat_buckets',
+                'calibration_data': 'calibration_data',
+                'device_info': 'device_info_sync',
+                'ai_analysis_results': 'ai_analysis_results',
+                'cpu_gpu_load_samples': 'cpu_gpu_load_samples',
+                'memory_snapshots': 'memory_snapshots',
+                'app_launch_metrics': 'app_launch_metrics',
+                'frame_metrics': 'frame_metrics',
+                'crash_events': 'crash_events',
+                'anr_events': 'anr_events',
+                'daily_aggregates': 'daily_aggregates',
+                'regression_events': 'regression_events',
+                'network_cellular_snapshots': 'network_cellular_snapshots',
+                'network_wifi_snapshots': 'network_wifi_snapshots',
+                'network_bluetooth_snapshots': 'network_bluetooth_snapshots',
+                'modem_firmware_events': 'modem_firmware_events'
             }
             key = key_map.get(table_name, table_name)
             new_data[key] = transformed

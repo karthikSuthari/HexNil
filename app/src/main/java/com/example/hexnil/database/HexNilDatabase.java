@@ -36,6 +36,10 @@ import com.example.hexnil.model.CrashEvent;
 import com.example.hexnil.model.AnrEvent;
 import com.example.hexnil.model.DailyAggregate;
 import com.example.hexnil.model.RegressionEvent;
+import com.example.hexnil.model.NetworkCellularSnapshot;
+import com.example.hexnil.model.NetworkWifiSnapshot;
+import com.example.hexnil.model.NetworkBluetoothSnapshot;
+import com.example.hexnil.model.ModemFirmwareEvent;
 
 /**
  * Main Room Database for HexNil Battery Analysis
@@ -69,8 +73,12 @@ import com.example.hexnil.model.RegressionEvent;
                 CrashEvent.class,
                 AnrEvent.class,
                 DailyAggregate.class,
-                RegressionEvent.class
-}, version = 25, exportSchema = true)
+                RegressionEvent.class,
+                NetworkCellularSnapshot.class,
+                NetworkWifiSnapshot.class,
+                NetworkBluetoothSnapshot.class,
+                ModemFirmwareEvent.class
+}, version = 27, exportSchema = true)
 public abstract class HexNilDatabase extends RoomDatabase {
 
         private static final String DATABASE_NAME = "hexnil_battery_db";
@@ -125,6 +133,14 @@ public abstract class HexNilDatabase extends RoomDatabase {
 
         public abstract RegressionEventDao regressionEventDao();
 
+        public abstract NetworkCellularSnapshotDao networkCellularSnapshotDao();
+
+        public abstract NetworkWifiSnapshotDao networkWifiSnapshotDao();
+
+        public abstract NetworkBluetoothSnapshotDao networkBluetoothSnapshotDao();
+
+        public abstract ModemFirmwareEventDao modemFirmwareEventDao();
+
         public static HexNilDatabase getInstance(Context context) {
                 if (INSTANCE == null) {
                         synchronized (HexNilDatabase.class) {
@@ -145,7 +161,9 @@ public abstract class HexNilDatabase extends RoomDatabase {
                                                                         MIGRATION_21_22,
                                                                         MIGRATION_22_23,
                                                                         MIGRATION_23_24,
-                                                                        MIGRATION_24_25)
+                                                                        MIGRATION_24_25,
+                                                                        MIGRATION_25_26,
+                                                                        MIGRATION_26_27)
                                                         .build();
                                 }
                         }
@@ -1503,6 +1521,293 @@ public abstract class HexNilDatabase extends RoomDatabase {
                         db.execSQL("CREATE INDEX IF NOT EXISTS index_regression_events_regressionType ON regression_events(regressionType)");
                         db.execSQL("CREATE INDEX IF NOT EXISTS index_regression_events_isResolved ON regression_events(isResolved)");
                         db.execSQL("CREATE INDEX IF NOT EXISTS index_regression_events_severity ON regression_events(severity)");
+                }
+        };
+
+        // =====================================================================================
+        // MIGRATION 25 -> 26: Three-state data model (nullable metrics, snapshot
+        // context)
+        // - Make three-state columns nullable: screenOn, wifi*, mobile*, bluetooth*,
+        // gps*,
+        // currentNow, currentAverage, energyCounter, chargeCounter, cpuLoadTotal,
+        // gpuLoad,
+        // screenBrightness, signalStrength, chargerVendorId, chargerProductId.
+        // - Add snapshotTrigger, dataSource, confidence for explainable data.
+        // =====================================================================================
+        static final Migration MIGRATION_25_26 = new Migration(25, 26) {
+                @Override
+                public void migrate(SupportSQLiteDatabase db) {
+                        db.execSQL("CREATE TABLE IF NOT EXISTS battery_snapshots_new (" +
+                                        "id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, " +
+                                        "timestamp INTEGER NOT NULL, sequenceNumber INTEGER NOT NULL, " +
+                                        "elapsedRealtimeMs INTEGER NOT NULL, level INTEGER NOT NULL, " +
+                                        "status INTEGER NOT NULL, health INTEGER NOT NULL, plugged INTEGER NOT NULL, " +
+                                        "voltage INTEGER NOT NULL, temperature INTEGER NOT NULL, " +
+                                        "chargeCounter INTEGER, currentNow INTEGER, currentAverage INTEGER, energyCounter INTEGER, "
+                                        +
+                                        "capacityMah REAL NOT NULL, designCapacityMah REAL NOT NULL, healthPercentage REAL NOT NULL, "
+                                        +
+                                        "chargeRate REAL NOT NULL, dischargeRate REAL NOT NULL, " +
+                                        "screenOn INTEGER, screenBrightness INTEGER, " +
+                                        "wifiEnabled INTEGER, mobileDataEnabled INTEGER, bluetoothEnabled INTEGER, gpsEnabled INTEGER, "
+                                        +
+                                        "signalStrength INTEGER, " +
+                                        "isCharging INTEGER NOT NULL, isFastCharging INTEGER NOT NULL, chargingType TEXT, "
+                                        +
+                                        "isDozeMode INTEGER NOT NULL, cpuUsage INTEGER NOT NULL, memoryUsage INTEGER NOT NULL, "
+                                        +
+                                        "cpuLoadTotal INTEGER, topAppPackage TEXT, gpuLoad INTEGER, networkState TEXT, "
+                                        +
+                                        "chargerVendorId INTEGER, chargerProductId INTEGER, " +
+                                        "voltageSamplesJson TEXT, currentSamplesJson TEXT, foregroundApp TEXT, runningApps INTEGER NOT NULL, "
+                                        +
+                                        "samplingContext TEXT, samplingIntervalMs INTEGER NOT NULL, timeSincePreviousMs INTEGER NOT NULL, "
+                                        +
+                                        "validationStatus TEXT, qualityScore INTEGER NOT NULL, validationFlags INTEGER NOT NULL, "
+                                        +
+                                        "validationNotes TEXT, sensorDataChanged INTEGER NOT NULL, sessionId INTEGER NOT NULL, "
+                                        +
+                                        "snapshotTrigger TEXT, dataSource TEXT, confidence REAL)");
+                        db.execSQL("INSERT INTO battery_snapshots_new (" +
+                                        "id, timestamp, sequenceNumber, elapsedRealtimeMs, level, status, health, plugged, "
+                                        +
+                                        "voltage, temperature, chargeCounter, currentNow, currentAverage, energyCounter, "
+                                        +
+                                        "capacityMah, designCapacityMah, healthPercentage, chargeRate, dischargeRate, "
+                                        +
+                                        "screenOn, screenBrightness, wifiEnabled, mobileDataEnabled, bluetoothEnabled, gpsEnabled, "
+                                        +
+                                        "signalStrength, isCharging, isFastCharging, chargingType, isDozeMode, cpuUsage, memoryUsage, "
+                                        +
+                                        "cpuLoadTotal, topAppPackage, gpuLoad, networkState, chargerVendorId, chargerProductId, "
+                                        +
+                                        "voltageSamplesJson, currentSamplesJson, foregroundApp, runningApps, " +
+                                        "samplingContext, samplingIntervalMs, timeSincePreviousMs, " +
+                                        "validationStatus, qualityScore, validationFlags, validationNotes, sensorDataChanged, sessionId, "
+                                        +
+                                        "snapshotTrigger, dataSource, confidence) " +
+                                        "SELECT " +
+                                        "id, timestamp, sequenceNumber, elapsedRealtimeMs, level, status, health, plugged, "
+                                        +
+                                        "voltage, temperature, chargeCounter, currentNow, currentAverage, energyCounter, "
+                                        +
+                                        "capacityMah, designCapacityMah, healthPercentage, chargeRate, dischargeRate, "
+                                        +
+                                        "screenOn, screenBrightness, wifiEnabled, mobileDataEnabled, bluetoothEnabled, gpsEnabled, "
+                                        +
+                                        "signalStrength, isCharging, isFastCharging, chargingType, isDozeMode, cpuUsage, memoryUsage, "
+                                        +
+                                        "cpuLoadTotal, topAppPackage, gpuLoad, networkState, chargerVendorId, chargerProductId, "
+                                        +
+                                        "voltageSamplesJson, currentSamplesJson, foregroundApp, runningApps, " +
+                                        "samplingContext, samplingIntervalMs, timeSincePreviousMs, " +
+                                        "validationStatus, qualityScore, validationFlags, validationNotes, sensorDataChanged, sessionId, "
+                                        +
+                                        "NULL, NULL, NULL FROM battery_snapshots");
+                        db.execSQL("DROP TABLE battery_snapshots");
+                        db.execSQL("ALTER TABLE battery_snapshots_new RENAME TO battery_snapshots");
+                        db.execSQL("CREATE INDEX IF NOT EXISTS index_battery_snapshots_timestamp ON battery_snapshots(timestamp)");
+                        db.execSQL("CREATE INDEX IF NOT EXISTS index_battery_snapshots_samplingContext ON battery_snapshots(samplingContext)");
+                        db.execSQL("CREATE INDEX IF NOT EXISTS index_battery_snapshots_isCharging_timestamp ON battery_snapshots(isCharging, timestamp)");
+                        db.execSQL("CREATE INDEX IF NOT EXISTS index_battery_snapshots_validationStatus ON battery_snapshots(validationStatus)");
+                }
+        };
+
+        // =====================================================================================
+        // MIGRATION 26 -> 27: Network & Connectivity Stack
+        // - Add network_cellular_snapshots table for 4G/5G signal metrics
+        // - Add network_wifi_snapshots table for Wi-Fi stability monitoring
+        // - Add network_bluetooth_snapshots table for BT protocol tracking
+        // - Add modem_firmware_events table for baseband version tracking
+        // =====================================================================================
+        static final Migration MIGRATION_26_27 = new Migration(26, 27) {
+                @Override
+                public void migrate(SupportSQLiteDatabase db) {
+                        // =====================================================================
+                        // network_cellular_snapshots: Raw cellular/modem signal data
+                        // =====================================================================
+                        db.execSQL("CREATE TABLE IF NOT EXISTS `network_cellular_snapshots` (" +
+                                        "`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, " +
+                                        "`timestamp` INTEGER NOT NULL, " +
+                                        "`sequenceNumber` INTEGER NOT NULL DEFAULT 0, " +
+                                        "`elapsedRealtimeMs` INTEGER NOT NULL DEFAULT 0, " +
+                                        "`sessionId` INTEGER NOT NULL DEFAULT 0, " +
+                                        "`radioTechnology` TEXT, " +
+                                        "`networkType` INTEGER, " +
+                                        "`signalStrengthDbm` INTEGER, " +
+                                        "`rsrp` INTEGER, " +
+                                        "`rsrq` INTEGER, " +
+                                        "`sinr` INTEGER, " +
+                                        "`rssi` INTEGER, " +
+                                        "`signalLevel` INTEGER, " +
+                                        "`asu` INTEGER, " +
+                                        "`band` INTEGER, " +
+                                        "`arfcn` INTEGER, " +
+                                        "`pci` INTEGER, " +
+                                        "`cellId` INTEGER, " +
+                                        "`tac` INTEGER, " +
+                                        "`carrierId` INTEGER, " +
+                                        "`mcc` TEXT, " +
+                                        "`mnc` TEXT, " +
+                                        "`networkOperatorName` TEXT, " +
+                                        "`plmn` TEXT, " +
+                                        "`dataRegistrationState` INTEGER, " +
+                                        "`voiceRegistrationState` INTEGER, " +
+                                        "`isRoaming` INTEGER, " +
+                                        "`roamingType` TEXT, " +
+                                        "`emergencyOnly` INTEGER, " +
+                                        "`dataState` INTEGER, " +
+                                        "`dataActivity` INTEGER, " +
+                                        "`modemFirmwareVersion` TEXT, " +
+                                        "`basebandVersion` TEXT, " +
+                                        "`snapshotContext` TEXT, " +
+                                        "`snapshotTrigger` TEXT, " +
+                                        "`dataSource` TEXT, " +
+                                        "`confidence` REAL, " +
+                                        "`validationStatus` TEXT, " +
+                                        "`qualityScore` INTEGER NOT NULL DEFAULT -1, " +
+                                        "`validationFlags` INTEGER NOT NULL DEFAULT 0, " +
+                                        "`validationNotes` TEXT, " +
+                                        "`signalDataChanged` INTEGER NOT NULL DEFAULT 1)");
+                        db.execSQL("CREATE INDEX IF NOT EXISTS index_network_cellular_snapshots_timestamp ON network_cellular_snapshots(timestamp)");
+                        db.execSQL("CREATE INDEX IF NOT EXISTS index_network_cellular_snapshots_radioTechnology ON network_cellular_snapshots(radioTechnology)");
+                        db.execSQL("CREATE INDEX IF NOT EXISTS index_network_cellular_snapshots_validationStatus ON network_cellular_snapshots(validationStatus)");
+                        db.execSQL("CREATE INDEX IF NOT EXISTS index_network_cellular_snapshots_snapshotContext ON network_cellular_snapshots(snapshotContext)");
+
+                        // =====================================================================
+                        // network_wifi_snapshots: Raw Wi-Fi diagnostics
+                        // =====================================================================
+                        db.execSQL("CREATE TABLE IF NOT EXISTS `network_wifi_snapshots` (" +
+                                        "`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, " +
+                                        "`timestamp` INTEGER NOT NULL, " +
+                                        "`sequenceNumber` INTEGER NOT NULL DEFAULT 0, " +
+                                        "`elapsedRealtimeMs` INTEGER NOT NULL DEFAULT 0, " +
+                                        "`sessionId` INTEGER NOT NULL DEFAULT 0, " +
+                                        "`ssidHash` TEXT, " +
+                                        "`bssidHash` TEXT, " +
+                                        "`frequency` INTEGER, " +
+                                        "`frequencyBand` TEXT, " +
+                                        "`channel` INTEGER, " +
+                                        "`linkSpeedMbps` INTEGER, " +
+                                        "`txLinkSpeedMbps` INTEGER, " +
+                                        "`rxLinkSpeedMbps` INTEGER, " +
+                                        "`maxTxLinkSpeedMbps` INTEGER, " +
+                                        "`maxRxLinkSpeedMbps` INTEGER, " +
+                                        "`rssi` INTEGER, " +
+                                        "`signalLevel` INTEGER, " +
+                                        "`wifiStandard` INTEGER, " +
+                                        "`wifiStandardName` TEXT, " +
+                                        "`securityType` TEXT, " +
+                                        "`connectionState` TEXT, " +
+                                        "`networkId` INTEGER, " +
+                                        "`isMetered` INTEGER, " +
+                                        "`isPasspoint` INTEGER, " +
+                                        "`disconnectReason` INTEGER, " +
+                                        "`reconnectCount` INTEGER, " +
+                                        "`dhcpLatencyMs` INTEGER, " +
+                                        "`timeSinceAuthMs` INTEGER, " +
+                                        "`associationAttempts` INTEGER, " +
+                                        "`associationFailures` INTEGER, " +
+                                        "`hasIpv4` INTEGER, " +
+                                        "`hasIpv6` INTEGER, " +
+                                        "`gatewayLatencyMs` INTEGER, " +
+                                        "`snapshotContext` TEXT, " +
+                                        "`snapshotTrigger` TEXT, " +
+                                        "`dataSource` TEXT, " +
+                                        "`confidence` REAL, " +
+                                        "`validationStatus` TEXT, " +
+                                        "`qualityScore` INTEGER NOT NULL DEFAULT -1, " +
+                                        "`validationFlags` INTEGER NOT NULL DEFAULT 0, " +
+                                        "`validationNotes` TEXT, " +
+                                        "`signalDataChanged` INTEGER NOT NULL DEFAULT 1)");
+                        db.execSQL("CREATE INDEX IF NOT EXISTS index_network_wifi_snapshots_timestamp ON network_wifi_snapshots(timestamp)");
+                        db.execSQL("CREATE INDEX IF NOT EXISTS index_network_wifi_snapshots_connectionState ON network_wifi_snapshots(connectionState)");
+                        db.execSQL("CREATE INDEX IF NOT EXISTS index_network_wifi_snapshots_validationStatus ON network_wifi_snapshots(validationStatus)");
+                        db.execSQL("CREATE INDEX IF NOT EXISTS index_network_wifi_snapshots_wifiStandard ON network_wifi_snapshots(wifiStandard)");
+
+                        // =====================================================================
+                        // network_bluetooth_snapshots: Bluetooth protocol stability tracking
+                        // =====================================================================
+                        db.execSQL("CREATE TABLE IF NOT EXISTS `network_bluetooth_snapshots` (" +
+                                        "`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, " +
+                                        "`timestamp` INTEGER NOT NULL, " +
+                                        "`sequenceNumber` INTEGER NOT NULL DEFAULT 0, " +
+                                        "`elapsedRealtimeMs` INTEGER NOT NULL DEFAULT 0, " +
+                                        "`sessionId` INTEGER NOT NULL DEFAULT 0, " +
+                                        "`adapterState` INTEGER, " +
+                                        "`adapterStateName` TEXT, " +
+                                        "`scanMode` INTEGER, " +
+                                        "`isEnabled` INTEGER, " +
+                                        "`isDiscovering` INTEGER, " +
+                                        "`pairedDeviceCount` INTEGER, " +
+                                        "`connectedDeviceCount` INTEGER, " +
+                                        "`profileType` TEXT, " +
+                                        "`profileTypeConstant` INTEGER, " +
+                                        "`connectionState` INTEGER, " +
+                                        "`connectionStateName` TEXT, " +
+                                        "`codecType` TEXT, " +
+                                        "`codecTypeConstant` INTEGER, " +
+                                        "`sampleRate` INTEGER, " +
+                                        "`bitsPerSample` INTEGER, " +
+                                        "`channelMode` TEXT, " +
+                                        "`codecQuality` INTEGER, " +
+                                        "`isPlaying` INTEGER, " +
+                                        "`leConnectionInterval` INTEGER, " +
+                                        "`leLatency` INTEGER, " +
+                                        "`rssi` INTEGER, " +
+                                        "`txPowerLevel` INTEGER, " +
+                                        "`packetErrorCount` INTEGER, " +
+                                        "`reconnectCount` INTEGER, " +
+                                        "`connectionDurationMs` INTEGER, " +
+                                        "`remoteAddressHash` TEXT, " +
+                                        "`remoteDeviceType` INTEGER, " +
+                                        "`remoteDeviceClass` INTEGER, " +
+                                        "`remoteDeviceName` TEXT, " +
+                                        "`snapshotContext` TEXT, " +
+                                        "`snapshotTrigger` TEXT, " +
+                                        "`dataSource` TEXT, " +
+                                        "`confidence` REAL, " +
+                                        "`validationStatus` TEXT, " +
+                                        "`qualityScore` INTEGER NOT NULL DEFAULT -1, " +
+                                        "`validationFlags` INTEGER NOT NULL DEFAULT 0, " +
+                                        "`validationNotes` TEXT)");
+                        db.execSQL("CREATE INDEX IF NOT EXISTS index_network_bluetooth_snapshots_timestamp ON network_bluetooth_snapshots(timestamp)");
+                        db.execSQL("CREATE INDEX IF NOT EXISTS index_network_bluetooth_snapshots_adapterState ON network_bluetooth_snapshots(adapterState)");
+                        db.execSQL("CREATE INDEX IF NOT EXISTS index_network_bluetooth_snapshots_profileType ON network_bluetooth_snapshots(profileType)");
+                        db.execSQL("CREATE INDEX IF NOT EXISTS index_network_bluetooth_snapshots_validationStatus ON network_bluetooth_snapshots(validationStatus)");
+
+                        // =====================================================================
+                        // modem_firmware_events: Baseband/radio firmware version tracking
+                        // =====================================================================
+                        db.execSQL("CREATE TABLE IF NOT EXISTS `modem_firmware_events` (" +
+                                        "`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, " +
+                                        "`timestamp` INTEGER NOT NULL, " +
+                                        "`elapsedRealtimeMs` INTEGER NOT NULL DEFAULT 0, " +
+                                        "`previousVersion` TEXT, " +
+                                        "`currentVersion` TEXT, " +
+                                        "`previousBasebandVersion` TEXT, " +
+                                        "`currentBasebandVersion` TEXT, " +
+                                        "`eventType` TEXT, " +
+                                        "`detectionSource` TEXT, " +
+                                        "`androidVersion` TEXT, " +
+                                        "`androidSdkLevel` INTEGER, " +
+                                        "`securityPatch` TEXT, " +
+                                        "`buildFingerprint` TEXT, " +
+                                        "`buildNumber` TEXT, " +
+                                        "`manufacturer` TEXT, " +
+                                        "`model` TEXT, " +
+                                        "`product` TEXT, " +
+                                        "`bootloaderVersion` TEXT, " +
+                                        "`hardware` TEXT, " +
+                                        "`board` TEXT, " +
+                                        "`isVersionChange` INTEGER, " +
+                                        "`isOtaUpdate` INTEGER, " +
+                                        "`timeSinceLastEventMs` INTEGER, " +
+                                        "`sessionId` INTEGER NOT NULL DEFAULT 0, " +
+                                        "`notes` TEXT)");
+                        db.execSQL("CREATE INDEX IF NOT EXISTS index_modem_firmware_events_timestamp ON modem_firmware_events(timestamp)");
+                        db.execSQL("CREATE INDEX IF NOT EXISTS index_modem_firmware_events_eventType ON modem_firmware_events(eventType)");
+                        db.execSQL("CREATE INDEX IF NOT EXISTS index_modem_firmware_events_currentVersion ON modem_firmware_events(currentVersion)");
                 }
         };
 }
