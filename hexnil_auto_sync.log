@@ -314,3 +314,34 @@ Auto-sync stopped by user
 2026-01-29 23:19:07,192 [INFO] Auto-sync completed successfully!
 2026-01-29 23:21:38,511 [INFO] 
 Auto-sync stopped by user
+2026-01-29 23:38:31,022 [INFO] ADB path: C:\Users\sutha\AppData\Local\Android\Sdk\platform-tools\adb.exe
+2026-01-29 23:38:31,022 [INFO] Backend URL: http://127.0.0.1:8000
+2026-01-29 23:38:31,022 [INFO] Check interval: 5s
+2026-01-29 23:38:31,043 [INFO] ========================================
+2026-01-29 23:38:31,043 [INFO] DEVICE CONNECTED - Starting auto-sync...
+2026-01-29 23:38:31,043 [INFO] ========================================
+2026-01-29 23:38:31,157 [INFO] Device ID: a6a9f331d869db9e
+2026-01-29 23:38:31,157 [INFO] Device Model: I2302
+2026-01-29 23:38:33,159 [INFO] Pulling database from device...
+2026-01-29 23:38:34,723 [INFO] Database pulled successfully: 7692288 bytes -> sync_data\hexnil_battery_db
+2026-01-29 23:38:34,757 [INFO] Found 19 new records in battery_snapshots
+2026-01-29 23:38:34,759 [INFO] Found 18 new records in battery_health
+2026-01-29 23:38:34,762 [INFO] Found 320 new records in app_battery_usage
+2026-01-29 23:38:34,762 [INFO] Found 15 new records in app_drain_ranks
+2026-01-29 23:38:34,762 [INFO] Found 6 new records in refresh_rate_anomalies
+2026-01-29 23:38:34,764 [INFO] Found 6 new records in anomaly_records
+2026-01-29 23:38:34,765 [INFO] Found 2 new records in calibration_data
+2026-01-29 23:38:34,765 [INFO] Found 6 new records in ai_analysis_results
+2026-01-29 23:38:34,765 [INFO] Found 17 new records in cpu_gpu_load_samples
+2026-01-29 23:38:34,765 [INFO] Found 17 new records in memory_snapshots
+2026-01-29 23:38:34,766 [INFO] Found 7 new records in app_launch_metrics
+2026-01-29 23:38:34,766 [INFO] Found 24 new records in crash_events
+2026-01-29 23:38:34,767 [INFO] Found 8 new records in daily_aggregates
+2026-01-29 23:38:34,768 [INFO] Found 8 new records in network_cellular_snapshots
+2026-01-29 23:38:34,769 [INFO] Found 8 new records in network_wifi_snapshots
+2026-01-29 23:38:34,769 [INFO] Found 8 new records in network_bluetooth_snapshots
+2026-01-29 23:38:34,770 [INFO] Found 2 new records in modem_firmware_events
+2026-01-29 23:38:34,770 [INFO] Syncing 491 records to backend...
+2026-01-29 23:38:34,801 [INFO] Sync successful: {'success': True, 'message': 'Accepted for processing', 'device_id': 'a6a9f331d869db9e', 'records_received': {'battery_snapshots': 0, 'charging_sessions': 0, 'thermal_events': 0, 'drain_events': 0, 'idle_drain_sessions': 0, 'battery_health': 0, 'safety_events': 0, 'calibration_data': 2, 'ai_analysis_results': 6, 'app_battery_usage': 320, 'app_drain_ranks': 15}, 'records_stored': {'battery_snapshots': 0, 'charging_sessions': 0, 'thermal_events': 0, 'drain_events': 0, 'idle_drain_sessions': 0, 'battery_health': 0, 'safety_events': 0, 'calibration_data': 0, 'ai_analysis_results': 0, 'app_battery_usage': 0, 'app_drain_ranks': 0}, 'errors': [], 'sync_id': 36}
+2026-01-29 23:38:34,803 [INFO] Sync state saved
+2026-01-29 23:38:34,803 [INFO] Auto-sync completed successfully!

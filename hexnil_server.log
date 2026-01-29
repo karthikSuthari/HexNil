@@ -35,3 +35,9 @@
 2026-01-26 16:55:45,668 - hexnil.server - INFO - Sync request accepted from device: a6a9f331d869db9e
 2026-01-26 16:57:49,301 - hexnil.server - INFO - Shutting down HexNil Backend Server...
 2026-01-26 16:57:49,383 - hexnil.server - INFO - Ingestion spool worker stopped
+2026-01-29 23:09:32,016 - hexnil.server - INFO - Starting HexNil Backend Server...
+2026-01-29 23:09:32,251 - hexnil.server - INFO - Database pool initialized: 10 connections
+2026-01-29 23:09:32,252 - hexnil.server - INFO - Ingestion spool worker started
+2026-01-29 23:09:52,423 - hexnil.server - INFO - Sync request accepted from device: a6a9f331d869db9e
+2026-01-29 23:19:07,171 - hexnil.server - INFO - Sync request accepted from device: a6a9f331d869db9e
+2026-01-29 23:38:34,783 - hexnil.server - INFO - Sync request accepted from device: a6a9f331d869db9e
