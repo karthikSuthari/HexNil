@@ -252,7 +252,7 @@ public class SOCEstimator {
         }
         
         // Try methods in order of reliability
-        if (hasChargeCounter && snapshot.chargeCounter > 0) {
+        if (hasChargeCounter && snapshot.chargeCounter != null && snapshot.chargeCounter > 0) {
             MethodEstimate est = estimateFromChargeCounter(snapshot);
             if (est.available && est.confidence > 50) {
                 return est.estimatedSOC;
@@ -286,7 +286,7 @@ public class SOCEstimator {
         result.method = "charge_counter";
         result.weight = WEIGHT_CHARGE_COUNTER;
         
-        if (!hasChargeCounter || snapshot.chargeCounter <= 0 || currentCapacityMah <= 0) {
+        if (!hasChargeCounter || snapshot.chargeCounter == null || snapshot.chargeCounter <= 0 || currentCapacityMah <= 0) {
             result.available = false;
             result.reason = "Charge counter not available or invalid";
             return result;
@@ -676,7 +676,7 @@ public class SOCEstimator {
         if (snapshot == null) return;
         
         // Calibrate charge counter
-        if (hasChargeCounter && snapshot.chargeCounter > 0) {
+        if (hasChargeCounter && snapshot.chargeCounter != null && snapshot.chargeCounter > 0) {
             float estimatedFromCounter = estimateFromChargeCounter(snapshot).estimatedSOC;
             chargeCounterOffset += (knownSOC - estimatedFromCounter);
         }

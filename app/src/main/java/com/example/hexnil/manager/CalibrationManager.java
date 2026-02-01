@@ -269,7 +269,7 @@ public class CalibrationManager {
      */
     private void populateSocEstimationMethods(CalibrationData data, BatterySnapshot snapshot, float designCapacity) {
         // Method 1: Charge counter estimate
-        if (snapshot.chargeCounter > 0 && designCapacity > 0) {
+        if (snapshot.chargeCounter != null && snapshot.chargeCounter > 0 && designCapacity > 0) {
             float chargeCounterMah = snapshot.chargeCounter / 1000f;
             data.chargeCounterEstimate = clamp((chargeCounterMah / designCapacity) * 100f, 0f, 100f);
         }
@@ -280,7 +280,7 @@ public class CalibrationManager {
         }
         
         // Method 3: Energy estimate
-        if (snapshot.energyCounter > 0 && designCapacity > 0) {
+        if (snapshot.energyCounter != null && snapshot.energyCounter > 0 && designCapacity > 0) {
             // Energy counter is in nWh, need nominal voltage to convert
             float nominalVoltage = 3.7f; // Average Li-ion voltage
             float energyWh = snapshot.energyCounter / 1_000_000_000f;
@@ -456,7 +456,7 @@ public class CalibrationManager {
     }
 
     private float estimateActualLevel(BatterySnapshot snapshot, float designCapacityMah) {
-        if (snapshot.chargeCounter > 0 && designCapacityMah > 0) {
+        if (snapshot.chargeCounter != null && snapshot.chargeCounter > 0 && designCapacityMah > 0) {
             float currentMah = snapshot.chargeCounter / 1000f;
             return clamp((currentMah / designCapacityMah) * 100f, 0f, 110f);
         }

@@ -289,7 +289,7 @@ public class BatteryHealthManager {
 
         // Method 2: Charge counter (if available)
         float chargeCounterCapacity = 0;
-        if (snapshot.chargeCounter > 0) {
+        if (snapshot.chargeCounter != null && snapshot.chargeCounter > 0) {
             chargeCounterCapacity = snapshot.chargeCounter / 1000f;
         }
 
