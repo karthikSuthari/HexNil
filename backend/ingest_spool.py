@@ -129,8 +129,8 @@ def claim_batch(
     except Exception:
         try:
             conn.execute("ROLLBACK;")
-        except Exception:
-            pass
+        except Exception:  # pragma: no cover
+            pass  # pragma: no cover
         raise
     finally:
         conn.close()
