@@ -16,6 +16,7 @@ from __future__ import annotations
 
 import os
 import signal
+import socket
 import subprocess
 import sys
 import time
@@ -25,12 +26,71 @@ from dataclasses import dataclass
 import requests
 import mysql.connector as mysql
 
+try:
+    import psutil
+    HAS_PSUTIL = True
+except ImportError:
+    HAS_PSUTIL = False
+
+
+# ============================================================================
+# PORT MANAGEMENT
+# ============================================================================
+
+def kill_port_processes(port: int) -> bool:
+    """Kill any process using the specified port. Returns True if any killed."""
+    killed = False
+    
+    if HAS_PSUTIL:
+        for proc in psutil.process_iter(['pid', 'name']):
+            try:
+                for conn in proc.connections(kind='inet'):
+                    if conn.laddr.port == port:
+                        proc.kill()
+                        proc.wait(timeout=3)
+                        killed = True
+            except (psutil.NoSuchProcess, psutil.AccessDenied, psutil.ZombieProcess):
+                pass
+    else:
+        # Fallback: try fuser on Linux/Mac
+        try:
+            subprocess.run(['fuser', '-k', f'{port}/tcp'], 
+                          capture_output=True, timeout=5)
+            killed = True
+        except Exception:
+            pass
+    
+    if killed:
+        time.sleep(0.5)  # Give OS time to release port
+    return killed
+
+
+def is_port_available(port: int) -> bool:
+    """Check if a port is available for binding."""
+    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+        try:
+            s.bind(('127.0.0.1', port))
+            return True
+        except OSError:
+            return False
+
+
+def find_available_port(start_port: int = 8000, max_attempts: int = 100) -> int:
+    """Find an available port starting from start_port."""
+    for offset in range(max_attempts):
+        port = start_port + offset
+        if is_port_available(port):
+            return port
+    raise RuntimeError(f"Could not find available port in range {start_port}-{start_port + max_attempts}")
+
 
 # ============================================================================
 # CONFIGURATION
 # ============================================================================
 
-BASE_URL = os.getenv("HEXNIL_SMOKE_BASE_URL", "http://127.0.0.1:8000")
+# Port will be set dynamically during startup
+SERVER_PORT = int(os.getenv("HEXNIL_PORT", "8000"))
+BASE_URL = os.getenv("HEXNIL_SMOKE_BASE_URL", f"http://127.0.0.1:{SERVER_PORT}")
 DEVICE_ID = os.getenv("HEXNIL_SMOKE_DEVICE_ID", "backend_smoke_device")
 
 DB_HOST = os.getenv("HEXNIL_DB_HOST", "localhost")
@@ -452,18 +512,18 @@ def test_metrics_endpoint():
 # MAIN
 # ============================================================================
 
-def start_server() -> subprocess.Popen:
-    """Start the FastAPI backend server."""
+def start_server(port: int) -> subprocess.Popen:
+    """Start the FastAPI backend server on specified port."""
     py = sys.executable
     env = os.environ.copy()
-    env.setdefault("HEXNIL_HOST", "127.0.0.1")
-    env.setdefault("HEXNIL_PORT", "8000")
+    env["HEXNIL_HOST"] = "127.0.0.1"
+    env["HEXNIL_PORT"] = str(port)
     env.setdefault("HEXNIL_DB_USER", BACKEND_USER)
     env.setdefault("HEXNIL_DB_PASSWORD", BACKEND_PASS)
 
     proc = subprocess.Popen(
         [py, "-m", "uvicorn", "backend.hexnil_fastapi_server:app",
-         "--host", "127.0.0.1", "--port", "8000"],
+         "--host", "127.0.0.1", "--port", str(port)],
         env=env,
         stdout=subprocess.PIPE,
         stderr=subprocess.STDOUT,
@@ -487,15 +547,54 @@ def stop_server(proc: subprocess.Popen):
 
 
 def main() -> int:
+    global BASE_URL, SERVER_PORT
+    
     runner = TestRunner()
+    proc = None  # Will be None if we use existing server
     
     print("=" * 60)
     print("HEXNIL BACKEND SMOKE TESTS")
     print("=" * 60)
     
-    # Start server
-    print("\n[Setup] Starting backend server...")
-    proc = start_server()
+    # Check if a server is already running on default port
+    target_port = SERVER_PORT
+    use_existing_server = False
+    
+    print("\n[Setup] Checking for existing server...")
+    try:
+        r = requests.get(f"http://127.0.0.1:{target_port}/health", timeout=2)
+        if r.status_code == 200:
+            print(f"[Setup] Found existing server on port {target_port}, reusing it")
+            use_existing_server = True
+            BASE_URL = f"http://127.0.0.1:{target_port}"
+    except Exception:
+        pass
+    
+    if not use_existing_server:
+        # Need to start our own server
+        print("[Setup] No existing server, starting new one...")
+        
+        # Try to free the port if something else is using it
+        if not is_port_available(target_port):
+            print(f"[Setup] Port {target_port} in use (not a HexNil server), attempting cleanup...")
+            killed = kill_port_processes(target_port)
+            if killed:
+                print(f"[Setup] Killed process on port {target_port}")
+                time.sleep(1)
+        
+        # If still not available, find alternative port
+        if not is_port_available(target_port):
+            print(f"[Setup] Port {target_port} still unavailable, finding alternative...")
+            target_port = find_available_port(target_port + 1)
+            print(f"[Setup] Using alternative port: {target_port}")
+        
+        # Update globals with actual port
+        SERVER_PORT = target_port
+        BASE_URL = f"http://127.0.0.1:{target_port}"
+        
+        # Start server
+        print(f"[Setup] Starting backend server on port {target_port}...")
+        proc = start_server(target_port)
     
     try:
         # Wait for server to be ready
@@ -528,18 +627,22 @@ def main() -> int:
         runner.run_test("Metrics Endpoint", test_metrics_endpoint)
         
     finally:
-        print("\n[Teardown] Stopping server...")
-        stop_server(proc)
-        
-        # Drain output for debugging
-        try:
-            if proc.stdout:
-                out = proc.stdout.read()
-                if out.strip() and any(not r.passed for r in runner.results):
-                    print("\n[Server Output (last 3000 chars)]")
-                    print(out[-3000:])
-        except Exception:
-            pass
+        # Only stop server if we started it
+        if proc is not None:
+            print("\n[Teardown] Stopping server...")
+            stop_server(proc)
+            
+            # Drain output for debugging
+            try:
+                if proc.stdout:
+                    out = proc.stdout.read()
+                    if out.strip() and any(not r.passed for r in runner.results):
+                        print("\n[Server Output (last 3000 chars)]")
+                        print(out[-3000:])
+            except Exception:
+                pass
+        else:
+            print("\n[Teardown] Using shared server, not stopping")
     
     return runner.summary()
 
