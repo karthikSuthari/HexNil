@@ -58,6 +58,11 @@ public class AnomalyDetector {
         List<AnomalyRecord> anomalies = new ArrayList<>();
 
         try {
+            // Get current device state for context
+            BatterySnapshot latestSnapshot = database.batterySnapshotDao().getLatest();
+            String deviceState = determineDeviceState(latestSnapshot);
+            int dataPoints = database.batterySnapshotDao().getCountInRange(periodStart, periodEnd);
+            
             // Detect app drain anomalies
             anomalies.addAll(detectAppDrainAnomalies(periodStart, periodEnd));
 
@@ -81,6 +86,22 @@ public class AnomalyDetector {
 
             // Detect safety events (critical battery safety issues)
             anomalies.addAll(detectSafetyEventAnomalies(periodStart));
+            
+            // Populate common context fields for all anomalies
+            for (AnomalyRecord anomaly : anomalies) {
+                // Set period bounds if not already set
+                if (anomaly.periodStart == 0) anomaly.periodStart = periodStart;
+                if (anomaly.periodEnd == 0) anomaly.periodEnd = periodEnd;
+                if (anomaly.dataPointsAnalyzed == 0) anomaly.dataPointsAnalyzed = dataPoints;
+                if (anomaly.deviceState == null) anomaly.deviceState = deviceState;
+                
+                // Set context from latest snapshot if not set
+                if (latestSnapshot != null) {
+                    if (anomaly.batteryLevel == 0) anomaly.batteryLevel = latestSnapshot.level;
+                    anomaly.wasCharging = latestSnapshot.isCharging;
+                    anomaly.screenOn = latestSnapshot.isScreenOnOrFalse();
+                }
+            }
 
             // Store all detected anomalies
             for (AnomalyRecord anomaly : anomalies) {
@@ -788,7 +809,24 @@ public class AnomalyDetector {
         }
         return "General high battery consumption during active use";
     }
-
+    
+    /**
+     * Determine current device state from snapshot.
+     */
+    private String determineDeviceState(BatterySnapshot snapshot) {
+        if (snapshot == null) return "unknown";
+        
+        if (snapshot.isCharging) {
+            return "charging";
+        } else if (snapshot.isDozeMode) {
+            return "doze";
+        } else if (!snapshot.isScreenOnOrFalse()) {
+            return "idle";
+        } else {
+            return "active";
+        }
+    }
+    
     private String determineHealthDegradationCause(BatteryHealth health) {
         StringBuilder causes = new StringBuilder();
 

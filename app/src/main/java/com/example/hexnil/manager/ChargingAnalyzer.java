@@ -116,12 +116,18 @@ public class ChargingAnalyzer {
     private StringBuilder interruptionTimestamps;
     private StringBuilder interruptionDurations;
     
+    // Session start timestamp for relative curve times
+    private long sessionStartTimestamp;
+    
     // Brief unplug detection
     private long unpluggedTimestamp;
     private boolean wasRecentlyUnplugged;
     
     // Screen tracking
     private boolean screenWasOnDuringCharge;
+    
+    // Flag to track if first sample has been processed
+    private boolean firstSampleProcessed;
     
     // ========================================================================
     // CONSTRUCTOR
@@ -160,7 +166,14 @@ public class ChargingAnalyzer {
             }
         }
         
-        // End any existing incomplete session
+        // If we already have an active session with data, don't create a new one
+        // This prevents race conditions where startChargingSession is called multiple times
+        if (activeSession != null && firstSampleProcessed) {
+            Log.d(TAG, "Session already active with data, skipping new session creation");
+            return;
+        }
+        
+        // End any existing incomplete session that has no data
         if (activeSession != null && !activeSession.isComplete()) {
             Log.d(TAG, "Closing orphaned session before starting new one");
             endChargingSession();
@@ -282,15 +295,27 @@ public class ChargingAnalyzer {
         }
         if (activeSession == null) return;
         
-        // First sample initialization
-        if (activeSession.startLevel == 0) {
+        // First sample initialization - use flag instead of checking startLevel==0
+        // (battery could genuinely be at 0% when plugging in)
+        if (!firstSampleProcessed) {
             activeSession.startLevel = snapshot.level;
             activeSession.startTemperature = snapshot.getTemperatureCelsius();
             activeSession.startTime = snapshot.timestamp;
-            activeSession.chargerVendorId = snapshot.chargerVendorId;
-            activeSession.chargerProductId = snapshot.chargerProductId;
+            sessionStartTimestamp = snapshot.timestamp;
+            // Handle nullable Integer -> int conversion for charger IDs
+            activeSession.chargerVendorId = snapshot.chargerVendorId != null ? snapshot.chargerVendorId : 0;
+            activeSession.chargerProductId = snapshot.chargerProductId != null ? snapshot.chargerProductId : 0;
             ccPhaseStartTime = snapshot.timestamp;
             lastLevel = snapshot.level;
+            firstSampleProcessed = true;
+            Log.d(TAG, "First sample: level=" + snapshot.level + "%, temp=" + snapshot.getTemperatureCelsius() + "°C");
+        }
+        
+        // Update charger IDs if they weren't available at start but are now
+        // This handles cases where USB enumeration takes time
+        if (activeSession.chargerVendorId == 0 && snapshot.chargerVendorId != null && snapshot.chargerVendorId != 0) {
+            activeSession.chargerVendorId = snapshot.chargerVendorId;
+            activeSession.chargerProductId = snapshot.chargerProductId != null ? snapshot.chargerProductId : 0;
         }
         
         // Update current values
@@ -339,6 +364,12 @@ public class ChargingAnalyzer {
         activeSession.avgCurrent = currentSum / sampleCount;
         activeSession.avgTemperature = tempSum / sampleCount;
         
+        // Track samples collected
+        activeSession.samplesCollected = sampleCount;
+        
+        // Calculate temperatureRise live (will be finalized at end)
+        activeSession.temperatureRise = activeSession.maxTemperature - activeSession.startTemperature;
+        
         // CC/CV phase detection
         detectChargingPhase(snapshot);
         
@@ -357,13 +388,29 @@ public class ChargingAnalyzer {
         // Real-time safety evaluation
         evaluateRealTimeSafety(snapshot);
         
-        // Charger fingerprint
-        activeSession.chargerFingerprint = (snapshot.chargerVendorId != null ? snapshot.chargerVendorId : "") + ":"
-                + (snapshot.chargerProductId != null ? snapshot.chargerProductId : "");
+        // Charger fingerprint - format as hex string for readability
+        if (snapshot.chargerVendorId != null && snapshot.chargerVendorId != 0) {
+            activeSession.chargerFingerprint = String.format("%04X:%04X", 
+                    snapshot.chargerVendorId, 
+                    snapshot.chargerProductId != null ? snapshot.chargerProductId : 0);
+        } else if (activeSession.chargerVendorId != 0) {
+            // Use cached values if current snapshot doesn't have them
+            activeSession.chargerFingerprint = String.format("%04X:%04X", 
+                    activeSession.chargerVendorId, 
+                    activeSession.chargerProductId);
+        } else {
+            // No charger ID available
+            activeSession.chargerFingerprint = null;
+        }
         
         // Screen tracking
         if (snapshot.isScreenOnOrFalse()) {
             screenWasOnDuringCharge = true;
+        }
+        
+        // Track top app during charge
+        if (snapshot.topAppPackage != null && !snapshot.topAppPackage.isEmpty()) {
+            activeSession.topAppDuringCharge = snapshot.topAppPackage;
         }
         
         // Update last values
@@ -417,16 +464,18 @@ public class ChargingAnalyzer {
                 cvPhaseStartTime = snapshot.timestamp;
                 activeSession.currentPhase = "cv";
                 
-                Log.d(TAG, "Transitioned to CV phase at " + snapshot.level + "%, " + voltage + "mV");
+                Log.d(TAG, "Transitioned to CV phase at " + snapshot.level + "%, " + voltage + "mV, ccDuration=" + activeSession.ccPhaseDuration + "ms");
             } else {
-                // Still in CC phase
+                // Still in CC phase - update duration in real-time
                 ccPhaseCurrentSum += current;
                 ccPhaseSampleCount++;
+                activeSession.ccPhaseDuration = snapshot.timestamp - ccPhaseStartTime;
             }
         } else {
-            // In CV phase
+            // In CV phase - update duration in real-time
             cvPhaseCurrentSum += current;
             cvPhaseSampleCount++;
+            activeSession.cvPhaseDuration = snapshot.timestamp - cvPhaseStartTime;
             
             // Detect trickle phase (very low current at 100%)
             if (snapshot.level >= 100 && current < TRICKLE_CURRENT_THRESHOLD) {
@@ -575,16 +624,22 @@ public class ChargingAnalyzer {
     
     /**
      * Record voltage, current, and temperature curve samples.
+     * Uses relative timestamps from session start for cleaner data.
      */
     private void recordCurveSamples(BatterySnapshot snapshot) {
-        // Voltage curve
-        appendPair(voltageCurve, snapshot.timestamp, snapshot.voltage);
+        // Initialize session start timestamp if not set
+        if (sessionStartTimestamp == 0) {
+            sessionStartTimestamp = snapshot.timestamp;
+        }
         
-        // Current curve
-        appendPair(currentCurve, snapshot.timestamp, Math.abs(snapshot.chargeRate));
+        // Voltage curve - format: {"t":relativeMs,"v":voltageVolts}
+        appendVoltageSample(voltageCurve, snapshot.timestamp, snapshot.voltage);
         
-        // Temperature curve
-        appendPair(temperatureCurve, snapshot.timestamp, snapshot.getTemperatureCelsius());
+        // Current curve - format: {"t":relativeMs,"i":currentMa}
+        appendCurrentSample(currentCurve, snapshot.timestamp, Math.abs(snapshot.chargeRate));
+        
+        // Temperature curve - format: {"t":relativeMs,"temp":tempCelsius}
+        appendTemperatureSample(temperatureCurve, snapshot.timestamp, snapshot.getTemperatureCelsius());
         
         // Sample interval tracking
         if (lastTimestamp > 0) {
@@ -795,12 +850,55 @@ public class ChargingAnalyzer {
         
         // Screen tracking
         screenWasOnDuringCharge = false;
+        
+        // Session start time tracking
+        sessionStartTimestamp = 0L;
+        
+        // First sample flag
+        firstSampleProcessed = false;
     }
     
     // ========================================================================
     // JSON HELPERS
     // ========================================================================
     
+    /**
+     * Append a voltage sample to the curve.
+     * Format: {"t":relativeMs,"v":voltageVolts}
+     */
+    private void appendVoltageSample(StringBuilder sb, long timestamp, float voltageMv) {
+        if (sb == null) return;
+        if (sb.length() > 1) sb.append(',');
+        long relativeTime = sessionStartTimestamp > 0 ? timestamp - sessionStartTimestamp : 0;
+        float voltageVolts = voltageMv / 1000f; // Convert mV to V
+        sb.append("{\"t\":").append(relativeTime).append(",\"v\":").append(String.format("%.3f", voltageVolts)).append('}');
+    }
+    
+    /**
+     * Append a current sample to the curve.
+     * Format: {"t":relativeMs,"i":currentMa}
+     */
+    private void appendCurrentSample(StringBuilder sb, long timestamp, float currentMa) {
+        if (sb == null) return;
+        if (sb.length() > 1) sb.append(',');
+        long relativeTime = sessionStartTimestamp > 0 ? timestamp - sessionStartTimestamp : 0;
+        sb.append("{\"t\":").append(relativeTime).append(",\"i\":").append((int) currentMa).append('}');
+    }
+    
+    /**
+     * Append a temperature sample to the curve.
+     * Format: {"t":relativeMs,"temp":tempCelsius}
+     */
+    private void appendTemperatureSample(StringBuilder sb, long timestamp, float tempCelsius) {
+        if (sb == null) return;
+        if (sb.length() > 1) sb.append(',');
+        long relativeTime = sessionStartTimestamp > 0 ? timestamp - sessionStartTimestamp : 0;
+        sb.append("{\"t\":").append(relativeTime).append(",\"temp\":").append(String.format("%.1f", tempCelsius)).append('}');
+    }
+    
+    /**
+     * Legacy helper for generic pairs (used for voltage in existing code).
+     */
     private void appendPair(StringBuilder sb, long t, float v) {
         if (sb == null) return;
         if (sb.length() > 1) sb.append(',');

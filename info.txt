@@ -3,12 +3,55 @@
                               Complete Feature Documentation
 ================================================================================
 
-Version: 3.5
-Last Updated: January 23, 2026
+Version: 3.6
+Last Updated: February 1, 2026
 Platform: Android (minSdk 30+ for Performance)
 Architecture: MVVM with Room Database + Foreground Service + WorkManager + Backend Pipeline
-Database Version: 25 (Performance Schema)
+Database Version: 27 (Network Monitoring Schema)
 Build Status: ✅ PRODUCTION READY
+
+================================================================================
+                    NEW IN VERSION 3.6 - NETWORK MONITORING
+================================================================================
+
+📡 CELLULAR NETWORK MONITORING (CellularCollector.java)
+   - Complete LTE/5G signal strength tracking (RSRP, RSRQ, SINR, RSSI)
+   - Cell tower identification (Cell ID, TAC, PCI, ARFCN)
+   - Carrier and registration state monitoring
+   - Roaming detection and data state tracking
+   - Modem firmware version tracking
+
+📶 WIFI MONITORING (WifiCollector.java)
+   - WiFi signal strength (RSSI) and link speed tracking
+   - WiFi 6/6E/7 standard detection
+   - Network frequency and channel monitoring
+   - Connection state and quality metrics
+   - DHCP latency and gateway measurements
+
+🔵 BLUETOOTH MONITORING (BluetoothCollector.java)
+   - Bluetooth adapter state tracking
+   - A2DP codec and audio quality monitoring
+   - Connected device count and profiles
+   - BLE connection parameters (interval, latency)
+   - Packet error and reconnect tracking
+
+📱 MODEM FIRMWARE TRACKING (ModemFirmwareTracker.java)
+   - Baseband version change detection
+   - OTA update correlation
+   - System version tracking
+   - Build fingerprint monitoring
+
+💾 DATABASE UPGRADE (MIGRATION_26_27)
+   - network_cellular_snapshots: LTE/5G signal metrics
+   - network_wifi_snapshots: WiFi connection data
+   - network_bluetooth_snapshots: Bluetooth state/audio
+   - modem_firmware_events: Firmware version tracking
+
+📊 SYNC INTEGRATION (February 1, 2026)
+   - All 4 network tables synced to MySQL backend
+   - Transform functions for all network entities
+   - Sync state tracking for incremental sync
+   - MySQL tables: 42 total (38 + 4 new network tables)
 
 ================================================================================
                     NEW IN VERSION 3.5 - PERFORMANCE MONITORING
@@ -43,31 +86,6 @@ Build Status: ✅ PRODUCTION READY
 💾 DATABASE UPGRADE (MIGRATION_24_25)
    - memory_snapshots, app_launch_metrics, frame_metrics
    - crash_events, anr_events, daily_aggregates, regression_events
-
-
-🔧 DRAIN EVENT ENHANCEMENT (DrainAnalyzer.java: 114→227 lines)
-   - Integrated DrainIntelligence.analyzeDrainEvent() for 50+ fields
-   - Populates: screenStateDetailed, drainEfficiency, benchmarkResult
-   - Added: deepSleepEffectiveness, anomalySeverity, qualitySummary
-   - Component attribution: displayDrainPct, cpuDrainPct, networkDrainPct
-
-🔧 IDLE DRAIN SESSION FIX (IdleDrainAnalyzer.java: 132→259 lines)
-   - Added timing fields: deepSleepTime, lightSleepTime, awakeTime (ms)
-   - Added dozeExits count with proper state tracking
-   - Improved leakageSources detection and recommendations
-
-🔧 SAFETY EVENT ENHANCEMENT (SafetyMonitor.java: 101→310 lines)
-   - Added device info: deviceModel, firmwareVersion, batteryPartNumber
-   - Swelling risk calculation with swellingRiskScore (0-100)
-   - IEC 62133 regulatory compliance checking
-   - Multi-tier severity: warning/critical/emergency classification
-
-📊 SYNC VERIFICATION (January 23, 2026)
-   - Performance Sync: 7 new tables added to hexnil_auto_sync.py and backend
-   - Tables: memory_snapshots, app_launch_metrics, frame_metrics,
-     crash_events, anr_events, daily_aggregates, regression_events
-   - Scheduling: WorkManager-based background aggregation verified.
-   - MySQL: All 38 tables active in hexnil database.
 
 ================================================================================
                     NEW IN VERSION 3.3 - AUTO-SYNC FEATURE

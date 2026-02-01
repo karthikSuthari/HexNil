@@ -31,6 +31,9 @@ public interface IdleDrainSessionDao {
     @Query("SELECT COUNT(*) FROM idle_drain_sessions")
     int getCount();
     
+    @Query("SELECT COUNT(*) FROM idle_drain_sessions WHERE startTime >= :startTime")
+    int getCountSince(long startTime);
+    
     @Query("SELECT * FROM idle_drain_sessions WHERE endTime = 0 LIMIT 1")
     IdleDrainSession getActiveSession();
     

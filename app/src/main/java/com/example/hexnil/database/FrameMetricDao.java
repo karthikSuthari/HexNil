@@ -70,6 +70,24 @@ public interface FrameMetricDao {
 
     @Query("SELECT AVG(jankPercentage) FROM frame_metrics WHERE packageName = :packageName AND sessionStart BETWEEN :start AND :end")
     float getAverageJankByPackageInRange(String packageName, long start, long end);
+    
+    @Query("SELECT MAX(jankPercentage) FROM frame_metrics WHERE packageName = :packageName AND sessionStart BETWEEN :start AND :end")
+    float getMaxJankByPackageInRange(String packageName, long start, long end);
+    
+    @Query("SELECT SUM(totalFrames) FROM frame_metrics WHERE packageName = :packageName AND sessionStart BETWEEN :start AND :end")
+    int getTotalFramesByPackageInRange(String packageName, long start, long end);
+    
+    @Query("SELECT SUM(slowFrames) FROM frame_metrics WHERE packageName = :packageName AND sessionStart BETWEEN :start AND :end")
+    int getTotalSlowFramesByPackageInRange(String packageName, long start, long end);
+    
+    @Query("SELECT SUM(frozenFrames) FROM frame_metrics WHERE packageName = :packageName AND sessionStart BETWEEN :start AND :end")
+    int getTotalFrozenFramesByPackageInRange(String packageName, long start, long end);
+    
+    @Query("SELECT AVG(fps) FROM frame_metrics WHERE packageName = :packageName AND sessionStart BETWEEN :start AND :end")
+    float getAverageFpsByPackageInRange(String packageName, long start, long end);
+    
+    @Query("SELECT COUNT(*) FROM frame_metrics WHERE packageName = :packageName AND sessionStart BETWEEN :start AND :end")
+    int getSessionCountByPackageInRange(String packageName, long start, long end);
 
     @Query("SELECT * FROM frame_metrics WHERE jankPercentage > 5 AND sessionStart >= :since ORDER BY jankPercentage DESC")
     List<FrameMetric> getExcessiveJankSessions(long since);

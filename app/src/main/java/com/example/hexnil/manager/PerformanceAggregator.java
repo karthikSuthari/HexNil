@@ -1,10 +1,13 @@
 package com.example.hexnil.manager;
 
 import android.content.Context;
+import android.content.pm.PackageInfo;
+import android.content.pm.PackageManager;
 import android.os.Build;
 import android.util.Log;
 
 import com.example.hexnil.database.HexNilDatabase;
+import com.example.hexnil.model.BatterySnapshot;
 import com.example.hexnil.model.DailyAggregate;
 
 import java.text.SimpleDateFormat;
@@ -32,6 +35,7 @@ public class PerformanceAggregator {
 
         private final Context context;
         private final HexNilDatabase database;
+        private final PackageManager packageManager;
         private final Executor executor;
 
         private static final SimpleDateFormat DATE_FORMAT = new SimpleDateFormat("yyyy-MM-dd", Locale.US);
@@ -39,6 +43,7 @@ public class PerformanceAggregator {
         public PerformanceAggregator(Context context, HexNilDatabase database) {
                 this.context = context.getApplicationContext();
                 this.database = database;
+                this.packageManager = context.getPackageManager();
                 this.executor = Executors.newSingleThreadExecutor();
         }
 
@@ -107,6 +112,8 @@ public class PerformanceAggregator {
                                         .getAverageMemoryUsageInRange(dayStart, dayEnd);
                         agg.maxMemoryUsedPercent = database.memorySnapshotDao()
                                         .getMaxMemoryUsageInRange(dayStart, dayEnd);
+                        agg.minMemoryUsedPercent = database.memorySnapshotDao()
+                                        .getMinMemoryUsageInRange(dayStart, dayEnd);
                         agg.lowMemoryEventCount = database.memorySnapshotDao()
                                         .getLowMemoryEventCountInRange(dayStart, dayEnd);
                         agg.memorySampleCount = database.memorySnapshotDao()
@@ -160,12 +167,135 @@ public class PerformanceAggregator {
                         agg.hasNewAnrType = !database.anrEventDao()
                                         .getNewAnrTypes(dayStart).isEmpty();
 
+                        // =====================================================
+                        // THERMAL AGGREGATES - From battery snapshots
+                        // =====================================================
+                        populateThermalAggregates(agg, dayStart, dayEnd);
+                        
+                        // =====================================================
+                        // BATTERY AGGREGATES - From battery snapshots
+                        // =====================================================
+                        populateBatteryAggregates(agg, dayStart, dayEnd);
+
                         agg.updatedAt = System.currentTimeMillis();
 
                         return agg;
                 } catch (Exception e) {
                         Log.e(TAG, "Error creating device aggregate", e);
                         return null;
+                }
+        }
+        
+        /**
+         * Populate thermal aggregates from battery snapshots.
+         */
+        private void populateThermalAggregates(DailyAggregate agg, long dayStart, long dayEnd) {
+                try {
+                        List<BatterySnapshot> snapshots = database.batterySnapshotDao()
+                                        .getSnapshotsInRange(dayStart, dayEnd);
+                        
+                        if (snapshots == null || snapshots.isEmpty()) {
+                                Log.d(TAG, "No thermal data for aggregation");
+                                return;
+                        }
+                        
+                        float tempSum = 0;
+                        float tempMin = Float.MAX_VALUE;
+                        float tempMax = Float.MIN_VALUE;
+                        int throttleEvents = 0;
+                        
+                        for (BatterySnapshot snapshot : snapshots) {
+                                float tempC = snapshot.temperature / 10f; // Convert from tenths
+                                tempSum += tempC;
+                                tempMin = Math.min(tempMin, tempC);
+                                tempMax = Math.max(tempMax, tempC);
+                                
+                                // Count thermal throttle events (temp > 40C)
+                                if (tempC > 40f) {
+                                        throttleEvents++;
+                                }
+                        }
+                        
+                        int count = snapshots.size();
+                        agg.avgTemp = tempSum / count;
+                        agg.minTemp = tempMin == Float.MAX_VALUE ? 0 : tempMin;
+                        agg.maxTemp = tempMax == Float.MIN_VALUE ? 0 : tempMax;
+                        agg.thermalSampleCount = count;
+                        agg.thermalThrottleEvents = throttleEvents;
+                        
+                        // Calculate thermal headroom (1.0 = optimal, 0.0 = throttling)
+                        // Headroom = (thermal_threshold - current_temp) / thermal_range
+                        float thermalThreshold = 45f; // Typical throttle threshold
+                        float thermalFloor = 20f;     // Typical room temp
+                        float range = thermalThreshold - thermalFloor;
+                        
+                        agg.avgThermalHeadroom = Math.max(0f, Math.min(1f, 
+                                        (thermalThreshold - agg.avgTemp) / range));
+                        agg.minThermalHeadroom = Math.max(0f, Math.min(1f,
+                                        (thermalThreshold - agg.maxTemp) / range)); // Min headroom at max temp
+                        
+                } catch (Exception e) {
+                        Log.e(TAG, "Error populating thermal aggregates", e);
+                }
+        }
+        
+        /**
+         * Populate battery aggregates from battery snapshots.
+         */
+        private void populateBatteryAggregates(DailyAggregate agg, long dayStart, long dayEnd) {
+                try {
+                        List<BatterySnapshot> snapshots = database.batterySnapshotDao()
+                                        .getSnapshotsInRange(dayStart, dayEnd);
+                        
+                        if (snapshots == null || snapshots.size() < 2) {
+                                Log.d(TAG, "Insufficient battery data for aggregation");
+                                return;
+                        }
+                        
+                        // Calculate total battery drain
+                        int maxLevel = 0;
+                        int minLevel = 100;
+                        long screenOnMs = 0;
+                        
+                        BatterySnapshot firstSnapshot = snapshots.get(0);
+                        BatterySnapshot lastSnapshot = snapshots.get(snapshots.size() - 1);
+                        
+                        // Track level changes to calculate drain (excluding charge periods)
+                        float totalDrain = 0;
+                        BatterySnapshot prevSnapshot = null;
+                        
+                        for (BatterySnapshot snapshot : snapshots) {
+                                maxLevel = Math.max(maxLevel, snapshot.level);
+                                minLevel = Math.min(minLevel, snapshot.level);
+                                
+                                if (prevSnapshot != null && !snapshot.isCharging) {
+                                        // Only count drain when not charging
+                                        int levelDrop = prevSnapshot.level - snapshot.level;
+                                        if (levelDrop > 0) {
+                                                totalDrain += levelDrop;
+                                        }
+                                        
+                                        // Estimate screen-on time (rough heuristic: higher drain = screen on)
+                                        float instantDrainRate = levelDrop / 
+                                                ((snapshot.timestamp - prevSnapshot.timestamp) / 3600000f);
+                                        if (instantDrainRate > 2f) { // More than 2%/hr suggests screen-on
+                                                screenOnMs += (snapshot.timestamp - prevSnapshot.timestamp);
+                                        }
+                                }
+                                prevSnapshot = snapshot;
+                        }
+                        
+                        agg.totalBatteryDrain = totalDrain;
+                        agg.screenOnMinutes = (int) (screenOnMs / 60000);
+                        
+                        // Calculate average drain rate per hour
+                        float totalHours = (lastSnapshot.timestamp - firstSnapshot.timestamp) / 3600000f;
+                        if (totalHours > 0) {
+                                agg.avgDrainRatePerHour = totalDrain / totalHours;
+                        }
+                        
+                } catch (Exception e) {
+                        Log.e(TAG, "Error populating battery aggregates", e);
                 }
         }
 
@@ -212,6 +342,19 @@ public class PerformanceAggregator {
                 try {
                         DailyAggregate agg = new DailyAggregate(date, packageName);
 
+                        // =====================================================
+                        // APP IDENTIFICATION
+                        // =====================================================
+                        try {
+                                PackageInfo info = packageManager.getPackageInfo(packageName, 0);
+                                agg.appLabel = packageManager.getApplicationLabel(
+                                                info.applicationInfo).toString();
+                                agg.appVersion = info.versionName;
+                        } catch (PackageManager.NameNotFoundException e) {
+                                agg.appLabel = packageName;
+                                agg.appVersion = "unknown";
+                        }
+
                         // Launch metrics for this app
                         agg.launchCount = database.appLaunchMetricDao()
                                         .getLaunchCountByPackage(packageName, dayStart);
@@ -219,12 +362,32 @@ public class PerformanceAggregator {
                                         .getColdLaunchCountByPackageInRange(packageName, dayStart, dayEnd);
                         agg.avgColdLaunchMs = database.appLaunchMetricDao()
                                         .getAverageColdLaunchByPackageInRange(packageName, dayStart, dayEnd);
+                        agg.avgWarmLaunchMs = database.appLaunchMetricDao()
+                                        .getAverageWarmLaunchByPackageInRange(packageName, dayStart, dayEnd);
+                        agg.avgHotLaunchMs = database.appLaunchMetricDao()
+                                        .getAverageHotLaunchByPackageInRange(packageName, dayStart, dayEnd);
                         agg.maxLaunchMs = database.appLaunchMetricDao()
                                         .getMaxLaunchTimeByPackage(packageName, dayStart);
+                        agg.slowLaunchCount = database.appLaunchMetricDao()
+                                        .getSlowLaunchCountByPackage(packageName, dayStart);
 
-                        // Frame metrics for this app
+                        // =====================================================
+                        // FRAME METRICS for this app
+                        // =====================================================
+                        agg.totalFrames = database.frameMetricDao()
+                                        .getTotalFramesByPackageInRange(packageName, dayStart, dayEnd);
+                        agg.totalSlowFrames = database.frameMetricDao()
+                                        .getTotalSlowFramesByPackageInRange(packageName, dayStart, dayEnd);
+                        agg.totalFrozenFrames = database.frameMetricDao()
+                                        .getTotalFrozenFramesByPackageInRange(packageName, dayStart, dayEnd);
                         agg.avgJankPercent = database.frameMetricDao()
                                         .getAverageJankByPackageInRange(packageName, dayStart, dayEnd);
+                        agg.maxJankPercent = database.frameMetricDao()
+                                        .getMaxJankByPackageInRange(packageName, dayStart, dayEnd);
+                        agg.avgFps = database.frameMetricDao()
+                                        .getAverageFpsByPackageInRange(packageName, dayStart, dayEnd);
+                        agg.frameSessionCount = database.frameMetricDao()
+                                        .getSessionCountByPackageInRange(packageName, dayStart, dayEnd);
 
                         // Crash/ANR for this app
                         agg.crashCount = database.crashEventDao()
@@ -233,6 +396,14 @@ public class PerformanceAggregator {
                                         .getUniqueCrashTypeCountByPackage(packageName, dayStart);
                         agg.anrCount = database.anrEventDao()
                                         .getCountByPackageInRange(packageName, dayStart, dayEnd);
+                        agg.uniqueAnrTypes = database.anrEventDao()
+                                        .getUniqueAnrTypeCountByPackage(packageName, dayStart);
+                        
+                        // Check for new crash/ANR types for this app
+                        agg.hasNewCrashType = !database.crashEventDao()
+                                        .getNewCrashTypesByPackage(packageName, dayStart).isEmpty();
+                        agg.hasNewAnrType = !database.anrEventDao()
+                                        .getNewAnrTypesByPackage(packageName, dayStart).isEmpty();
 
                         agg.systemVersion = Build.VERSION.RELEASE;
                         agg.updatedAt = System.currentTimeMillis();

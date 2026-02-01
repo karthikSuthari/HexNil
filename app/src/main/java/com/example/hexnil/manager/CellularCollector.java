@@ -5,6 +5,8 @@ import android.annotation.SuppressLint;
 import android.content.Context;
 import android.content.pm.PackageManager;
 import android.os.Build;
+import android.os.Handler;
+import android.os.HandlerThread;
 import android.telephony.CellIdentityLte;
 import android.telephony.CellIdentityNr;
 import android.telephony.CellInfo;
@@ -25,7 +27,10 @@ import androidx.core.app.ActivityCompat;
 import com.example.hexnil.model.NetworkCellularSnapshot;
 
 import java.util.List;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.AtomicReference;
 
 /**
  * OEM-Grade Cellular Data Collector
@@ -38,17 +43,22 @@ import java.util.concurrent.atomic.AtomicLong;
  * - LTE signal details: API 26+
  * - NR (5G) signal: API 29+
  * - TelephonyDisplayInfo (5G display): API 30+
+ * - requestCellInfoUpdate (fresh data): API 29+
  * 
  * PERMISSION REQUIREMENTS:
  * - READ_PHONE_STATE (dangerous permission) for TelephonyManager access
+ * - ACCESS_FINE_LOCATION for getAllCellInfo() on Android 10+
  * 
  * DATA INTEGRITY PRINCIPLES:
  * - Never fabricate values - use null for unavailable data
  * - Always timestamp with System.currentTimeMillis()
  * - Log all API restrictions/failures for auditability
+ * - Use requestCellInfoUpdate for fresh modem data when possible
+ * - Cache last known cell identity as fallback
  */
 public class CellularCollector {
     private static final String TAG = "CellularCollector";
+    private static final long CELL_INFO_UPDATE_TIMEOUT_MS = 2000; // 2 second timeout
 
     private final Context context;
     private final TelephonyManager telephonyManager;
@@ -56,10 +66,30 @@ public class CellularCollector {
     private long sessionId = 0;
     private NetworkCellularSnapshot lastSnapshot = null;
 
+    // Handler thread for cell info callbacks
+    private HandlerThread callbackThread;
+    private Handler callbackHandler;
+
+    // Last known good cell identity values (for caching when modem returns null)
+    private Integer lastPci = null;
+    private Integer lastTac = null;
+    private Long lastCellId = null;
+    private Integer lastArfcn = null;
+    private Integer lastBand = null;
+    private long lastCellInfoUpdateTime = 0;
+    private static final long CELL_IDENTITY_CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes
+
     public CellularCollector(Context context) {
         this.context = context.getApplicationContext();
         this.telephonyManager = (TelephonyManager) context.getSystemService(Context.TELEPHONY_SERVICE);
         this.sessionId = System.currentTimeMillis();
+
+        // Initialize callback handler thread for requestCellInfoUpdate
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            callbackThread = new HandlerThread("CellInfoCallback");
+            callbackThread.start();
+            callbackHandler = new Handler(callbackThread.getLooper());
+        }
     }
 
     /**
@@ -427,36 +457,151 @@ public class CellularCollector {
 
     /**
      * Collect cell identity info (PCI, band, ARFCN, TAC, etc.).
+     * Uses requestCellInfoUpdate() on API 29+ to get fresh modem data.
+     * Falls back to getAllCellInfo() on older devices.
+     * Caches last known good values as fallback when modem returns null.
      */
     @SuppressLint("MissingPermission")
     private void collectCellInfo(NetworkCellularSnapshot snapshot) {
-        try {
-            List<CellInfo> cellInfoList = telephonyManager.getAllCellInfo();
-            if (cellInfoList == null || cellInfoList.isEmpty()) {
-                Log.d(TAG, "No cell info available");
-                return;
-            }
+        List<CellInfo> cellInfoList = null;
 
-            // Find the registered (serving) cell
+        // Try to get fresh cell info using requestCellInfoUpdate (API 29+)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q && callbackHandler != null) {
+            cellInfoList = requestFreshCellInfo();
+        }
+
+        // Fallback to getAllCellInfo if requestCellInfoUpdate didn't work
+        if (cellInfoList == null || cellInfoList.isEmpty()) {
+            try {
+                cellInfoList = telephonyManager.getAllCellInfo();
+            } catch (SecurityException e) {
+                Log.w(TAG, "getAllCellInfo() denied (Fix with AI)", e);
+            } catch (Exception e) {
+                Log.w(TAG, "Failed to get cell info", e);
+            }
+        }
+
+        // Process cell info if available
+        if (cellInfoList != null && !cellInfoList.isEmpty()) {
+            boolean foundRegistered = false;
             for (CellInfo cellInfo : cellInfoList) {
                 if (!cellInfo.isRegistered())
                     continue;
 
                 if (cellInfo instanceof CellInfoLte) {
                     collectLteCellIdentity((CellInfoLte) cellInfo, snapshot);
+                    foundRegistered = true;
                     break;
                 } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q &&
                         cellInfo instanceof CellInfoNr) {
                     collectNrCellIdentity((CellInfoNr) cellInfo, snapshot);
+                    foundRegistered = true;
                     break;
                 }
             }
 
-        } catch (SecurityException e) {
-            Log.w(TAG, "getAllCellInfo() denied", e);
-        } catch (Exception e) {
-            Log.w(TAG, "Failed to get cell info", e);
+            if (foundRegistered) {
+                // Update cache with fresh values
+                updateCellIdentityCache(snapshot);
+                return;
+            }
         }
+
+        // No fresh data - use cached values if still valid
+        Log.d(TAG, "No cell info available - using cached values if valid");
+        applyCachedCellIdentity(snapshot);
+    }
+
+    /**
+     * Request fresh cell info from modem using requestCellInfoUpdate().
+     * This forces the modem to query the network instead of returning cached data.
+     * Blocks for up to CELL_INFO_UPDATE_TIMEOUT_MS milliseconds.
+     */
+    @SuppressLint("MissingPermission")
+    @androidx.annotation.RequiresApi(api = Build.VERSION_CODES.Q)
+    private List<CellInfo> requestFreshCellInfo() {
+        final AtomicReference<List<CellInfo>> result = new AtomicReference<>(null);
+        final CountDownLatch latch = new CountDownLatch(1);
+
+        try {
+            telephonyManager.requestCellInfoUpdate(
+                    context.getMainExecutor(),
+                    new TelephonyManager.CellInfoCallback() {
+                        @Override
+                        public void onCellInfo(@NonNull List<CellInfo> cellInfoList) {
+                            result.set(cellInfoList);
+                            latch.countDown();
+                            Log.d(TAG, "Fresh cell info received: " + cellInfoList.size() + " cells");
+                        }
+
+                        @Override
+                        public void onError(int errorCode, @Nullable Throwable detail) {
+                            Log.w(TAG, "requestCellInfoUpdate error: " + errorCode, detail);
+                            latch.countDown();
+                        }
+                    });
+
+            // Wait for callback with timeout
+            boolean completed = latch.await(CELL_INFO_UPDATE_TIMEOUT_MS, TimeUnit.MILLISECONDS);
+            if (!completed) {
+                Log.d(TAG, "requestCellInfoUpdate timed out after " + CELL_INFO_UPDATE_TIMEOUT_MS + "ms");
+            }
+
+        } catch (SecurityException e) {
+            Log.w(TAG, "requestCellInfoUpdate() denied - missing location permission", e);
+        } catch (InterruptedException e) {
+            Log.w(TAG, "requestCellInfoUpdate() interrupted", e);
+            Thread.currentThread().interrupt();
+        } catch (Exception e) {
+            Log.w(TAG, "requestCellInfoUpdate() failed", e);
+        }
+
+        return result.get();
+    }
+
+    /**
+     * Update the cell identity cache with fresh values from snapshot.
+     */
+    private void updateCellIdentityCache(NetworkCellularSnapshot snapshot) {
+        if (snapshot.pci != null)
+            lastPci = snapshot.pci;
+        if (snapshot.tac != null)
+            lastTac = snapshot.tac;
+        if (snapshot.cellId != null)
+            lastCellId = snapshot.cellId;
+        if (snapshot.arfcn != null)
+            lastArfcn = snapshot.arfcn;
+        if (snapshot.band != null)
+            lastBand = snapshot.band;
+        lastCellInfoUpdateTime = System.currentTimeMillis();
+        Log.d(TAG, "Cell identity cache updated: pci=" + lastPci + ", tac=" + lastTac + ", cellId=" + lastCellId);
+    }
+
+    /**
+     * Apply cached cell identity values to snapshot if cache is still valid.
+     */
+    private void applyCachedCellIdentity(NetworkCellularSnapshot snapshot) {
+        long now = System.currentTimeMillis();
+        long cacheAge = now - lastCellInfoUpdateTime;
+
+        if (lastCellInfoUpdateTime == 0 || cacheAge > CELL_IDENTITY_CACHE_TTL_MS) {
+            Log.d(TAG, "Cell identity cache expired or empty (age=" + cacheAge + "ms)");
+            return;
+        }
+
+        // Apply cached values
+        if (snapshot.pci == null && lastPci != null)
+            snapshot.pci = lastPci;
+        if (snapshot.tac == null && lastTac != null)
+            snapshot.tac = lastTac;
+        if (snapshot.cellId == null && lastCellId != null)
+            snapshot.cellId = lastCellId;
+        if (snapshot.arfcn == null && lastArfcn != null)
+            snapshot.arfcn = lastArfcn;
+        if (snapshot.band == null && lastBand != null)
+            snapshot.band = lastBand;
+
+        Log.d(TAG, "Applied cached cell identity (age=" + cacheAge + "ms)");
     }
 
     /**

@@ -156,6 +156,9 @@ public interface DailyAggregateDao {
     @Query("SELECT COUNT(*) FROM daily_aggregates")
     int getCount();
 
+    @Query("SELECT COUNT(*) FROM daily_aggregates WHERE createdAt >= :since")
+    int getAggregateCountSince(long since);
+
     @Query("SELECT COUNT(DISTINCT date) FROM daily_aggregates")
     int getDistinctDateCount();
 }

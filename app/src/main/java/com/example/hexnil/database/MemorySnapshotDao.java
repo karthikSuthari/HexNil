@@ -76,6 +76,9 @@ public interface MemorySnapshotDao {
 
     @Query("SELECT MAX(usedMemoryPercent) FROM memory_snapshots WHERE timestamp BETWEEN :start AND :end")
     float getMaxMemoryUsageInRange(long start, long end);
+    
+    @Query("SELECT MIN(usedMemoryPercent) FROM memory_snapshots WHERE timestamp BETWEEN :start AND :end")
+    float getMinMemoryUsageInRange(long start, long end);
 
     @Query("SELECT COUNT(*) FROM memory_snapshots WHERE timestamp >= :since")
     int getSampleCountSince(long since);

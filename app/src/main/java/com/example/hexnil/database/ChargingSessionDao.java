@@ -46,6 +46,9 @@ public interface ChargingSessionDao {
     @Query("SELECT COUNT(*) FROM charging_sessions")
     int getCount();
     
+    @Query("SELECT COUNT(*) FROM charging_sessions WHERE startTime >= :startTime")
+    int getCountSince(long startTime);
+    
     // ========================================================================
     // SESSION RETRIEVAL
     // ========================================================================

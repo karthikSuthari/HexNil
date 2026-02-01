@@ -96,6 +96,9 @@ public interface AnrEventDao {
 
     @Query("SELECT * FROM anr_events WHERE isNewAnrType = 1 AND timestamp >= :since ORDER BY timestamp DESC")
     List<AnrEvent> getNewAnrTypes(long since);
+    
+    @Query("SELECT * FROM anr_events WHERE isNewAnrType = 1 AND packageName = :packageName AND timestamp >= :since ORDER BY timestamp DESC")
+    List<AnrEvent> getNewAnrTypesByPackage(String packageName, long since);
 
     @Query("SELECT DISTINCT traceHash FROM anr_events WHERE packageName = :packageName")
     List<String> getDistinctAnrHashesByPackage(String packageName);

@@ -347,3 +347,111 @@ Auto-sync stopped by user
 2026-01-29 23:38:34,803 [INFO] Auto-sync completed successfully!
 2026-01-29 23:48:51,441 [INFO] Device disconnected
 2026-01-29 23:48:51,583 [INFO] Device disconnected
+2026-02-01 15:29:11,556 [INFO] ADB path: C:\Users\sutha\AppData\Local\Android\Sdk\platform-tools\adb.exe
+2026-02-01 15:29:11,557 [INFO] Backend URL: http://127.0.0.1:8000
+2026-02-01 15:29:11,557 [INFO] Check interval: 5s
+2026-02-01 15:29:11,591 [INFO] ========================================
+2026-02-01 15:29:11,591 [INFO] DEVICE CONNECTED - Starting auto-sync...
+2026-02-01 15:29:11,591 [INFO] ========================================
+2026-02-01 15:29:11,740 [INFO] Device ID: a6a9f331d869db9e
+2026-02-01 15:29:11,741 [INFO] Device Model: I2302
+2026-02-01 15:29:13,742 [INFO] Pulling database from device...
+2026-02-01 15:29:17,528 [INFO] Database pulled successfully: 14794752 bytes -> sync_data\hexnil_battery_db
+2026-02-01 15:29:17,571 [INFO] Found 799 new records in battery_snapshots
+2026-02-01 15:29:17,573 [INFO] Found 3 new records in charging_sessions
+2026-02-01 15:29:17,577 [INFO] Found 74 new records in drain_events
+2026-02-01 15:29:17,641 [INFO] Found 665 new records in battery_health
+2026-02-01 15:29:17,646 [INFO] Found 50 new records in safety_events
+2026-02-01 15:29:18,792 [INFO] Found 18812 new records in app_battery_usage
+2026-02-01 15:29:18,818 [INFO] Found 2255 new records in app_drain_ranks
+2026-02-01 15:29:18,819 [INFO] Found 18 new records in refresh_rate_sessions
+2026-02-01 15:29:18,820 [INFO] Found 37 new records in refresh_rate_anomalies
+2026-02-01 15:29:18,827 [INFO] Found 346 new records in anomaly_records
+2026-02-01 15:29:18,828 [INFO] Found 21 new records in thermal_heat_buckets
+2026-02-01 15:29:18,831 [INFO] Found 52 new records in calibration_data
+2026-02-01 15:29:18,845 [INFO] Found 222 new records in ai_analysis_results
+2026-02-01 15:29:18,859 [INFO] Found 615 new records in cpu_gpu_load_samples
+2026-02-01 15:29:18,865 [INFO] Found 649 new records in memory_snapshots
+2026-02-01 15:29:18,869 [INFO] Found 250 new records in app_launch_metrics
+2026-02-01 15:29:18,872 [INFO] Found 179 new records in crash_events
+2026-02-01 15:29:18,875 [INFO] Found 118 new records in daily_aggregates
+2026-02-01 15:29:18,876 [INFO] Found 4 new records in regression_events
+2026-02-01 15:29:18,894 [INFO] Found 773 new records in network_cellular_snapshots
+2026-02-01 15:29:18,917 [INFO] Found 773 new records in network_wifi_snapshots
+2026-02-01 15:29:18,936 [INFO] Found 773 new records in network_bluetooth_snapshots
+2026-02-01 15:29:18,946 [INFO] Found 437 new records in modem_firmware_events
+2026-02-01 15:29:18,951 [INFO] Syncing 27861 records to backend...
+2026-02-01 15:29:21,827 [ERROR] Backend server not running. Start it with: python run_hexnil_backend.py
+2026-02-01 15:29:21,827 [ERROR] Auto-sync failed!
+2026-02-01 15:44:46,709 [INFO] ADB path: C:\Users\sutha\AppData\Local\Android\Sdk\platform-tools\adb.exe
+2026-02-01 15:44:46,711 [INFO] Backend URL: http://127.0.0.1:8000
+2026-02-01 15:44:46,711 [INFO] Check interval: 5s
+2026-02-01 15:44:46,727 [INFO] ========================================
+2026-02-01 15:44:46,727 [INFO] DEVICE CONNECTED - Starting auto-sync...
+2026-02-01 15:44:46,727 [INFO] ========================================
+2026-02-01 15:44:47,001 [INFO] Device ID: a6a9f331d869db9e
+2026-02-01 15:44:47,001 [INFO] Device Model: I2302
+2026-02-01 15:44:49,001 [INFO] Pulling database from device...
+2026-02-01 15:44:54,204 [INFO] Database pulled successfully: 15425536 bytes -> sync_data\hexnil_battery_db
+2026-02-01 15:44:54,222 [INFO] Found 831 new records in battery_snapshots
+2026-02-01 15:44:54,222 [INFO] Found 3 new records in charging_sessions
+2026-02-01 15:44:54,224 [INFO] Found 76 new records in drain_events
+2026-02-01 15:44:54,238 [INFO] Found 696 new records in battery_health
+2026-02-01 15:44:54,239 [INFO] Found 50 new records in safety_events
+2026-02-01 15:44:54,436 [INFO] Found 20354 new records in app_battery_usage
+2026-02-01 15:44:54,450 [INFO] Found 2475 new records in app_drain_ranks
+2026-02-01 15:44:54,450 [INFO] Found 18 new records in refresh_rate_sessions
+2026-02-01 15:44:54,450 [INFO] Found 50 new records in refresh_rate_anomalies
+2026-02-01 15:44:54,456 [INFO] Found 368 new records in anomaly_records
+2026-02-01 15:44:54,457 [INFO] Found 24 new records in thermal_heat_buckets
+2026-02-01 15:44:54,457 [INFO] Found 54 new records in calibration_data
+2026-02-01 15:44:54,463 [INFO] Found 234 new records in ai_analysis_results
+2026-02-01 15:44:54,471 [INFO] Found 647 new records in cpu_gpu_load_samples
+2026-02-01 15:44:54,474 [INFO] Found 681 new records in memory_snapshots
+2026-02-01 15:44:54,475 [INFO] Found 261 new records in app_launch_metrics
+2026-02-01 15:44:54,476 [INFO] Found 183 new records in crash_events
+2026-02-01 15:44:54,477 [INFO] Found 120 new records in daily_aggregates
+2026-02-01 15:44:54,478 [INFO] Found 4 new records in regression_events
+2026-02-01 15:44:54,486 [INFO] Found 805 new records in network_cellular_snapshots
+2026-02-01 15:44:54,494 [INFO] Found 805 new records in network_wifi_snapshots
+2026-02-01 15:44:54,501 [INFO] Found 805 new records in network_bluetooth_snapshots
+2026-02-01 15:44:54,505 [INFO] Found 469 new records in modem_firmware_events
+2026-02-01 15:44:54,507 [INFO] Syncing 29949 records to backend...
+2026-02-01 15:44:56,729 [ERROR] Backend server not running. Start it with: python run_hexnil_backend.py
+2026-02-01 15:44:56,729 [ERROR] Auto-sync failed!
+2026-02-01 16:26:35,348 [INFO] ADB path: C:\Users\sutha\AppData\Local\Android\Sdk\platform-tools\adb.exe
+2026-02-01 16:26:35,348 [INFO] Backend URL: http://127.0.0.1:8000
+2026-02-01 16:26:35,348 [INFO] Check interval: 5s
+2026-02-01 16:26:35,365 [INFO] ========================================
+2026-02-01 16:26:35,365 [INFO] DEVICE CONNECTED - Starting auto-sync...
+2026-02-01 16:26:35,365 [INFO] ========================================
+2026-02-01 16:26:35,575 [INFO] Device ID: a6a9f331d869db9e
+2026-02-01 16:26:35,575 [INFO] Device Model: I2302
+2026-02-01 16:26:37,576 [INFO] Pulling database from device...
+2026-02-01 16:26:41,628 [INFO] Database pulled successfully: 17526784 bytes -> sync_data\hexnil_battery_db
+2026-02-01 16:26:41,646 [INFO] Found 950 new records in battery_snapshots
+2026-02-01 16:26:41,647 [INFO] Found 4 new records in charging_sessions
+2026-02-01 16:26:41,648 [INFO] Found 80 new records in drain_events
+2026-02-01 16:26:41,662 [INFO] Found 809 new records in battery_health
+2026-02-01 16:26:41,663 [INFO] Found 138 new records in safety_events
+2026-02-01 16:26:41,922 [INFO] Found 25876 new records in app_battery_usage
+2026-02-01 16:26:41,940 [INFO] Found 2975 new records in app_drain_ranks
+2026-02-01 16:26:41,940 [INFO] Found 20 new records in refresh_rate_sessions
+2026-02-01 16:26:41,941 [INFO] Found 60 new records in refresh_rate_anomalies
+2026-02-01 16:26:41,945 [INFO] Found 400 new records in anomaly_records
+2026-02-01 16:26:41,945 [INFO] Found 24 new records in thermal_heat_buckets
+2026-02-01 16:26:41,946 [INFO] Found 59 new records in calibration_data
+2026-02-01 16:26:41,954 [INFO] Found 248 new records in ai_analysis_results
+2026-02-01 16:26:41,962 [INFO] Found 758 new records in cpu_gpu_load_samples
+2026-02-01 16:26:41,967 [INFO] Found 793 new records in memory_snapshots
+2026-02-01 16:26:41,968 [INFO] Found 268 new records in app_launch_metrics
+2026-02-01 16:26:41,970 [INFO] Found 192 new records in crash_events
+2026-02-01 16:26:41,972 [INFO] Found 123 new records in daily_aggregates
+2026-02-01 16:26:41,972 [INFO] Found 4 new records in regression_events
+2026-02-01 16:26:41,983 [INFO] Found 921 new records in network_cellular_snapshots
+2026-02-01 16:26:41,996 [INFO] Found 921 new records in network_wifi_snapshots
+2026-02-01 16:26:42,007 [INFO] Found 921 new records in network_bluetooth_snapshots
+2026-02-01 16:26:42,011 [INFO] Found 585 new records in modem_firmware_events
+2026-02-01 16:26:42,013 [INFO] Syncing 37065 records to backend...
+2026-02-01 16:26:44,303 [ERROR] Backend server not running. Start it with: python run_hexnil_backend.py
+2026-02-01 16:26:44,303 [ERROR] Auto-sync failed!

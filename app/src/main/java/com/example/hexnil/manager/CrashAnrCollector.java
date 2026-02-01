@@ -211,11 +211,18 @@ public class CrashAnrCollector {
             event.reasonCode = info.getReason();
             event.status = info.getStatus();
             event.importance = info.getImportance();
-            event.pss = info.getPss() * 1024L; // Convert KB to bytes
-            event.rss = info.getRss() * 1024L;
+            // subReason left at default 0 - getSubReason() API 31+ has compile issues
+            
+            // Memory info - getPss/getRss return KB, convert to bytes
+            // Note: These may return 0 for some crash types
+            long pssKb = info.getPss();
+            long rssKb = info.getRss();
+            event.pss = pssKb > 0 ? pssKb * 1024L : 0;
+            event.rss = rssKb > 0 ? rssKb * 1024L : 0;
 
-            // Set crash type
+            // Set crash type and human-readable reason
             event.crashType = mapReasonToCrashType(info.getReason());
+            event.reason = mapReasonToString(info.getReason());
 
             // Get description (may contain exception info)
             String description = info.getDescription();
@@ -230,14 +237,26 @@ public class CrashAnrCollector {
             try {
                 InputStream traceStream = info.getTraceInputStream();
                 if (traceStream != null) {
-                    String traceContent = readInputStream(traceStream, 2000);
+                    String traceContent = readInputStream(traceStream, 4000);
                     if (traceContent != null && !traceContent.isEmpty()) {
                         event.stackTraceHash = computeHash(traceContent);
+                        
+                        // Try to extract exception info from trace if not in description
+                        if (event.exceptionType == null) {
+                            parseExceptionFromTrace(event, traceContent);
+                        }
                     }
                     traceStream.close();
                 }
             } catch (Exception e) {
                 Log.d(TAG, "Could not read trace: " + e.getMessage());
+            }
+            
+            // Generate fallback hash if trace unavailable
+            if (event.stackTraceHash == null) {
+                String fallbackContent = event.packageName + ":" + event.crashType + ":" +
+                        event.reasonCode + ":" + (event.description != null ? event.description : "");
+                event.stackTraceHash = computeHash(fallbackContent);
             }
 
             // Get app label and version
@@ -259,10 +278,9 @@ public class CrashAnrCollector {
             event.wasLowMemory = isLowMemory;
 
             // Check if this is a new crash type for this package
-            if (event.stackTraceHash != null) {
-                event.isNewCrashType = !database.crashEventDao()
-                        .existsByHash(event.stackTraceHash, packageName);
-            }
+            // Always check since we now always generate a hash
+            event.isNewCrashType = !database.crashEventDao()
+                    .existsByHash(event.stackTraceHash, packageName);
 
             return event;
         } catch (Exception e) {
@@ -365,8 +383,56 @@ public class CrashAnrCollector {
                 return "excessive_resource";
             case REASON_ANR:
                 return "anr";
+            case REASON_SIGNALED:
+                return "signal_crash";
+            case REASON_INITIALIZATION_FAILURE:
+                return "init_failure";
             default:
                 return "unknown";
+        }
+    }
+    
+    /**
+     * Map exit reason code to human-readable string.
+     */
+    private String mapReasonToString(int reason) {
+        switch (reason) {
+            case REASON_UNKNOWN:
+                return "unknown";
+            case REASON_EXIT_SELF:
+                return "exit_self";
+            case REASON_SIGNALED:
+                return "signal";
+            case REASON_LOW_MEMORY:
+                return "low_memory";
+            case REASON_CRASH:
+                return "crash";
+            case REASON_CRASH_NATIVE:
+                return "native_crash";
+            case REASON_ANR:
+                return "anr";
+            case REASON_INITIALIZATION_FAILURE:
+                return "init_failure";
+            case REASON_PERMISSION_CHANGE:
+                return "permission_change";
+            case REASON_EXCESSIVE_RESOURCE_USAGE:
+                return "excessive_resource";
+            case REASON_USER_REQUESTED:
+                return "user_requested";
+            case REASON_USER_STOPPED:
+                return "user_stopped";
+            case REASON_DEPENDENCY_DIED:
+                return "dependency_died";
+            case REASON_OTHER:
+                return "other";
+            case REASON_FREEZER:
+                return "freezer";
+            case REASON_PACKAGE_STATE_CHANGE:
+                return "package_state_change";
+            case REASON_PACKAGE_UPDATED:
+                return "package_updated";
+            default:
+                return "unknown_" + reason;
         }
     }
 
@@ -398,16 +464,80 @@ public class CrashAnrCollector {
         if (description == null)
             return;
 
-        // Common patterns to extract exception type
-        // e.g., "java.lang.NullPointerException: ..."
-        String[] parts = description.split("[:\\n]");
-        if (parts.length > 0) {
-            String firstPart = parts[0].trim();
-            if (firstPart.contains("Exception") || firstPart.contains("Error")) {
-                event.exceptionType = firstPart;
-                if (parts.length > 1) {
-                    event.exceptionMessage = truncate(parts[1].trim(), 200);
+        // Pattern 1: "java.lang.NullPointerException: message"
+        // Pattern 2: "NullPointerException"
+        // Pattern 3: "Crash: java.lang.RuntimeException"
+        
+        String[] lines = description.split("\n");
+        for (String line : lines) {
+            line = line.trim();
+            
+            // Look for fully qualified exception names
+            if (line.contains("Exception") || line.contains("Error")) {
+                // Try to extract: "java.lang.NullPointerException: message"
+                int colonIdx = line.indexOf(':');
+                if (colonIdx > 0) {
+                    String potentialException = line.substring(0, colonIdx).trim();
+                    // Check if it looks like a class name (contains . or ends with Exception/Error)
+                    if (potentialException.contains(".") || 
+                        potentialException.endsWith("Exception") || 
+                        potentialException.endsWith("Error")) {
+                        // Extract just the class name if fully qualified
+                        int lastDot = potentialException.lastIndexOf('.');
+                        event.exceptionType = lastDot > 0 ? 
+                                potentialException.substring(lastDot + 1) : potentialException;
+                        // Message is after the colon
+                        if (colonIdx + 1 < line.length()) {
+                            event.exceptionMessage = truncate(line.substring(colonIdx + 1).trim(), 200);
+                        }
+                        return;
+                    }
+                } else {
+                    // No colon, the whole line might be the exception
+                    if (line.endsWith("Exception") || line.endsWith("Error") || line.contains(".")) {
+                        int lastDot = line.lastIndexOf('.');
+                        event.exceptionType = lastDot > 0 ? line.substring(lastDot + 1) : line;
+                        return;
+                    }
                 }
+            }
+        }
+    }
+    
+    /**
+     * Parse exception info from stack trace content.
+     */
+    private void parseExceptionFromTrace(CrashEvent event, String traceContent) {
+        if (traceContent == null || traceContent.isEmpty()) return;
+        
+        String[] lines = traceContent.split("\n");
+        for (String line : lines) {
+            line = line.trim();
+            
+            // Skip "at" lines (stack frames)
+            if (line.startsWith("at ")) continue;
+            
+            // Look for exception patterns: "java.lang.NullPointerException: message"
+            if ((line.contains("Exception") || line.contains("Error")) && 
+                !line.startsWith("Caused by:")) {
+                
+                int colonIdx = line.indexOf(':');
+                String exceptionPart = colonIdx > 0 ? line.substring(0, colonIdx).trim() : line.trim();
+                
+                // Extract simple class name
+                int lastDot = exceptionPart.lastIndexOf('.');
+                if (lastDot > 0) {
+                    event.exceptionType = exceptionPart.substring(lastDot + 1);
+                } else if (exceptionPart.endsWith("Exception") || exceptionPart.endsWith("Error")) {
+                    event.exceptionType = exceptionPart;
+                }
+                
+                // Get message if present
+                if (colonIdx > 0 && colonIdx + 1 < line.length()) {
+                    event.exceptionMessage = truncate(line.substring(colonIdx + 1).trim(), 200);
+                }
+                
+                if (event.exceptionType != null) return;
             }
         }
     }
@@ -436,7 +566,7 @@ public class CrashAnrCollector {
         }
         return null;
     }
-
+    
     /**
      * Read input stream to string (limited length).
      */

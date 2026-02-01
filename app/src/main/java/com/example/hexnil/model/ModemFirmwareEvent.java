@@ -199,10 +199,17 @@ public class ModemFirmwareEvent {
     @Ignore
     public void populateFromBuild() {
         this.currentVersion = android.os.Build.getRadioVersion();
+
+        // Baseband version is often the same as radio version on Android
         this.currentBasebandVersion = android.os.Build.getRadioVersion();
+
         this.androidVersion = android.os.Build.VERSION.RELEASE;
         this.androidSdkLevel = android.os.Build.VERSION.SDK_INT;
-        this.securityPatch = android.os.Build.VERSION.SECURITY_PATCH;
+
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.M) {
+            this.securityPatch = android.os.Build.VERSION.SECURITY_PATCH;
+        }
+
         this.buildFingerprint = android.os.Build.FINGERPRINT;
         this.buildNumber = android.os.Build.DISPLAY;
         this.manufacturer = android.os.Build.MANUFACTURER;

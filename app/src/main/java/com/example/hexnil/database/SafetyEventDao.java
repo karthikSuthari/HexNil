@@ -67,6 +67,9 @@ public interface SafetyEventDao {
     @Query("SELECT * FROM safety_events WHERE swellingRiskScore > 0.5")
     List<SafetyEvent> getSwellingRiskEvents();
     
+    @Query("SELECT * FROM safety_events WHERE eventType = :eventType ORDER BY timestamp DESC LIMIT 1")
+    SafetyEvent getLatestByType(String eventType);
+    
     @Query("DELETE FROM safety_events WHERE timestamp < :beforeTime")
     void deleteOlderThan(long beforeTime);
 }

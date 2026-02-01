@@ -56,6 +56,17 @@ public class SafetyMonitor {
     // Device info (cached)
     private final String deviceModel;
     private final String firmwareVersion;
+    
+    // Tracking for resolution and abuse counting
+    private SafetyEvent pendingResolution = null;
+    private long pendingResolutionStartTime = 0;
+    private float lowestVoltageTracked = Float.MAX_VALUE;
+    
+    // Abuse event counts (persisted per session)
+    private int overTempAbuseCount = 0;
+    private int overVoltageAbuseCount = 0;
+    private int overCurrentAbuseCount = 0;
+    private int overDischargeAbuseCount = 0;
 
     public SafetyMonitor(Context context, HexNilDatabase database) {
         this.context = context;
@@ -71,6 +82,9 @@ public class SafetyMonitor {
     public void checkSafety(BatterySnapshot snapshot) {
         if (snapshot == null)
             return;
+            
+        // Check if pending event has been resolved
+        checkResolution(snapshot);
 
         float tempC = snapshot.getTemperatureCelsius();
         float voltage = snapshot.voltage;
@@ -127,6 +141,20 @@ public class SafetyMonitor {
         event.batteryTemperature = snapshot.getTemperatureCelsius();
         event.voltage = snapshot.voltage;
         event.current = snapshot.chargeRate;
+        
+        // Ambient temperature estimation (battery temp - thermal offset based on load)
+        float loadFactor = Math.abs(snapshot.chargeRate) / 3000f; // Normalize by typical max current
+        float thermalOffset = 3f + (loadFactor * 8f); // 3-11°C offset based on load
+        event.ambientTemperature = Math.max(15f, snapshot.getTemperatureCelsius() - thermalOffset);
+        
+        // Track lowest voltage seen
+        if (snapshot.voltage < lowestVoltageTracked) {
+            lowestVoltageTracked = snapshot.voltage;
+        }
+        event.lowestVoltage = lowestVoltageTracked;
+        
+        // Calculate expected voltage for current battery level
+        event.expectedVoltage = estimateExpectedVoltage(snapshot.level);
 
         return event;
     }
@@ -153,10 +181,20 @@ public class SafetyMonitor {
             event.protectionAction = "throttle_charging";
         } else {
             event.severity = "warning";
-            event.protectionAction = "none";
+            event.protectionAction = "monitor";
         }
 
         event.wasProtectionTriggered = tempC >= OVER_TEMP_CRITICAL;
+        
+        // Abuse tracking
+        overTempAbuseCount++;
+        event.abuseType = "thermal_abuse";
+        event.abuseCount = overTempAbuseCount;
+        event.abuseSeverity = Math.min(1.0f, (tempC - OVER_TEMP_WARNING) / 15f);
+        
+        // Track for resolution
+        pendingResolution = event;
+        pendingResolutionStartTime = System.currentTimeMillis();
     }
 
     private void populateOverVoltageEvent(SafetyEvent event, BatterySnapshot snapshot) {
@@ -164,7 +202,6 @@ public class SafetyMonitor {
         event.thresholdValue = OVER_VOLTAGE_WARNING;
         event.measurementUnit = "mV";
         event.triggerValue = snapshot.voltage;
-        event.expectedVoltage = 4200f; // Normal max voltage
 
         if (snapshot.voltage >= OVER_VOLTAGE_CRITICAL) {
             event.severity = "critical";
@@ -175,6 +212,16 @@ public class SafetyMonitor {
             event.protectionAction = "monitor";
             event.wasProtectionTriggered = false;
         }
+        
+        // Abuse tracking
+        overVoltageAbuseCount++;
+        event.abuseType = "voltage_abuse";
+        event.abuseCount = overVoltageAbuseCount;
+        event.abuseSeverity = Math.min(1.0f, (snapshot.voltage - OVER_VOLTAGE_WARNING) / 100f);
+        
+        // Track for resolution
+        pendingResolution = event;
+        pendingResolutionStartTime = System.currentTimeMillis();
     }
 
     private void populateLowVoltageEvent(SafetyEvent event, BatterySnapshot snapshot) {
@@ -182,8 +229,6 @@ public class SafetyMonitor {
         event.thresholdValue = LOW_VOLTAGE_WARNING;
         event.measurementUnit = "mV";
         event.triggerValue = snapshot.voltage;
-        event.lowestVoltage = snapshot.voltage;
-        event.expectedVoltage = 3600f; // Normal min voltage
 
         if (snapshot.voltage <= LOW_VOLTAGE_CRITICAL) {
             event.severity = "critical";
@@ -195,6 +240,16 @@ public class SafetyMonitor {
             event.protectionAction = "low_power_mode";
             event.wasProtectionTriggered = false;
         }
+        
+        // Abuse tracking
+        overDischargeAbuseCount++;
+        event.abuseType = "deep_discharge";
+        event.abuseCount = overDischargeAbuseCount;
+        event.abuseSeverity = Math.min(1.0f, (LOW_VOLTAGE_WARNING - snapshot.voltage) / 200f);
+        
+        // Track for resolution
+        pendingResolution = event;
+        pendingResolutionStartTime = System.currentTimeMillis();
     }
 
     private void populateOverCurrentEvent(SafetyEvent event, BatterySnapshot snapshot) {
@@ -215,6 +270,16 @@ public class SafetyMonitor {
             event.protectionAction = "monitor";
             event.wasProtectionTriggered = false;
         }
+        
+        // Abuse tracking
+        overCurrentAbuseCount++;
+        event.abuseType = "current_abuse";
+        event.abuseCount = overCurrentAbuseCount;
+        event.abuseSeverity = Math.min(1.0f, (current - OVER_CURRENT_WARNING) / 1500f);
+        
+        // Track for resolution
+        pendingResolution = event;
+        pendingResolutionStartTime = System.currentTimeMillis();
     }
 
     // =========================================================================
@@ -365,6 +430,48 @@ public class SafetyMonitor {
     // =========================================================================
     // HELPERS
     // =========================================================================
+    
+    /**
+     * Check if a pending safety event has been resolved.
+     */
+    private void checkResolution(BatterySnapshot snapshot) {
+        if (pendingResolution == null || pendingResolutionStartTime == 0) {
+            return;
+        }
+        
+        boolean resolved = false;
+        String eventType = pendingResolution.eventType;
+        
+        if ("over_temp".equals(eventType)) {
+            // Resolved if temperature dropped below warning threshold
+            resolved = snapshot.getTemperatureCelsius() < OVER_TEMP_WARNING;
+        } else if ("over_voltage".equals(eventType)) {
+            // Resolved if voltage dropped below warning threshold
+            resolved = snapshot.voltage < OVER_VOLTAGE_WARNING;
+        } else if ("over_discharge".equals(eventType)) {
+            // Resolved if voltage recovered (charging started)
+            resolved = snapshot.voltage > LOW_VOLTAGE_WARNING || snapshot.isCharging;
+        } else if ("over_current".equals(eventType)) {
+            // Resolved if current dropped below warning threshold
+            resolved = Math.abs(snapshot.chargeRate) < OVER_CURRENT_WARNING;
+        }
+        
+        if (resolved) {
+            long resolutionTime = System.currentTimeMillis() - pendingResolutionStartTime;
+            
+            // Update the most recent safety event of this type
+            SafetyEvent latest = database.safetyEventDao().getLatestByType(eventType);
+            if (latest != null && !latest.wasResolved) {
+                latest.wasResolved = true;
+                latest.resolutionTime = resolutionTime;
+                database.safetyEventDao().update(latest);
+            }
+            
+            // Clear pending
+            pendingResolution = null;
+            pendingResolutionStartTime = 0;
+        }
+    }
 
     private String getBatteryPartNumber() {
         // Battery part number is typically OEM-specific

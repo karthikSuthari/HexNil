@@ -48,6 +48,9 @@ public interface DrainEventDao {
     @Query("SELECT COUNT(*) FROM drain_events")
     int getCount();
     
+    @Query("SELECT COUNT(*) FROM drain_events WHERE startTime >= :startTime")
+    int getCountSince(long startTime);
+    
     @Query("SELECT * FROM drain_events WHERE endTime = 0 LIMIT 1")
     DrainEvent getActiveEvent();
     

@@ -37,6 +37,7 @@ import com.example.hexnil.manager.IdleDrainAnalyzer;
 import com.example.hexnil.manager.CalibrationManager;
 import com.example.hexnil.manager.ProtectionManager;
 import com.example.hexnil.manager.AppUsageCollector;
+import com.example.hexnil.manager.AppDrainRanker;
 import com.example.hexnil.manager.HexNilAI;
 import com.example.hexnil.ai.ThermalPerformanceIntelligence;
 import com.example.hexnil.intelligence.AppIntelligenceCollector;
@@ -200,6 +201,11 @@ public class BatteryMonitorService extends Service {
     private static final long INTERVAL_PHASE2_ANALYSIS = 60 * 60 * 1000; // 1 hour
     private volatile long lastAIAnalysisTime = 0;
     private volatile long serviceStartTime = 0;
+    
+    // Drain ranking
+    private AppDrainRanker appDrainRanker;
+    private volatile long lastDrainRankingTime = 0;
+    private static final long INTERVAL_DRAIN_RANKING = 60 * 60 * 1000; // 1 hour
 
     // State tracking
     private volatile boolean isCharging = false;
@@ -311,6 +317,7 @@ public class BatteryMonitorService extends Service {
         calibrationManager = new CalibrationManager(this, database);
         protectionManager = new ProtectionManager(database);
         appUsageCollector = new AppUsageCollector(this);
+        appDrainRanker = new AppDrainRanker(database);
         hexNilAI = new HexNilAI(this, database);
         appIntelligenceCollector = new AppIntelligenceCollector(this);
         thermalPerfIntelligence = new ThermalPerformanceIntelligence(database);
@@ -335,6 +342,8 @@ public class BatteryMonitorService extends Service {
         wifiCollector = new WifiCollector(this);
         bluetoothCollector = new BluetoothCollector(this);
         modemFirmwareTracker = new ModemFirmwareTracker(this, database);
+        // Record initial firmware state on app start
+        modemFirmwareTracker.checkAndRecordVersion("APP_START");
         Log.d(TAG, "Network & Connectivity collectors initialized");
 
         // Track service start time for AI analysis periods
@@ -1035,6 +1044,7 @@ public class BatteryMonitorService extends Service {
      * Runs comprehensive AI analysis every INTERVAL_AI_ANALYSIS milliseconds.
      * Runs Phase-2 thermal/performance analysis every INTERVAL_PHASE2_ANALYSIS
      * milliseconds.
+     * Runs drain ranking generation every INTERVAL_DRAIN_RANKING milliseconds.
      */
     private void checkAndRunAIAnalysis() {
         // Guard: Check if executor is valid before submitting
@@ -1048,6 +1058,11 @@ public class BatteryMonitorService extends Service {
         // Run Phase-2 Thermal/Performance analysis (hourly)
         if (lastPhase2AnalysisTime == 0 || (now - lastPhase2AnalysisTime) >= INTERVAL_PHASE2_ANALYSIS) {
             runPhase2Analysis(now);
+        }
+        
+        // Run drain ranking generation (hourly) for all standard windows
+        if (lastDrainRankingTime == 0 || (now - lastDrainRankingTime) >= INTERVAL_DRAIN_RANKING) {
+            runDrainRankingGeneration(now);
         }
 
         // Check if enough time has passed since last general AI analysis
@@ -1158,6 +1173,33 @@ public class BatteryMonitorService extends Service {
     }
 
     /**
+     * Generate drain rankings for all standard time windows (1h, 6h, 24h, 7d).
+     * Creates ranked lists of apps by battery drain for each window.
+     */
+    private void runDrainRankingGeneration(long now) {
+        // Guard: Check if executor is valid before submitting
+        if (!isExecutorValid()) {
+            Log.w(TAG, "Executor is shutdown, skipping drain ranking generation");
+            return;
+        }
+
+        executor.execute(() -> {
+            try {
+                Log.d(TAG, "Generating drain rankings for all standard windows...");
+                
+                // Generate rankings for 1h, 6h, 24h, 7d windows
+                appDrainRanker.generateAllWindowRankings();
+                
+                lastDrainRankingTime = now;
+                Log.d(TAG, "Drain ranking generation complete");
+                
+            } catch (Exception e) {
+                Log.e(TAG, "Error generating drain rankings", e);
+            }
+        });
+    }
+
+    /**
      * Force an immediate AI analysis (can be called from external sources).
      */
     public void triggerImmediateAIAnalysis() {
@@ -1185,52 +1227,30 @@ public class BatteryMonitorService extends Service {
      */
     private void collectAppUsage(BatterySnapshot snapshot) {
         try {
-            // Collect app usage for last 5 minutes
+            // Collect comprehensive app usage for last 5 minutes
             long periodEnd = System.currentTimeMillis();
             long periodStart = periodEnd - (5 * 60 * 1000);
             List<AppBatteryUsage> appUsages = appUsageCollector.collect(5 * 60 * 1000);
 
             if (appUsages != null && !appUsages.isEmpty()) {
                 for (AppBatteryUsage usage : appUsages) {
-                    // Set unique timestamp and period for each record
+                    // Ensure unique timestamp for each record
                     usage.timestamp = periodEnd;
                     usage.periodStart = periodStart;
                     usage.periodEnd = periodEnd;
 
-                    // Calculate estimated battery usage based on foreground time
-                    float hoursActive = usage.foregroundTime / 3600000.0f;
-
-                    // Estimate battery drain based on time active
-                    // Typical drain rate is ~10%/hour for active app
-                    usage.batteryPercentUsed = hoursActive * 10.0f;
-                    usage.drainPerHour = hoursActive > 0 ? usage.batteryPercentUsed / hoursActive : 0;
-
-                    // Try to get app name
-                    try {
-                        android.content.pm.PackageManager pm = getPackageManager();
-                        android.content.pm.ApplicationInfo appInfo = pm.getApplicationInfo(usage.packageName, 0);
-                        usage.appName = pm.getApplicationLabel(appInfo).toString();
-                        usage.isSystemApp = (appInfo.flags & android.content.pm.ApplicationInfo.FLAG_SYSTEM) != 0;
-                    } catch (Exception e) {
-                        usage.appName = usage.packageName;
-                        usage.isSystemApp = false;
-                    }
-
-                    // Rate efficiency
-                    if (usage.drainPerHour > 20) {
-                        usage.efficiencyRating = "problematic";
-                    } else if (usage.drainPerHour > 15) {
-                        usage.efficiencyRating = "inefficient";
-                    } else if (usage.drainPerHour > 8) {
-                        usage.efficiencyRating = "normal";
-                    } else {
-                        usage.efficiencyRating = "efficient";
-                    }
+                    // All other fields (appName, isSystemApp, appCategory, foregroundTime,
+                    // backgroundTime, batteryPercentUsed, drainPerHour, cpuTimeMs, networkBytes,
+                    // wakelockTime, partialWakelockTime, wakelockCount, alarmWakeCount, 
+                    // networkWakeCount, wakelockDrainScore, alarmCount, gpsRequests, 
+                    // backgroundWakes, pushNotifications, backgroundServices, hasExcessiveBackground,
+                    // categoryAverage, deviationFromAverage, efficiencyRating, drainReasons,
+                    // optimizationTips, needsRestriction) are now populated by AppUsageCollector
 
                     // Store in database
                     database.appBatteryUsageDao().insert(usage);
                 }
-                Log.d(TAG, "Stored " + appUsages.size() + " app usage records");
+                Log.d(TAG, "Stored " + appUsages.size() + " app usage records with comprehensive data");
             }
         } catch (Exception e) {
             Log.e(TAG, "Error collecting app usage", e);
@@ -1292,8 +1312,11 @@ public class BatteryMonitorService extends Service {
         Log.d(TAG, "Power connected");
         isCharging = true;
         stateCache.setCharging(true);
+        // Capture snapshot first - this will automatically start the charging session
+        // via processChargingSnapshot() when it detects isCharging=true and no active session
         captureSnapshot("power_connected");
-        executor.execute(() -> chargingAnalyzer.startChargingSession());
+        // DON'T call startChargingSession() explicitly - it causes a race condition
+        // where the session gets created twice and loses the initial start values
         updateSamplingInterval();
         updateNotification();
     }
@@ -1303,9 +1326,13 @@ public class BatteryMonitorService extends Service {
         isCharging = false;
         isFastCharging = false;
         stateCache.setCharging(false);
-        captureSnapshot("power_disconnected");
+        // End the charging session BEFORE capturing the final snapshot
+        // so the session gets finalized with the correct end values
         executor.execute(() -> {
             chargingAnalyzer.endChargingSession();
+        });
+        captureSnapshot("power_disconnected");
+        executor.execute(() -> {
             drainAnalyzer.startDrainTracking();
         });
         updateSamplingInterval();
@@ -1412,13 +1439,8 @@ public class BatteryMonitorService extends Service {
         try {
             // Modem firmware check (only logs changes)
             if (modemFirmwareTracker != null) {
-                ModemFirmwareEvent modemEvent = modemFirmwareTracker.checkAndRecordVersion("PERIODIC");
-                if (modemEvent != null) {
-                    long modemId = database.modemFirmwareEventDao().insert(modemEvent);
-                    Log.i(TAG, "Modem firmware event saved: id=" + modemId +
-                            ", type=" + modemEvent.eventType +
-                            ", ver=" + modemEvent.currentVersion);
-                }
+                // checkAndRecordVersion handles database insertion internally
+                modemFirmwareTracker.checkAndRecordVersion("PERIODIC");
             }
         } catch (Exception e) {
             Log.w(TAG, "Failed to check modem firmware", e);

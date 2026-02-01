@@ -96,6 +96,9 @@ public interface CrashEventDao {
 
     @Query("SELECT * FROM crash_events WHERE isNewCrashType = 1 AND timestamp >= :since ORDER BY timestamp DESC")
     List<CrashEvent> getNewCrashTypes(long since);
+    
+    @Query("SELECT * FROM crash_events WHERE isNewCrashType = 1 AND packageName = :packageName AND timestamp >= :since ORDER BY timestamp DESC")
+    List<CrashEvent> getNewCrashTypesByPackage(String packageName, long since);
 
     @Query("SELECT DISTINCT stackTraceHash FROM crash_events WHERE packageName = :packageName")
     List<String> getDistinctCrashHashesByPackage(String packageName);

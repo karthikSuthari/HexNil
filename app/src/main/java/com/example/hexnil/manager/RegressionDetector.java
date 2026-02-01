@@ -311,6 +311,9 @@ public class RegressionDetector {
                 event.currentVersion = info.versionName;
                 event.appLabel = packageManager.getApplicationLabel(
                         info.applicationInfo).toString();
+                        
+                // Get previous version from history
+                event.previousVersion = getPreviousAppVersion(packageName, info.versionName);
             } catch (PackageManager.NameNotFoundException e) {
                 event.appLabel = packageName;
             }
@@ -321,7 +324,398 @@ public class RegressionDetector {
         event.evidenceEndTime = now;
         event.evidenceStartTime = now - (7 * 24 * 60 * 60 * 1000L); // 7 days
 
+        // Populate additional fields
+        event.previousSystemVersion = getPreviousSystemVersion();
+        event.evidenceCount = calculateEvidenceCount(type, event.evidenceStartTime, event.evidenceEndTime, packageName);
+        event.confidenceScore = calculateConfidenceScore(event);
+        event.rootCause = inferRootCause(type, event);
+        event.trend = calculateTrend(type, packageName, event.evidenceStartTime);
+        event.evidenceDataJson = buildEvidenceDataJson(type, packageName, event.evidenceStartTime);
+        event.evidenceQuery = buildEvidenceQuery(type, packageName, event.evidenceStartTime, event.evidenceEndTime);
+        
+        // Set recommendations
+        event.userRecommendation = getUserRecommendation(type, event);
+        event.engineerRecommendation = getEngineerRecommendation(type, event);
+
         return event;
+    }
+    
+    /**
+     * Get previous app version from history.
+     */
+    private String getPreviousAppVersion(String packageName, String currentVersion) {
+        try {
+            List<DailyAggregate> history = database.dailyAggregateDao()
+                    .getByPackageInRange(packageName, getDateNDaysAgo(DATE_FORMAT.format(new Date()), 30), 
+                            DATE_FORMAT.format(new Date()));
+            
+            for (DailyAggregate agg : history) {
+                if (agg.appVersion != null && !agg.appVersion.equals(currentVersion)) {
+                    return agg.appVersion;
+                }
+            }
+        } catch (Exception e) {
+            Log.e(TAG, "Error getting previous app version", e);
+        }
+        return null;
+    }
+    
+    /**
+     * Get previous system version from stored state or detect OS update.
+     */
+    private String getPreviousSystemVersion() {
+        try {
+            // Check if we stored previous version
+            String storedPrev = context.getSharedPreferences("hexnil_prefs", Context.MODE_PRIVATE)
+                    .getString("previous_system_version", null);
+            
+            // Also check daily aggregates for system version changes
+            if (storedPrev == null) {
+                List<DailyAggregate> history = database.dailyAggregateDao()
+                        .getDeviceLevelInRange(getDateNDaysAgo(DATE_FORMAT.format(new Date()), 30),
+                                DATE_FORMAT.format(new Date()));
+                
+                String currentVer = Build.VERSION.RELEASE;
+                for (DailyAggregate agg : history) {
+                    // Could track system version in aggregates - for now return null if not stored
+                }
+            }
+            return storedPrev;
+        } catch (Exception e) {
+            Log.e(TAG, "Error getting previous system version", e);
+            return null;
+        }
+    }
+    
+    /**
+     * Calculate evidence count based on regression type.
+     */
+    private int calculateEvidenceCount(String type, long startTime, long endTime, String packageName) {
+        try {
+            switch (type) {
+                case "launch_time":
+                    return database.dailyAggregateDao().getAggregateCountSince(startTime);
+                case "jank":
+                    return database.dailyAggregateDao().getAggregateCountSince(startTime);
+                case "memory":
+                    // Count low memory events
+                    List<DailyAggregate> memHistory = database.dailyAggregateDao()
+                            .getDeviceLevelInRange(getDateNDaysAgo(DATE_FORMAT.format(new Date(endTime)), 7),
+                                    DATE_FORMAT.format(new Date(endTime)));
+                    int memEvents = 0;
+                    for (DailyAggregate agg : memHistory) {
+                        memEvents += agg.lowMemoryEventCount;
+                    }
+                    return memEvents;
+                case "crash":
+                    if (packageName != null) {
+                        List<DailyAggregate> crashHistory = database.dailyAggregateDao()
+                                .getByPackageInRange(packageName, 
+                                        getDateNDaysAgo(DATE_FORMAT.format(new Date(endTime)), 7),
+                                        DATE_FORMAT.format(new Date(endTime)));
+                        int crashes = 0;
+                        for (DailyAggregate agg : crashHistory) {
+                            crashes += agg.crashCount;
+                        }
+                        return crashes;
+                    }
+                    return 0;
+                case "anr":
+                    if (packageName != null) {
+                        List<DailyAggregate> anrHistory = database.dailyAggregateDao()
+                                .getByPackageInRange(packageName,
+                                        getDateNDaysAgo(DATE_FORMAT.format(new Date(endTime)), 7),
+                                        DATE_FORMAT.format(new Date(endTime)));
+                        int anrs = 0;
+                        for (DailyAggregate agg : anrHistory) {
+                            anrs += agg.anrCount;
+                        }
+                        return anrs;
+                    }
+                    return 0;
+                case "thermal":
+                    return database.batterySnapshotDao().getCountSince(startTime);
+                default:
+                    return database.dailyAggregateDao().getAggregateCountSince(startTime);
+            }
+        } catch (Exception e) {
+            Log.e(TAG, "Error calculating evidence count", e);
+            return 0;
+        }
+    }
+    
+    /**
+     * Calculate confidence score based on evidence strength.
+     */
+    private float calculateConfidenceScore(RegressionEvent event) {
+        float confidence = 0.5f; // Base confidence
+        
+        // More evidence = higher confidence
+        if (event.evidenceCount >= 10) confidence += 0.2f;
+        else if (event.evidenceCount >= 5) confidence += 0.1f;
+        
+        // Larger delta = higher confidence (more obvious regression)
+        if (Math.abs(event.deltaPercent) > 50) confidence += 0.15f;
+        else if (Math.abs(event.deltaPercent) > 30) confidence += 0.1f;
+        else if (Math.abs(event.deltaPercent) > 20) confidence += 0.05f;
+        
+        // Known trigger increases confidence
+        if ("app_update".equals(event.triggerEvent) || "system_update".equals(event.triggerEvent)) {
+            confidence += 0.15f;
+        }
+        
+        // Type-specific confidence adjustments
+        switch (event.regressionType) {
+            case "anr":
+                confidence += 0.2f; // ANRs are clear regressions
+                break;
+            case "crash":
+                confidence += 0.15f;
+                break;
+            case "launch_time":
+            case "jank":
+                // These are statistical so slightly lower confidence
+                break;
+        }
+        
+        return Math.min(1.0f, confidence);
+    }
+    
+    /**
+     * Infer root cause based on regression type and context.
+     */
+    private String inferRootCause(String type, RegressionEvent event) {
+        StringBuilder cause = new StringBuilder();
+        
+        boolean isAppUpdate = "app_update".equals(event.triggerEvent);
+        boolean isSystemUpdate = "system_update".equals(event.triggerEvent);
+        
+        switch (type) {
+            case "launch_time":
+                if (isAppUpdate) {
+                    cause.append("App update introduced slower initialization. ");
+                    cause.append("Possible causes: new dependencies, larger assets, heavier startup logic.");
+                } else if (isSystemUpdate) {
+                    cause.append("System update may have affected app compatibility or startup sequence.");
+                } else {
+                    cause.append("Gradual launch time degradation. ");
+                    cause.append("Possible causes: accumulated cache, data growth, background services.");
+                }
+                break;
+                
+            case "jank":
+                if (isAppUpdate) {
+                    cause.append("App update introduced UI performance issues. ");
+                    cause.append("Possible causes: heavier animations, inefficient layouts, main thread work.");
+                } else {
+                    cause.append("Frame rendering degradation. ");
+                    cause.append("Possible causes: memory pressure, thermal throttling, competing processes.");
+                }
+                break;
+                
+            case "memory":
+                cause.append("Increased memory pressure detected. ");
+                cause.append("Possible causes: memory leaks, large allocations, insufficient device RAM.");
+                break;
+                
+            case "crash":
+                if (isAppUpdate) {
+                    cause.append("New crashes detected after app update. ");
+                    cause.append("Possible causes: new code bugs, API compatibility issues, missing resources.");
+                } else {
+                    cause.append("Increased crash frequency. ");
+                    cause.append("Possible causes: edge case bugs, resource exhaustion, external dependencies.");
+                }
+                break;
+                
+            case "anr":
+                cause.append("Application Not Responding - main thread blocked. ");
+                if (isAppUpdate) {
+                    cause.append("App update likely introduced main thread blocking operations.");
+                } else {
+                    cause.append("Possible causes: slow I/O, network on main thread, deadlocks, heavy computation.");
+                }
+                break;
+                
+            case "thermal":
+                cause.append("Sustained temperature increase. ");
+                cause.append("Possible causes: CPU-intensive operations, poor efficiency, external heat source.");
+                break;
+                
+            default:
+                cause.append("Performance regression detected. Root cause requires further investigation.");
+        }
+        
+        return cause.toString();
+    }
+    
+    /**
+     * Calculate trend based on recent values.
+     */
+    private String calculateTrend(String type, String packageName, long startTime) {
+        try {
+            String startDate = DATE_FORMAT.format(new Date(startTime));
+            String endDate = DATE_FORMAT.format(new Date());
+            
+            List<DailyAggregate> history;
+            if (packageName != null) {
+                history = database.dailyAggregateDao().getByPackageInRange(packageName, startDate, endDate);
+            } else {
+                history = database.dailyAggregateDao().getDeviceLevelInRange(startDate, endDate);
+            }
+            
+            if (history.size() < 3) return "insufficient_data";
+            
+            // Get metric values based on type
+            List<Float> values = new ArrayList<>();
+            for (DailyAggregate agg : history) {
+                float value = getMetricValue(agg, type);
+                if (value > 0) values.add(value);
+            }
+            
+            if (values.size() < 3) return "insufficient_data";
+            
+            // Calculate trend using simple linear regression slope direction
+            int n = values.size();
+            float firstHalfAvg = 0;
+            float secondHalfAvg = 0;
+            int halfPoint = n / 2;
+            
+            for (int i = 0; i < halfPoint; i++) {
+                firstHalfAvg += values.get(i);
+            }
+            firstHalfAvg /= halfPoint;
+            
+            for (int i = halfPoint; i < n; i++) {
+                secondHalfAvg += values.get(i);
+            }
+            secondHalfAvg /= (n - halfPoint);
+            
+            float changePct = (secondHalfAvg - firstHalfAvg) / Math.max(1f, firstHalfAvg) * 100f;
+            
+            if (changePct > 10f) return "worsening";
+            if (changePct < -10f) return "improving";
+            return "stable";
+            
+        } catch (Exception e) {
+            Log.e(TAG, "Error calculating trend", e);
+            return "unknown";
+        }
+    }
+    
+    /**
+     * Get metric value from aggregate based on regression type.
+     */
+    private float getMetricValue(DailyAggregate agg, String type) {
+        switch (type) {
+            case "launch_time": return agg.avgColdLaunchMs;
+            case "jank": return agg.avgJankPercent;
+            case "memory": return agg.lowMemoryEventCount;
+            case "crash": return agg.crashCount;
+            case "anr": return agg.anrCount;
+            case "thermal": return agg.avgTemp;
+            default: return 0;
+        }
+    }
+    
+    /**
+     * Build JSON summary of key evidence data points.
+     */
+    private String buildEvidenceDataJson(String type, String packageName, long startTime) {
+        try {
+            String startDate = DATE_FORMAT.format(new Date(startTime));
+            String endDate = DATE_FORMAT.format(new Date());
+            
+            List<DailyAggregate> history;
+            if (packageName != null) {
+                history = database.dailyAggregateDao().getByPackageInRange(packageName, startDate, endDate);
+            } else {
+                history = database.dailyAggregateDao().getDeviceLevelInRange(startDate, endDate);
+            }
+            
+            StringBuilder json = new StringBuilder("[");
+            boolean first = true;
+            for (DailyAggregate agg : history) {
+                float value = getMetricValue(agg, type);
+                if (value > 0) {
+                    if (!first) json.append(",");
+                    json.append(String.format(Locale.US, "{\"date\":\"%s\",\"value\":%.2f}", agg.date, value));
+                    first = false;
+                }
+            }
+            json.append("]");
+            return json.toString();
+            
+        } catch (Exception e) {
+            Log.e(TAG, "Error building evidence JSON", e);
+            return "[]";
+        }
+    }
+    
+    /**
+     * Build SQL query for evidence retrieval.
+     */
+    private String buildEvidenceQuery(String type, String packageName, long startTime, long endTime) {
+        String table = getEvidenceTable(type);
+        String startDate = DATE_FORMAT.format(new Date(startTime));
+        String endDate = DATE_FORMAT.format(new Date(endTime));
+        
+        if (packageName != null) {
+            return String.format(Locale.US, 
+                    "SELECT * FROM %s WHERE packageName='%s' AND date BETWEEN '%s' AND '%s' ORDER BY date DESC",
+                    table, packageName, startDate, endDate);
+        } else {
+            return String.format(Locale.US,
+                    "SELECT * FROM %s WHERE date BETWEEN '%s' AND '%s' ORDER BY date DESC",
+                    table, startDate, endDate);
+        }
+    }
+    
+    /**
+     * Get user-facing recommendation.
+     */
+    private String getUserRecommendation(String type, RegressionEvent event) {
+        switch (type) {
+            case "launch_time":
+                return "Try clearing app cache or reinstalling the app if startup is too slow.";
+            case "jank":
+                return "Reduce animations in accessibility settings if the UI feels sluggish.";
+            case "memory":
+                return "Close unused apps and clear cache to free up memory.";
+            case "crash":
+                if ("app_update".equals(event.triggerEvent)) {
+                    return "Report crashes to the app developer. Consider rolling back to previous version.";
+                }
+                return "Report crashes to the app developer and ensure app is up to date.";
+            case "anr":
+                return "The app is freezing. Force stop and restart it, or reinstall if issue persists.";
+            case "thermal":
+                return "Reduce usage to allow device to cool down. Avoid using while charging.";
+            default:
+                return "Monitor the app and report issues to the developer.";
+        }
+    }
+    
+    /**
+     * Get engineer/developer recommendation.
+     */
+    private String getEngineerRecommendation(String type, RegressionEvent event) {
+        switch (type) {
+            case "launch_time":
+                return "Profile app startup with Android Studio. Check for main thread blocking, heavy initialization, and deferred work opportunities.";
+            case "jank":
+                return "Use Frame Metrics API to identify slow frames. Check for overdraw, layout complexity, and main thread work during rendering.";
+            case "memory":
+                return "Profile memory with Android Profiler. Check for leaks, large bitmap allocations, and object retention.";
+            case "crash":
+                return "Analyze crash logs and stack traces. Review recent code changes and test edge cases.";
+            case "anr":
+                return "Review ANR traces for main thread blocking. Move I/O and network calls off main thread. Check for deadlocks.";
+            case "thermal":
+                return "Profile CPU usage and optimize hot paths. Consider work deferral and efficient algorithms.";
+            default:
+                return "Profile and analyze performance metrics to identify root cause.";
+        }
     }
 
     /**

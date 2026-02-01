@@ -181,6 +181,9 @@ public interface BatterySnapshotDao {
     @Query("SELECT COUNT(*) FROM battery_snapshots WHERE timestamp >= :startTime")
     int getCountSince(long startTime);
     
+    @Query("SELECT COUNT(*) FROM battery_snapshots WHERE timestamp BETWEEN :startTime AND :endTime")
+    int getCountInRange(long startTime, long endTime);
+    
     @Query("SELECT COUNT(*) FROM battery_snapshots " +
            "WHERE validationStatus = 'valid' AND timestamp >= :startTime")
     int getValidCountSince(long startTime);

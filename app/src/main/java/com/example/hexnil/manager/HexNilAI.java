@@ -76,6 +76,108 @@ public class HexNilAI {
         result.analysisPeriod = periodLabel;
         result.dataPointsAnalyzed = database.batterySnapshotDao().getCountSince(startTime);
 
+        // =========================================================================
+        // AI READINESS - Anti-Hallucination Gate
+        // =========================================================================
+        int snapshotsAvailable = result.dataPointsAnalyzed;
+        int snapshotsRequired = 10;
+        long observationHoursAvailable = (now - startTime) / (1000 * 3600);
+        long observationHoursRequired = 4;
+        int chargingSessions = database.chargingSessionDao().getCountSince(startTime);
+        int drainEvents = database.drainEventDao().getCountSince(startTime);
+        
+        result.snapshotsAvailable = snapshotsAvailable;
+        result.snapshotsRequired = snapshotsRequired;
+        result.observationHoursAvailable = observationHoursAvailable;
+        result.observationHoursRequired = observationHoursRequired;
+        result.chargingSessionsAvailable = chargingSessions;
+        result.drainEventsAvailable = drainEvents;
+        
+        // Calculate readiness score
+        float snapshotScore = Math.min(1f, (float) snapshotsAvailable / snapshotsRequired);
+        float hoursScore = Math.min(1f, (float) observationHoursAvailable / observationHoursRequired);
+        float dataScore = Math.min(1f, (chargingSessions + drainEvents) / 5f);
+        result.aiReadinessScore = (snapshotScore + hoursScore + dataScore) / 3f;
+        
+        result.aiWasAllowedToRun = snapshotsAvailable >= snapshotsRequired && 
+                                    observationHoursAvailable >= observationHoursRequired;
+        
+        if (!result.aiWasAllowedToRun) {
+            StringBuilder reason = new StringBuilder();
+            if (snapshotsAvailable < snapshotsRequired) {
+                reason.append("Insufficient snapshots (").append(snapshotsAvailable)
+                      .append("/").append(snapshotsRequired).append("). ");
+            }
+            if (observationHoursAvailable < observationHoursRequired) {
+                reason.append("Insufficient observation time (").append(observationHoursAvailable)
+                      .append("/").append(observationHoursRequired).append("h). ");
+            }
+            result.aiBlockedReason = reason.toString().trim();
+        }
+        
+        result.aiReadinessDetails = buildReadinessJson(snapshotsAvailable, snapshotsRequired, 
+                observationHoursAvailable, observationHoursRequired, chargingSessions, drainEvents);
+
+        // =========================================================================
+        // DATA QUALITY METRICS
+        // =========================================================================
+        float completeness = calculateDataCompleteness(startTime, now);
+        float consistency = calculateDataConsistency(startTime, now);
+        float coverage = calculateDataCoverage(startTime, now);
+        
+        result.dataCompletenessScore = completeness;
+        result.dataConsistencyScore = consistency;
+        result.dataCoverageScore = coverage;
+        result.dataQualityGrade = gradeFromScore((completeness + consistency + coverage) / 3f);
+
+        // =========================================================================
+        // DETERMINISTIC RESULTS - Exact calculations
+        // =========================================================================
+        DeterministicMetrics deterministic = calculateDeterministicMetrics(startTime, now);
+        result.tempMinCelsius = deterministic.tempMin;
+        result.tempMaxCelsius = deterministic.tempMax;
+        result.tempMeanCelsius = deterministic.tempMean;
+        result.tempStdDevCelsius = deterministic.tempStdDev;
+        result.voltageMinMv = deterministic.voltageMin;
+        result.voltageMaxMv = deterministic.voltageMax;
+        result.voltageMeanMv = deterministic.voltageMean;
+        result.drainRateMeanPerHour = deterministic.drainRateMean;
+        result.drainRateMaxPerHour = deterministic.drainRateMax;
+        result.drainRateStdDev = deterministic.drainRateStdDev;
+        result.equivalentChargeCycles = deterministic.equivalentCycles;
+        result.fullDischargeCount = deterministic.fullDischargeCount;
+        result.screenOnTimeMs = deterministic.screenOnTimeMs;
+        result.chargingTimeMs = deterministic.chargingTimeMs;
+        result.highTempTimeMs = deterministic.highTempTimeMs;
+        result.deterministicResults = buildDeterministicJson(deterministic);
+
+        // =========================================================================
+        // AI INFERENCES (only if allowed to run)
+        // =========================================================================
+        if (result.aiWasAllowedToRun) {
+            // Health pattern
+            result.healthPatternInference = inferHealthPattern(health, deterministic);
+            result.healthPatternConfidence = health != null ? Math.min(0.9f, health.overallConfidence / 100f) : 0.5f;
+            
+            // Usage pattern
+            UsagePattern usage = inferUsagePattern(deterministic, rollup);
+            result.usagePatternInference = usage.inference;
+            result.usagePatternConfidence = usage.confidence;
+            result.usagePatternCategory = usage.category;
+            
+            // Thermal stress
+            ThermalStress thermal = inferThermalStress(deterministic);
+            result.thermalStressInference = thermal.inference;
+            result.thermalStressConfidence = thermal.confidence;
+            result.thermalStressLevel = thermal.level;
+            
+            // Drain anomalies - check based on idle drain being higher than expected
+            result.drainAnomaliesDetected = rollup.idleDrain > 2.0f || rollup.wakelockDrain > rollup.screenOnDrain;
+            
+            result.includesAIContent = true;
+            result.aiInterpretations = buildAiInterpretationsJson(result);
+        }
+
         result.issuesDetected = classification.issuesDetected;
         result.issueCount = classification.issueCount;
         result.detectedIssues = classification.detectedIssues != null ? classification.detectedIssues : toIssueJson(rollup.topIssues);
@@ -86,6 +188,12 @@ public class HexNilAI {
         result.issueCategory = classification.issueCategory != null ? classification.issueCategory : attribution.category;
         result.issueConfidence = 0.75f;
         result.rootCause = classification.rootCause != null ? classification.rootCause : rollup.attribution;
+        
+        // Enhanced root cause analysis
+        result.rootCauseCode = mapToRootCauseCode(result.rootCause);
+        result.rootCauseConfidence = result.aiWasAllowedToRun ? 0.7f : 0.4f;
+        result.rootCauseConfidenceLevel = result.rootCauseConfidence >= 0.7f ? "HIGH" : 
+                                           result.rootCauseConfidence >= 0.5f ? "MODERATE" : "LOW";
 
         float combinedRisk = combineRisk(rollup, updateVerdict, calibration, health);
         result.riskScore = combinedRisk;
@@ -119,9 +227,237 @@ public class HexNilAI {
         result.executiveSummary = buildExecutiveSummary(result, rollup, updateVerdict, calibration, health, attribution);
         result.technicalSummary = buildTechnicalSummary(result, trend, rollup, updateVerdict, calibration, health, attribution);
         result.oemReportData = recPayload.oemReportData;
+        
+        // Confidence metrics
+        result.overallConfidenceScore = result.aiReadinessScore;
+        result.overallConfidenceLevel = result.overallConfidenceScore >= 0.8f ? "HIGH" : 
+                                         result.overallConfidenceScore >= 0.6f ? "MODERATE" : "LOW";
+        result.evidencePointCount = snapshotsAvailable + chargingSessions + drainEvents;
 
         database.miscDao().insertAIAnalysis(result);
         return result;
+    }
+    
+    // =========================================================================
+    // AI READINESS HELPERS
+    // =========================================================================
+    
+    private String buildReadinessJson(int snapshots, int snapshotsReq, long hours, long hoursReq, int charging, int drain) {
+        return String.format("{\"snapshots\":{\"available\":%d,\"required\":%d},\"hours\":{\"available\":%d,\"required\":%d},\"sessions\":{\"charging\":%d,\"drain\":%d}}",
+                snapshots, snapshotsReq, hours, hoursReq, charging, drain);
+    }
+    
+    private float calculateDataCompleteness(long startTime, long endTime) {
+        int snapshots = database.batterySnapshotDao().getCountSince(startTime);
+        long expectedSnapshots = (endTime - startTime) / (5 * 60 * 1000); // Every 5 min
+        return Math.min(1f, (float) snapshots / Math.max(1, expectedSnapshots));
+    }
+    
+    private float calculateDataConsistency(long startTime, long endTime) {
+        // Check for gaps in data
+        // For now, use a simple heuristic
+        return 0.85f; // Placeholder - could analyze timestamp gaps
+    }
+    
+    private float calculateDataCoverage(long startTime, long endTime) {
+        int charging = database.chargingSessionDao().getCountSince(startTime);
+        int drain = database.drainEventDao().getCountSince(startTime);
+        int idle = database.idleDrainSessionDao().getCountSince(startTime);
+        return Math.min(1f, (charging + drain + idle) / 10f);
+    }
+    
+    private String gradeFromScore(float score) {
+        if (score >= 0.9f) return "A";
+        if (score >= 0.8f) return "B";
+        if (score >= 0.7f) return "C";
+        if (score >= 0.6f) return "D";
+        return "F";
+    }
+    
+    // =========================================================================
+    // DETERMINISTIC CALCULATIONS
+    // =========================================================================
+    
+    private DeterministicMetrics calculateDeterministicMetrics(long startTime, long endTime) {
+        DeterministicMetrics m = new DeterministicMetrics();
+        
+        try {
+            List<com.example.hexnil.model.BatterySnapshot> snapshots = 
+                    database.batterySnapshotDao().getSnapshotsSince(startTime);
+            
+            if (snapshots == null || snapshots.isEmpty()) return m;
+            
+            float tempSum = 0, tempSumSq = 0;
+            int voltageSum = 0;
+            int tempMin = Integer.MAX_VALUE, tempMax = Integer.MIN_VALUE;
+            int voltageMin = Integer.MAX_VALUE, voltageMax = Integer.MIN_VALUE;
+            
+            for (com.example.hexnil.model.BatterySnapshot s : snapshots) {
+                float tempC = s.temperature / 10f;
+                tempSum += tempC;
+                tempSumSq += tempC * tempC;
+                tempMin = Math.min(tempMin, s.temperature);
+                tempMax = Math.max(tempMax, s.temperature);
+                
+                voltageSum += s.voltage;
+                voltageMin = Math.min(voltageMin, s.voltage);
+                voltageMax = Math.max(voltageMax, s.voltage);
+                
+                if (tempC > 40) m.highTempTimeMs += 300000; // 5 min per snapshot
+                if (s.isCharging) m.chargingTimeMs += 300000;
+                else m.screenOnTimeMs += 300000; // Approximation
+            }
+            
+            int n = snapshots.size();
+            m.tempMean = tempSum / n;
+            m.tempMin = tempMin / 10f;
+            m.tempMax = tempMax / 10f;
+            float variance = (tempSumSq / n) - (m.tempMean * m.tempMean);
+            m.tempStdDev = (float) Math.sqrt(Math.max(0, variance));
+            
+            m.voltageMean = voltageSum / n;
+            m.voltageMin = voltageMin;
+            m.voltageMax = voltageMax;
+            
+            // Calculate drain rate
+            if (n >= 2) {
+                com.example.hexnil.model.BatterySnapshot first = snapshots.get(0);
+                com.example.hexnil.model.BatterySnapshot last = snapshots.get(n - 1);
+                float hours = (last.timestamp - first.timestamp) / (1000f * 3600f);
+                if (hours > 0) {
+                    m.drainRateMean = (first.level - last.level) / hours;
+                }
+            }
+            
+            // Get cycle data from health
+            BatteryHealth health = database.batteryHealthDao().getLatest();
+            if (health != null) {
+                m.equivalentCycles = health.cycleCount;
+                m.fullDischargeCount = health.deepCycleCount;
+            }
+            
+        } catch (Exception e) {
+            Log.e(TAG, "Error calculating deterministic metrics", e);
+        }
+        
+        return m;
+    }
+    
+    private String buildDeterministicJson(DeterministicMetrics m) {
+        return String.format("{\"temp\":{\"min\":%.1f,\"max\":%.1f,\"mean\":%.1f,\"stdDev\":%.2f},\"voltage\":{\"min\":%d,\"max\":%d,\"mean\":%d},\"drain\":{\"mean\":%.2f,\"max\":%.2f},\"cycles\":%.1f}",
+                m.tempMin, m.tempMax, m.tempMean, m.tempStdDev,
+                m.voltageMin, m.voltageMax, m.voltageMean,
+                m.drainRateMean, m.drainRateMax, m.equivalentCycles);
+    }
+    
+    // =========================================================================
+    // AI INFERENCES
+    // =========================================================================
+    
+    private String inferHealthPattern(BatteryHealth health, DeterministicMetrics m) {
+        if (health == null) return "Insufficient health data";
+        
+        if (health.healthPercentage >= 90) {
+            return "Excellent battery health. Capacity retention is optimal.";
+        } else if (health.healthPercentage >= 80) {
+            return "Good battery health. Minor capacity degradation within normal range.";
+        } else if (health.healthPercentage >= 70) {
+            return "Moderate capacity loss detected. Consider monitoring charging habits.";
+        } else {
+            return "Significant capacity degradation. Battery replacement may be needed.";
+        }
+    }
+    
+    private UsagePattern inferUsagePattern(DeterministicMetrics m, RollupMetrics rollup) {
+        UsagePattern p = new UsagePattern();
+        
+        float drainRate = m.drainRateMean;
+        float screenOnHours = m.screenOnTimeMs / (1000f * 3600f);
+        
+        if (drainRate > 10f || screenOnHours > 8f) {
+            p.category = "power_user";
+            p.inference = "High usage pattern detected. Extended screen time and intensive app usage.";
+            p.confidence = 0.8f;
+        } else if (drainRate > 5f || screenOnHours > 4f) {
+            p.category = "heavy_user";
+            p.inference = "Above average usage. Multiple apps active throughout the day.";
+            p.confidence = 0.75f;
+        } else if (drainRate > 2f) {
+            p.category = "moderate_user";
+            p.inference = "Moderate usage pattern. Balanced screen time and background activity.";
+            p.confidence = 0.8f;
+        } else {
+            p.category = "light_user";
+            p.inference = "Light usage pattern. Minimal active usage, mostly idle.";
+            p.confidence = 0.85f;
+        }
+        
+        return p;
+    }
+    
+    private ThermalStress inferThermalStress(DeterministicMetrics m) {
+        ThermalStress t = new ThermalStress();
+        
+        if (m.tempMax > 45f || m.tempMean > 38f) {
+            t.level = "CRITICAL";
+            t.inference = "Critical thermal stress detected. Sustained high temperatures may damage battery.";
+            t.confidence = 0.9f;
+        } else if (m.tempMax > 40f || m.tempMean > 35f) {
+            t.level = "HIGH";
+            t.inference = "Elevated thermal stress. Device running warmer than optimal.";
+            t.confidence = 0.85f;
+        } else if (m.tempMax > 35f || m.tempMean > 30f) {
+            t.level = "MODERATE";
+            t.inference = "Moderate thermal conditions. Within acceptable range.";
+            t.confidence = 0.8f;
+        } else {
+            t.level = "LOW";
+            t.inference = "Optimal thermal conditions. No thermal stress detected.";
+            t.confidence = 0.9f;
+        }
+        
+        return t;
+    }
+    
+    private String buildAiInterpretationsJson(AIAnalysisResult r) {
+        return String.format("{\"health\":{\"inference\":\"%s\",\"confidence\":%.2f},\"usage\":{\"inference\":\"%s\",\"category\":\"%s\",\"confidence\":%.2f},\"thermal\":{\"level\":\"%s\",\"inference\":\"%s\",\"confidence\":%.2f}}",
+                escape(r.healthPatternInference != null ? r.healthPatternInference : ""), r.healthPatternConfidence,
+                escape(r.usagePatternInference != null ? r.usagePatternInference : ""), r.usagePatternCategory != null ? r.usagePatternCategory : "", r.usagePatternConfidence,
+                r.thermalStressLevel != null ? r.thermalStressLevel : "", escape(r.thermalStressInference != null ? r.thermalStressInference : ""), r.thermalStressConfidence);
+    }
+    
+    private String mapToRootCauseCode(String rootCause) {
+        if (rootCause == null) return "UNKNOWN";
+        String lower = rootCause.toLowerCase();
+        if (lower.contains("thermal") || lower.contains("temp")) return "THERMAL_DEGRADATION";
+        if (lower.contains("drain") || lower.contains("wakelock")) return "EXCESSIVE_DRAIN";
+        if (lower.contains("network")) return "NETWORK_ACTIVITY";
+        if (lower.contains("calibrat")) return "CALIBRATION_ISSUE";
+        if (lower.contains("aging") || lower.contains("health")) return "BATTERY_AGING";
+        if (lower.contains("update") || lower.contains("ota")) return "SOFTWARE_REGRESSION";
+        return "MIXED_FACTORS";
+    }
+    
+    // Helper classes
+    private static class DeterministicMetrics {
+        float tempMin, tempMax, tempMean, tempStdDev;
+        int voltageMin, voltageMax, voltageMean;
+        float drainRateMean, drainRateMax, drainRateStdDev;
+        float equivalentCycles;
+        int fullDischargeCount;
+        long screenOnTimeMs, chargingTimeMs, highTempTimeMs;
+    }
+    
+    private static class UsagePattern {
+        String inference;
+        String category;
+        float confidence;
+    }
+    
+    private static class ThermalStress {
+        String inference;
+        String level;
+        float confidence;
     }
 
     private String toIssueJson(String[] issues) {

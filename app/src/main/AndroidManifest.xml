@@ -2,38 +2,69 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools">
 
-    <!-- Battery & Power Permissions -->
+    <!-- ================================================================== -->
+    <!-- BATTERY & POWER PERMISSIONS -->
+    <!-- ================================================================== -->
     <uses-permission android:name="android.permission.BATTERY_STATS" tools:ignore="ProtectedPermissions"/>
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED"/>
     <uses-permission android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS"/>
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE"/>
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE"/>
     <uses-permission android:name="android.permission.WAKE_LOCK"/>
+    <!-- Required for reading battery/power profile info -->
+    <uses-permission android:name="android.permission.DEVICE_POWER" tools:ignore="ProtectedPermissions"/>
     
-    <!-- System Info Permissions -->
+    <!-- ================================================================== -->
+    <!-- USB & CHARGER IDENTIFICATION PERMISSIONS -->
+    <!-- Required for chargerVendorId, chargerProductId, chargerFingerprint -->
+    <!-- ================================================================== -->
+    <uses-feature android:name="android.hardware.usb.host" android:required="false"/>
+    
+    <!-- ================================================================== -->
+    <!-- SYSTEM INFO PERMISSIONS -->
+    <!-- ================================================================== -->
     <uses-permission android:name="android.permission.READ_PHONE_STATE"/>
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE"/>
     <uses-permission android:name="android.permission.ACCESS_WIFI_STATE"/>
     <uses-permission android:name="android.permission.BLUETOOTH" android:maxSdkVersion="30"/>
     <uses-permission android:name="android.permission.BLUETOOTH_CONNECT"/>
+    <uses-permission android:name="android.permission.BLUETOOTH_SCAN" android:usesPermissionFlags="neverForLocation" tools:targetApi="s"/>
+    <!-- Required for reading system settings like brightness -->
+    <uses-permission android:name="android.permission.READ_SYNC_SETTINGS"/>
     
-    <!-- Location Permission (required for getAllCellInfo on Android 10+) -->
+    <!-- ================================================================== -->
+    <!-- LOCATION PERMISSIONS -->
+    <!-- Required for getAllCellInfo on Android 10+ and Wi-Fi SSID/BSSID -->
+    <!-- ================================================================== -->
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION"/>
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION"/>
+    <!-- Background location for continuous monitoring -->
+    <uses-permission android:name="android.permission.ACCESS_BACKGROUND_LOCATION"/>
     
-    <!-- Network Permissions for Remote Server -->
+    <!-- ================================================================== -->
+    <!-- NETWORK PERMISSIONS -->
+    <!-- ================================================================== -->
     <uses-permission android:name="android.permission.INTERNET"/>
     <uses-permission android:name="android.permission.CHANGE_WIFI_STATE"/>
+    <uses-permission android:name="android.permission.CHANGE_NETWORK_STATE"/>
     
-    <!-- Package Info -->
+    <!-- ================================================================== -->
+    <!-- PACKAGE & USAGE INFO -->
+    <!-- Required for topAppDuringCharge and app usage stats -->
+    <!-- ================================================================== -->
     <uses-permission android:name="android.permission.QUERY_ALL_PACKAGES" tools:ignore="QueryAllPackagesPermission"/>
     <uses-permission android:name="android.permission.PACKAGE_USAGE_STATS" tools:ignore="ProtectedPermissions"/>
+    <uses-permission android:name="android.permission.GET_TASKS"/>
     
-    <!-- Storage for Reports -->
+    <!-- ================================================================== -->
+    <!-- STORAGE PERMISSIONS -->
+    <!-- ================================================================== -->
     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" android:maxSdkVersion="28"/>
     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" android:maxSdkVersion="32"/>
     
-    <!-- Notifications -->
+    <!-- ================================================================== -->
+    <!-- NOTIFICATION PERMISSIONS -->
+    <!-- ================================================================== -->
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
     <uses-permission android:name="android.permission.VIBRATE"/>
 

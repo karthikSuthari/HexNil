@@ -1,6 +1,7 @@
 package com.example.hexnil.manager;
 
 import android.content.Context;
+import android.net.TrafficStats;
 
 import com.example.hexnil.database.HexNilDatabase;
 import com.example.hexnil.model.BatterySnapshot;
@@ -8,6 +9,16 @@ import com.example.hexnil.model.ThermalEvent;
 import com.example.hexnil.model.ThermalHeatBucket;
 import com.example.hexnil.thermal.ThermalCorrelationEngine;
 import com.example.hexnil.thermal.ThermalIntelligence;
+import com.example.hexnil.util.ActivityDetector;
+import com.example.hexnil.util.ThermalZoneReader;
+
+import org.json.JSONArray;
+import org.json.JSONObject;
+
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 /**
  * OEM-Grade Thermal Monitor with comprehensive heat intelligence.
@@ -15,6 +26,13 @@ import com.example.hexnil.thermal.ThermalIntelligence;
  * Monitors snapshot data for thermal anomalies and logs ThermalEvent records.
  * Integrates with ThermalIntelligence for spike/sustained heat detection
  * and ThermalCorrelationEngine for root cause analysis.
+ * 
+ * Populates ALL columns in thermal_heat_buckets and thermal_events tables:
+ * - Activity correlations (gaming, camera, navigation)
+ * - Thermal zones (CPU, GPU, skin, ambient)
+ * - Network activity tracking
+ * - App temperature contribution analysis
+ * - Temperature sample history
  */
 public class ThermalMonitor {
 
@@ -24,10 +42,15 @@ public class ThermalMonitor {
     private static final float CRITICAL_TEMP_C = ThermalIntelligence.TEMP_CRITICAL;  // 46°C
     private static final float WARNING_TEMP_C = ThermalIntelligence.TEMP_WARNING;    // 42°C
     private static final float ELEVATED_TEMP_C = ThermalIntelligence.TEMP_ELEVATED;  // 40°C
+    
+    // Network activity threshold (bytes per second)
+    private static final long HEAVY_NETWORK_THRESHOLD = 500_000; // 500 KB/s
 
+    private final Context context;
     private final HexNilDatabase database;
     private final ThermalIntelligence thermalIntelligence;
     private final ThermalCorrelationEngine correlationEngine;
+    private final ActivityDetector activityDetector;
     
     private ThermalEvent activeEvent;
     private ThermalHeatBucket activeBucket;
@@ -43,11 +66,35 @@ public class ThermalMonitor {
     private float highGpuTempSum = 0;
     private int screenOnSamples = 0;
     private int startBatteryLevel = -1;
+    
+    // NEW: Activity tracking for bucket
+    private int gamingSamples = 0;
+    private int cameraSamples = 0;
+    private int navigationSamples = 0;
+    private Map<String, Integer> networkTypeCounts = new HashMap<>();
+    private Map<String, Float> appTempSums = new HashMap<>();
+    private Map<String, Integer> appSampleCounts = new HashMap<>();
+    
+    // NEW: Network activity tracking
+    private long lastNetworkBytesRx = 0;
+    private long lastNetworkBytesTx = 0;
+    private long lastNetworkCheckTime = 0;
+    
+    // NEW: Temperature samples for event
+    private List<TempSample> eventTempSamples = new ArrayList<>();
+    
+    private static class TempSample {
+        long timestamp;
+        float temp;
+        TempSample(long ts, float t) { timestamp = ts; temp = t; }
+    }
 
     public ThermalMonitor(Context context, HexNilDatabase database) {
+        this.context = context;
         this.database = database;
         this.thermalIntelligence = new ThermalIntelligence();
         this.correlationEngine = new ThermalCorrelationEngine(database);
+        this.activityDetector = new ActivityDetector(context);
     }
 
     /**
@@ -95,11 +142,27 @@ public class ThermalMonitor {
         activeEvent.eventType = tempC >= CRITICAL_TEMP_C ? "threshold_violation" : "spike";
         activeEvent.severity = severity;
         activeEvent.batteryTemp = tempC;
-        activeEvent.cpuTemp = 0;
-        activeEvent.ambientTemp = 0;
+        
+        // Read thermal zones for CPU, GPU, skin, ambient temperatures
+        ThermalZoneReader.ThermalZoneData thermalZones = ThermalZoneReader.readThermalZones(tempC);
+        activeEvent.cpuTemp = thermalZones.cpuTemp;
+        activeEvent.skinTemp = thermalZones.skinTemp;
+        activeEvent.ambientTemp = thermalZones.ambientEstimate;
+        activeEvent.thermalZones = thermalZones.toJson();
+        
         activeEvent.peakTemperature = tempC;
         activeEvent.temperatureRise = tempC - WARNING_TEMP_C;
-        activeEvent.foregroundApp = snapshot.topAppPackage != null ? snapshot.topAppPackage : snapshot.foregroundApp;
+        
+        // Get foreground app
+        String foregroundApp = snapshot.topAppPackage != null ? snapshot.topAppPackage : snapshot.foregroundApp;
+        activeEvent.foregroundApp = foregroundApp;
+        
+        // Detect activity type from foreground app
+        ActivityDetector.ActivityResult activity = activityDetector.detectActivity(foregroundApp);
+        activeEvent.isGaming = activity.isGaming;
+        activeEvent.isCamera = activity.isCamera;
+        activeEvent.isNavigation = activity.isNavigation;
+        
         int cpu = (snapshot.cpuLoadTotal != null && snapshot.cpuLoadTotal > 0) ? snapshot.cpuLoadTotal : snapshot.cpuUsage;
         int gpu = snapshot.gpuLoad != null ? snapshot.gpuLoad : 0;
         activeEvent.cpuUsage = cpu;
@@ -109,7 +172,22 @@ public class ThermalMonitor {
         activeEvent.batteryLevel = snapshot.level;
         activeEvent.currentDraw = snapshot.dischargeRate;
         activeEvent.networkType = snapshot.networkState;
-        activeEvent.triggerActivity = snapshot.isScreenOnOrFalse() ? "display_load" : "background_load";
+        
+        // Detect heavy network activity
+        activeEvent.heavyNetworkActivity = isHeavyNetworkActivity();
+        
+        // Set trigger activity based on detected type
+        if (activity.isGaming) {
+            activeEvent.triggerActivity = "gaming";
+        } else if (activity.isCamera) {
+            activeEvent.triggerActivity = "camera";
+        } else if (activity.isNavigation) {
+            activeEvent.triggerActivity = "navigation";
+        } else if (snapshot.isScreenOnOrFalse()) {
+            activeEvent.triggerActivity = "display_load";
+        } else {
+            activeEvent.triggerActivity = "background_load";
+        }
         
         // Set spike detection fields from analysis
         activeEvent.isSpike = analysis.isSpike;
@@ -118,7 +196,12 @@ public class ThermalMonitor {
         if (analysis.isSpike) {
             activeEvent.spikeStartTime = snapshot.timestamp;
             activeEvent.spikeStartTemp = tempC - analysis.spikeMagnitude;
+            activeEvent.spikeCause = activity.activityType;
         }
+        
+        // Initialize temperature samples tracking for this event
+        eventTempSamples.clear();
+        eventTempSamples.add(new TempSample(snapshot.timestamp, tempC));
         
         // Set sustained heat fields
         activeEvent.isSustainedHeat = analysis.isSustainedHeat;
@@ -179,6 +262,28 @@ public class ThermalMonitor {
         activeEvent.batteryLevel = snapshot.level;
         activeEvent.currentDraw = snapshot.dischargeRate;
         
+        // Update activity detection (sticky - once detected, stays true for the event)
+        String foregroundApp = snapshot.topAppPackage != null ? snapshot.topAppPackage : snapshot.foregroundApp;
+        ActivityDetector.ActivityResult activity = activityDetector.detectActivity(foregroundApp);
+        activeEvent.isGaming = activeEvent.isGaming || activity.isGaming;
+        activeEvent.isCamera = activeEvent.isCamera || activity.isCamera;
+        activeEvent.isNavigation = activeEvent.isNavigation || activity.isNavigation;
+        activeEvent.heavyNetworkActivity = activeEvent.heavyNetworkActivity || isHeavyNetworkActivity();
+        
+        // Update thermal zones with latest readings
+        ThermalZoneReader.ThermalZoneData thermalZones = ThermalZoneReader.readThermalZones(tempC);
+        if (thermalZones.cpuTemp > activeEvent.cpuTemp) {
+            activeEvent.cpuTemp = thermalZones.cpuTemp;
+        }
+        if (thermalZones.skinTemp > activeEvent.skinTemp) {
+            activeEvent.skinTemp = thermalZones.skinTemp;
+        }
+        activeEvent.thermalZones = thermalZones.toJson();
+        
+        // Add temperature sample
+        eventTempSamples.add(new TempSample(snapshot.timestamp, tempC));
+        activeEvent.temperatureSamplesJson = buildTemperatureSamplesJson();
+        
         // Update event type based on duration
         if (activeEvent.duration > 120_000) {
             activeEvent.eventType = "sustained_high";
@@ -232,6 +337,10 @@ public class ThermalMonitor {
         activeEvent.cooldownTime = activeEvent.duration;
         activeEvent.resolution = "cooled";
         
+        // Finalize temperature samples JSON
+        activeEvent.temperatureSamplesJson = buildTemperatureSamplesJson();
+        eventTempSamples.clear();
+        
         // Calculate cooldown rate
         if (activeEvent.duration > 0 && activeEvent.peakTemperature > analysis.currentTemp) {
             float tempDrop = activeEvent.peakTemperature - analysis.currentTemp;
@@ -243,6 +352,15 @@ public class ThermalMonitor {
         activeEvent.primaryCause = rootCause.primaryCause;
         activeEvent.causeConfidence = rootCause.confidence;
         activeEvent.degradationRisk = rootCause.degradationRisk;
+        
+        // Calculate estimated cycle impact based on temperature and duration
+        // High temperatures cause accelerated battery degradation
+        // Formula: impact = baseFactor * tempMultiplier * durationHours
+        activeEvent.estimatedCycleImpact = calculateEstimatedCycleImpact(
+            activeEvent.peakTemperature, 
+            activeEvent.duration, 
+            activeEvent.isSustainedHeat
+        );
         
         // Calculate contribution percentages
         for (ThermalCorrelationEngine.ContributingFactor factor : rootCause.contributingFactors) {
@@ -329,7 +447,33 @@ public class ThermalMonitor {
             
             if (snapshot.topAppPackage != null) {
                 activeBucket.topForegroundApp = snapshot.topAppPackage;
+                
+                // Track app temperature contribution
+                String app = snapshot.topAppPackage;
+                appTempSums.put(app, appTempSums.getOrDefault(app, 0f) + tempC);
+                appSampleCounts.put(app, appSampleCounts.getOrDefault(app, 0) + 1);
             }
+            
+            // Activity tracking (gaming, camera, navigation)
+            String foregroundApp = snapshot.topAppPackage != null ? snapshot.topAppPackage : snapshot.foregroundApp;
+            ActivityDetector.ActivityResult activity = activityDetector.detectActivity(foregroundApp);
+            if (activity.isGaming) {
+                gamingSamples++;
+            }
+            if (activity.isCamera) {
+                cameraSamples++;
+            }
+            if (activity.isNavigation) {
+                navigationSamples++;
+            }
+            activeBucket.gamingCount = gamingSamples;
+            activeBucket.cameraCount = cameraSamples;
+            activeBucket.navigationCount = navigationSamples;
+            
+            // Network type tracking
+            String networkType = snapshot.networkState != null ? snapshot.networkState : "unknown";
+            networkTypeCounts.put(networkType, networkTypeCounts.getOrDefault(networkType, 0) + 1);
+            activeBucket.networkType = getDominantNetworkType();
             
             // Event tracking
             if (analysis.isSpike) {
@@ -398,6 +542,14 @@ public class ThermalMonitor {
         highGpuTempSum = 0;
         screenOnSamples = 0;
         startBatteryLevel = batteryLevel;
+        
+        // Reset new tracking variables
+        gamingSamples = 0;
+        cameraSamples = 0;
+        navigationSamples = 0;
+        networkTypeCounts.clear();
+        appTempSums.clear();
+        appSampleCounts.clear();
     }
 
     private void persistBucket() {
@@ -417,6 +569,9 @@ public class ThermalMonitor {
             activeBucket.degradationRisk = 0;
         }
         activeBucket.degradationRisk = Math.min(1.0f, activeBucket.degradationRisk);
+        
+        // Generate app temperature contribution JSON
+        activeBucket.appTempContributionJson = buildAppTempContributionJson();
         
         database.thermalHeatBucketDao().insert(activeBucket);
         activeBucket = null;
@@ -450,8 +605,178 @@ public class ThermalMonitor {
         persistBucket();
         if (activeEvent != null) {
             activeEvent.resolution = "service_stopped";
+            activeEvent.temperatureSamplesJson = buildTemperatureSamplesJson();
             database.thermalEventDao().update(activeEvent);
             activeEvent = null;
         }
+        eventTempSamples.clear();
+    }
+    
+    // =========================================================================
+    // Helper Methods for Data Population
+    // =========================================================================
+    
+    /**
+     * Check if there is heavy network activity.
+     * Uses TrafficStats to measure network throughput.
+     */
+    private boolean isHeavyNetworkActivity() {
+        try {
+            long currentRx = TrafficStats.getTotalRxBytes();
+            long currentTx = TrafficStats.getTotalTxBytes();
+            long currentTime = System.currentTimeMillis();
+            
+            if (lastNetworkCheckTime == 0) {
+                lastNetworkBytesRx = currentRx;
+                lastNetworkBytesTx = currentTx;
+                lastNetworkCheckTime = currentTime;
+                return false;
+            }
+            
+            long timeDelta = currentTime - lastNetworkCheckTime;
+            if (timeDelta <= 0) return false;
+            
+            long bytesRxDelta = currentRx - lastNetworkBytesRx;
+            long bytesTxDelta = currentTx - lastNetworkBytesTx;
+            long totalBytesDelta = bytesRxDelta + bytesTxDelta;
+            
+            // Update tracking
+            lastNetworkBytesRx = currentRx;
+            lastNetworkBytesTx = currentTx;
+            lastNetworkCheckTime = currentTime;
+            
+            // Calculate bytes per second
+            float bytesPerSecond = (totalBytesDelta * 1000f) / timeDelta;
+            
+            return bytesPerSecond > HEAVY_NETWORK_THRESHOLD;
+        } catch (Exception e) {
+            return false;
+        }
+    }
+    
+    /**
+     * Get the dominant (most frequent) network type from tracking.
+     */
+    private String getDominantNetworkType() {
+        if (networkTypeCounts.isEmpty()) {
+            return "unknown";
+        }
+        
+        String dominant = "unknown";
+        int maxCount = 0;
+        
+        for (Map.Entry<String, Integer> entry : networkTypeCounts.entrySet()) {
+            if (entry.getValue() > maxCount) {
+                maxCount = entry.getValue();
+                dominant = entry.getKey();
+            }
+        }
+        
+        return dominant;
+    }
+    
+    /**
+     * Build JSON string for app temperature contribution.
+     * Format: {"com.app.name": avgTemp, "com.other.app": avgTemp}
+     */
+    private String buildAppTempContributionJson() {
+        try {
+            JSONObject json = new JSONObject();
+            
+            for (Map.Entry<String, Float> entry : appTempSums.entrySet()) {
+                String app = entry.getKey();
+                Float tempSum = entry.getValue();
+                Integer count = appSampleCounts.get(app);
+                
+                if (count != null && count > 0) {
+                    float avgTemp = tempSum / count;
+                    // Round to 1 decimal place
+                    avgTemp = Math.round(avgTemp * 10) / 10f;
+                    json.put(app, avgTemp);
+                }
+            }
+            
+            return json.toString();
+        } catch (Exception e) {
+            return "{}";
+        }
+    }
+    
+    /**
+     * Build JSON string for temperature samples during an event.
+     * Format: [{"t": relativeMs, "temp": tempC}, ...]
+     */
+    private String buildTemperatureSamplesJson() {
+        try {
+            if (eventTempSamples.isEmpty()) {
+                return "[]";
+            }
+            
+            JSONArray array = new JSONArray();
+            long startTime = eventTempSamples.get(0).timestamp;
+            
+            for (TempSample sample : eventTempSamples) {
+                JSONObject obj = new JSONObject();
+                obj.put("t", sample.timestamp - startTime); // Relative time in ms
+                obj.put("temp", Math.round(sample.temp * 10) / 10f); // Round to 1 decimal
+                array.put(obj);
+            }
+            
+            return array.toString();
+        } catch (Exception e) {
+            return "[]";
+        }
+    }
+    
+    /**
+     * Calculate estimated battery cycle impact from a thermal event.
+     * 
+     * Based on research showing that high temperatures accelerate battery degradation:
+     * - At 25°C: baseline aging
+     * - At 35°C: ~2x aging rate
+     * - At 45°C: ~4x aging rate
+     * - At 55°C: ~8x aging rate
+     * 
+     * @param peakTemp Peak temperature during the event
+     * @param durationMs Duration of the event in milliseconds
+     * @param isSustained Whether this was a sustained heat event
+     * @return Estimated cycle impact (0-1, where 1 = one full cycle of degradation)
+     */
+    private float calculateEstimatedCycleImpact(float peakTemp, long durationMs, boolean isSustained) {
+        if (durationMs <= 0 || peakTemp < 35) {
+            return 0;
+        }
+        
+        // Convert duration to hours
+        float hours = durationMs / 3600000f;
+        
+        // Base degradation rate per hour at elevated temperature
+        // A typical battery has ~500 full cycles lifetime
+        // Normal usage at 25°C: ~0.0002 cycles/hour (500 hours active = 0.1 cycle)
+        float baseDegradationPerHour = 0.0002f;
+        
+        // Temperature multiplier using exponential model
+        // Doubles approximately every 10°C above 25°C
+        float tempFactor;
+        if (peakTemp < 35) {
+            tempFactor = 1.0f;
+        } else if (peakTemp < 40) {
+            tempFactor = 2.0f;
+        } else if (peakTemp < 45) {
+            tempFactor = 4.0f;
+        } else if (peakTemp < 50) {
+            tempFactor = 8.0f;
+        } else {
+            tempFactor = 16.0f; // Severe degradation above 50°C
+        }
+        
+        // Sustained heat causes more damage than spikes
+        float sustainedMultiplier = isSustained ? 1.5f : 1.0f;
+        
+        // Calculate impact
+        float impact = baseDegradationPerHour * tempFactor * sustainedMultiplier * hours;
+        
+        // Cap at reasonable maximum (0.1 cycle per event is severe)
+        return Math.min(0.1f, impact);
     }
 }

@@ -87,6 +87,12 @@ public interface AppLaunchMetricDao {
 
     @Query("SELECT AVG(launchDurationMs) FROM app_launch_metrics WHERE packageName = :packageName AND launchType = 'cold' AND timestamp BETWEEN :start AND :end")
     float getAverageColdLaunchByPackageInRange(String packageName, long start, long end);
+    
+    @Query("SELECT AVG(launchDurationMs) FROM app_launch_metrics WHERE packageName = :packageName AND launchType = 'warm' AND timestamp BETWEEN :start AND :end")
+    float getAverageWarmLaunchByPackageInRange(String packageName, long start, long end);
+    
+    @Query("SELECT AVG(launchDurationMs) FROM app_launch_metrics WHERE packageName = :packageName AND launchType = 'hot' AND timestamp BETWEEN :start AND :end")
+    float getAverageHotLaunchByPackageInRange(String packageName, long start, long end);
 
     @Query("SELECT MAX(launchDurationMs) FROM app_launch_metrics WHERE timestamp >= :since")
     float getMaxLaunchTimeSince(long since);
@@ -121,6 +127,12 @@ public interface AppLaunchMetricDao {
             "(launchType = 'warm' AND launchDurationMs > 2000) OR " +
             "(launchType = 'hot' AND launchDurationMs > 1000)) AND timestamp >= :since")
     int getSlowLaunchCount(long since);
+    
+    @Query("SELECT COUNT(*) FROM app_launch_metrics WHERE packageName = :packageName AND " +
+            "((launchType = 'cold' AND launchDurationMs > 5000) OR " +
+            "(launchType = 'warm' AND launchDurationMs > 2000) OR " +
+            "(launchType = 'hot' AND launchDurationMs > 1000)) AND timestamp >= :since")
+    int getSlowLaunchCountByPackage(String packageName, long since);
 
     // =========================================================================
     // Distinct Packages

@@ -62,7 +62,8 @@ public class ModemFirmwareTracker {
     /**
      * Check current firmware version and record if changed.
      * 
-     * @param detectionSource Source of this check (APP_START, BOOT_COMPLETED, etc.)
+     * @param detectionSource Source of this check (APP_START, BOOT_COMPLETED,
+     *                        PERIODIC, MANUAL)
      * @return ModemFirmwareEvent if recorded, null if unchanged
      */
     @Nullable
@@ -82,28 +83,45 @@ public class ModemFirmwareTracker {
             event.isOtaUpdate = false;
         }
 
-        // Decide if we should record this event
+        // Decide if we should record this event and build notes
         boolean shouldRecord = false;
+        StringBuilder notes = new StringBuilder();
 
         if (lastKnownEvent == null) {
-            // Always record first capture
+            // Group C/F: INITIAL_CAPTURE
             shouldRecord = true;
+            notes.append("First capture - Baseline established; ");
             Log.i(TAG, "Recording initial modem version: " + event.currentVersion);
         } else if (event.isVersionChange != null && event.isVersionChange) {
-            // Modem firmware changed
+            // Group C/F: VERSION_CHANGE
             shouldRecord = true;
+            notes.append("Modem version changed: ").append(lastKnownEvent.currentVersion)
+                    .append(" -> ").append(event.currentVersion).append("; ");
             Log.w(TAG, "Modem firmware changed: " + lastKnownEvent.currentVersion +
                     " -> " + event.currentVersion);
         } else if (event.isOtaUpdate != null && event.isOtaUpdate) {
-            // OTA update detected (security patch or build changed)
+            // Group C/F: OTA_UPDATE
             shouldRecord = true;
+            notes.append("OTA update detected (System Build changed); ");
             Log.i(TAG, "OTA update detected: " + event.securityPatch);
         } else if ("APP_START".equals(detectionSource) || "BOOT_COMPLETED".equals(detectionSource)) {
-            // Record on app start/boot for baseline
+            // Group C: Detection Source Baseline
             shouldRecord = true;
+            notes.append("Baseline capture (").append(detectionSource).append("); ");
+        } else if ("PERIODIC".equals(detectionSource)) {
+            // Group C: PERIODIC_CHECK
+            shouldRecord = true;
+            event.eventType = "PERIODIC_CHECK";
+            notes.append("Periodic check - no changes detected; ");
+        } else if ("MANUAL".equals(detectionSource)) {
+            // Group C: MANUAL check
+            shouldRecord = true;
+            event.eventType = "PERIODIC_CHECK"; // Manual still counts as a check
+            notes.append("Manual check triggered; ");
         }
 
         if (shouldRecord) {
+            event.notes = notes.toString().trim();
             recordEvent(event);
             return event;
         }

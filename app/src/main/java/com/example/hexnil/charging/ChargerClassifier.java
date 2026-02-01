@@ -178,12 +178,16 @@ public class ChargerClassifier {
     /**
      * Detect charging protocol based on voltage/current characteristics.
      * 
-     * @param voltageMv Input voltage in millivolts (charger voltage, not battery)
+     * NOTE: On most Android devices, the voltage reported by BatteryManager is the
+     * battery cell voltage (3.7V-4.4V), NOT the charger input voltage (5V, 9V, etc.).
+     * Therefore, protocol detection relies primarily on current draw and system flags.
+     * 
+     * @param batteryVoltageMv Battery voltage in millivolts (typically 3700-4400mV)
      * @param currentMa Charging current in milliamps
      * @param plugType Android plug type constant
      * @return Detected charging protocol
      */
-    public static ChargingProtocol detectProtocol(float voltageMv, float currentMa, int plugType) {
+    public static ChargingProtocol detectProtocol(float batteryVoltageMv, float currentMa, int plugType) {
         // Wireless charging
         if (plugType == PLUG_WIRELESS) {
             return ChargingProtocol.WIRELESS_QI;
@@ -191,28 +195,38 @@ public class ChargerClassifier {
         
         float absCurrent = Math.abs(currentMa);
         
-        // High voltage protocols (9V+)
-        if (voltageMv >= VOLTAGE_9V_MIN && voltageMv <= VOLTAGE_9V_MAX) {
-            if (absCurrent > 2000) {
-                return ChargingProtocol.QUALCOMM_QC3;
-            }
-            return ChargingProtocol.QUALCOMM_QC2;
-        }
+        // Since Android typically reports battery voltage (not charger input voltage),
+        // we infer protocol from charging current patterns:
         
-        // USB-PD typically uses 9V, 12V, 15V, or 20V
-        if (voltageMv >= VOLTAGE_12V_MIN) {
+        // Ultra high current (>3A) typically indicates fast charging protocols
+        if (absCurrent > 3000) {
+            // Could be VOOC (5V/6A), Super VOOC, Warp Charge, or high-power USB-PD
+            // Check if current is extremely high (VOOC-style low voltage high current)
+            if (absCurrent > 4500) {
+                return ChargingProtocol.OPPO_VOOC; // Or OnePlus WARP - they use 5V/6A+
+            }
+            // Could be QC4/USB-PD at 9V or higher
             return ChargingProtocol.USB_PD;
         }
         
-        // Standard 5V protocols
-        if (voltageMv >= VOLTAGE_5V_MIN && voltageMv <= VOLTAGE_5V_MAX) {
-            if (absCurrent > 2000) {
-                // High current at 5V could be proprietary (VOOC, WARP)
-                return ChargingProtocol.UNKNOWN; // Need more data to distinguish
-            }
-            if (absCurrent > 1500) {
-                return ChargingProtocol.USB_BC12;
-            }
+        // High current (2-3A) indicates fast charging
+        if (absCurrent > 2000) {
+            // Likely QC3.0 (adjustable 3.6-20V) or USB-PD
+            return ChargingProtocol.QUALCOMM_QC3;
+        }
+        
+        // Medium-high current (1.5-2A) could be QC2.0 or USB BC1.2
+        if (absCurrent > 1500) {
+            return ChargingProtocol.QUALCOMM_QC2;
+        }
+        
+        // Standard current (1-1.5A) - USB BC1.2 DCP
+        if (absCurrent > 1000) {
+            return ChargingProtocol.USB_BC12;
+        }
+        
+        // Low current (<1A) - Standard USB
+        if (absCurrent > 0) {
             return ChargingProtocol.STANDARD_USB;
         }
         

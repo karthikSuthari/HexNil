@@ -1,11 +1,22 @@
 package com.example.hexnil.manager;
 
 import android.content.Context;
+import android.net.TrafficStats;
 
 import com.example.hexnil.database.HexNilDatabase;
 import com.example.hexnil.drain.DrainIntelligence;
+import com.example.hexnil.model.AppBatteryUsage;
 import com.example.hexnil.model.BatterySnapshot;
 import com.example.hexnil.model.DrainEvent;
+
+import org.json.JSONArray;
+import org.json.JSONObject;
+
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 /**
  * OEM-Grade Drain Event Analyzer
@@ -29,6 +40,17 @@ public class DrainAnalyzer {
     private DrainEvent activeEvent;
     private int lastLevel = -1;
     private BatterySnapshot lastSnapshot;
+    
+    // Network tracking for Group F
+    private long networkTxBytesStart = 0;
+    private long networkRxBytesStart = 0;
+    
+    // CPU tracking for Group F
+    private int cpuSampleCount = 0;
+    private long cpuUsageSum = 0;
+    
+    // Flag to defer database insert until first snapshot populates basic data
+    private boolean needsInsert = false;
 
     public DrainAnalyzer(Context context, HexNilDatabase database) {
         this.context = context;
@@ -40,7 +62,18 @@ public class DrainAnalyzer {
         if (activeEvent != null && activeEvent.endTime == 0)
             return;
         activeEvent = new DrainEvent();
-        database.drainEventDao().insert(activeEvent);
+        // DON'T insert yet - wait for first snapshot to populate basic data
+        
+        // Reset network tracking at drain start
+        networkTxBytesStart = TrafficStats.getTotalTxBytes();
+        networkRxBytesStart = TrafficStats.getTotalRxBytes();
+        
+        // Reset CPU tracking
+        cpuSampleCount = 0;
+        cpuUsageSum = 0;
+        
+        // Flag that we need to insert on first processSnapshot
+        needsInsert = true;
     }
 
     public synchronized void processSnapshot(BatterySnapshot snapshot) {
@@ -50,7 +83,13 @@ public class DrainAnalyzer {
                 activeEvent.endTime = snapshot.timestamp;
                 activeEvent.endLevel = snapshot.level;
                 finalizeDrain(activeEvent, snapshot);
-                database.drainEventDao().update(activeEvent);
+                // Insert or update based on whether we've already saved this event
+                if (needsInsert) {
+                    database.drainEventDao().insert(activeEvent);
+                    needsInsert = false;
+                } else {
+                    database.drainEventDao().update(activeEvent);
+                }
                 activeEvent = null;
             }
             lastSnapshot = snapshot;
@@ -66,6 +105,13 @@ public class DrainAnalyzer {
         if (activeEvent.startLevel == 0) {
             activeEvent.startLevel = snapshot.level;
             activeEvent.startTime = snapshot.timestamp;
+        }
+        
+        // Track CPU usage samples for avgCpuUsage calculation (Group F)
+        if (snapshot.cpuLoadTotal != null && snapshot.cpuLoadTotal > 0) {
+            cpuUsageSum += snapshot.cpuLoadTotal;
+            cpuSampleCount++;
+            activeEvent.avgCpuUsage = cpuSampleCount > 0 ? (int)(cpuUsageSum / cpuSampleCount) : 0;
         }
 
         // Update basic metrics
@@ -92,7 +138,15 @@ public class DrainAnalyzer {
         // CRITICAL FIX: Use DrainIntelligence to compute all 50+ advanced metrics
         applyDrainIntelligence(activeEvent, snapshot);
 
-        database.drainEventDao().update(activeEvent);
+        // Insert or update the event in database
+        if (needsInsert) {
+            // First time - insert with populated data
+            long id = database.drainEventDao().insert(activeEvent);
+            activeEvent.id = id;
+            needsInsert = false;
+        } else {
+            database.drainEventDao().update(activeEvent);
+        }
         lastLevel = snapshot.level;
         lastSnapshot = snapshot;
     }
@@ -171,6 +225,16 @@ public class DrainAnalyzer {
         event.topAppName = snapshot.foregroundApp;
         event.topAppIsSystem = isSystemApp(snapshot.topAppPackage);
         event.topAppEfficiency = calculateAppEfficiency(snapshot.topAppPackage, event.drainRatePerHour);
+
+        // =====================================================================
+        // APP-LEVEL ANALYSIS (Group D) - Query app usage during drain event
+        // =====================================================================
+        populateAppLevelAnalysis(event);
+
+        // =====================================================================
+        // NETWORK & RESOURCE TRACKING (Group F)
+        // =====================================================================
+        populateNetworkStats(event);
 
         // =====================================================================
         // ANOMALY DETECTION ENHANCED
@@ -388,5 +452,324 @@ public class DrainAnalyzer {
         return String.format("Grade %s: %.1f%%/hr drain (%s). %s",
                 grade, event.drainRatePerHour, result.benchmarkResult,
                 event.isAnomalous ? "Anomaly detected." : "Within normal range.");
+    }
+
+    // =========================================================================
+    // APP-LEVEL ANALYSIS (Group D) - Comprehensive app drain attribution
+    // =========================================================================
+
+    /**
+     * Populate all app-level analysis fields for DrainEvent.
+     * Queries AppBatteryUsageDao to get app usage data during the drain event timeframe.
+     */
+    private void populateAppLevelAnalysis(DrainEvent event) {
+        try {
+            // Get app usage during this drain event's timeframe
+            List<AppBatteryUsage> appUsages = database.appBatteryUsageDao()
+                    .getUsageSince(event.startTime);
+
+            if (appUsages == null || appUsages.isEmpty()) {
+                event.totalAppsContributing = 0;
+                event.systemAppDrainPct = 0;
+                event.userAppDrainPct = 0;
+                event.drainDominant = "unknown";
+                return;
+            }
+
+            // Aggregate by package name to avoid duplicates
+            Map<String, AggregatedAppUsage> aggregatedUsage = new HashMap<>();
+            for (AppBatteryUsage usage : appUsages) {
+                String pkg = usage.packageName;
+                AggregatedAppUsage agg = aggregatedUsage.get(pkg);
+                if (agg == null) {
+                    agg = new AggregatedAppUsage();
+                    agg.packageName = pkg;
+                    agg.appName = usage.appName;
+                    agg.isSystemApp = usage.isSystemApp;
+                    agg.appCategory = usage.appCategory;
+                    agg.efficiencyRating = usage.efficiencyRating;
+                    agg.hasExcessiveBackground = usage.hasExcessiveBackground;
+                    aggregatedUsage.put(pkg, agg);
+                }
+                agg.totalDrain += usage.batteryPercentUsed;
+                agg.sampleCount++;
+                // Keep worst efficiency rating
+                if ("problematic".equals(usage.efficiencyRating)) {
+                    agg.efficiencyRating = "problematic";
+                }
+                if (usage.hasExcessiveBackground) {
+                    agg.hasExcessiveBackground = true;
+                }
+            }
+
+            // Convert to list and sort by drain
+            List<AggregatedAppUsage> sortedApps = new ArrayList<>(aggregatedUsage.values());
+            Collections.sort(sortedApps, (a, b) -> Float.compare(b.totalDrain, a.totalDrain));
+
+            // Calculate totals
+            float totalDrain = 0;
+            float systemDrain = 0;
+            float userDrain = 0;
+            int systemAppCount = 0;
+            int userAppCount = 0;
+
+            for (AggregatedAppUsage agg : sortedApps) {
+                totalDrain += agg.totalDrain;
+                if (agg.isSystemApp) {
+                    systemDrain += agg.totalDrain;
+                    systemAppCount++;
+                } else {
+                    userDrain += agg.totalDrain;
+                    userAppCount++;
+                }
+            }
+
+            // Total unique apps contributing
+            event.totalAppsContributing = sortedApps.size();
+
+            // System vs user drain percentages
+            if (totalDrain > 0) {
+                event.systemAppDrainPct = (systemDrain / totalDrain) * 100f;
+                event.userAppDrainPct = (userDrain / totalDrain) * 100f;
+                event.systemAppDrain = systemDrain;
+                event.userAppDrain = userDrain;
+            } else {
+                event.systemAppDrainPct = 0;
+                event.userAppDrainPct = 0;
+            }
+
+            // Top app info
+            if (!sortedApps.isEmpty()) {
+                AggregatedAppUsage topApp = sortedApps.get(0);
+                event.topAppPackage = topApp.packageName;
+                event.topAppName = topApp.appName;
+                event.topAppDrainPct = totalDrain > 0 ? 
+                        (topApp.totalDrain / totalDrain) * 100f : 0;
+                event.topAppIsSystem = topApp.isSystemApp;
+            }
+
+            // Drain dominant classification
+            event.drainDominant = classifyDrainDominant(event.systemAppDrainPct, event.userAppDrainPct);
+
+            // System vs user analysis text
+            event.systemVsUserAnalysis = generateSystemVsUserAnalysis(
+                    event.systemAppDrainPct, event.userAppDrainPct, systemAppCount, userAppCount);
+
+            // Unattributed drain (difference between event drain and sum of app drains)
+            if (event.drainAmount > 0 && totalDrain > 0) {
+                float attributedPercent = Math.min(100f, totalDrain);
+                event.unattributedDrain = Math.max(0, event.drainAmount - totalDrain);
+                event.unattributedDrainPct = Math.max(0, 100f - attributedPercent);
+            }
+
+            // Build JSON arrays for detailed breakdown (using aggregated data)
+            event.topDrainingApps = buildTopDrainingAppsJson(sortedApps, 10);
+            event.appDrainBreakdownJson = buildAppDrainBreakdownJson(sortedApps);
+            event.worstOffendersJson = buildWorstOffendersJson(sortedApps);
+
+        } catch (Exception e) {
+            // Silently handle - app analysis is supplementary
+            event.totalAppsContributing = 0;
+        }
+    }
+
+    /**
+     * Helper class for aggregating app usage by package
+     */
+    private static class AggregatedAppUsage {
+        String packageName;
+        String appName;
+        boolean isSystemApp;
+        String appCategory;
+        String efficiencyRating;
+        boolean hasExcessiveBackground;
+        float totalDrain;
+        int sampleCount;
+    }
+
+    /**
+     * Classify drain as system-dominant, user-dominant, or balanced
+     */
+    private String classifyDrainDominant(float systemPct, float userPct) {
+        if (systemPct > userPct + 20) return "system";
+        if (userPct > systemPct + 20) return "user";
+        return "balanced";
+    }
+
+    /**
+     * Generate human-readable analysis of system vs user app drain
+     */
+    private String generateSystemVsUserAnalysis(float systemPct, float userPct, 
+            int systemCount, int userCount) {
+        StringBuilder analysis = new StringBuilder();
+        
+        if (systemPct > userPct + 30) {
+            analysis.append("System apps dominate drain (")
+                    .append(String.format("%.0f%%", systemPct))
+                    .append("). ");
+            analysis.append(systemCount).append(" system apps vs ")
+                    .append(userCount).append(" user apps contributing. ");
+            analysis.append("This is typically normal behavior. ");
+        } else if (userPct > systemPct + 30) {
+            analysis.append("User apps dominate drain (")
+                    .append(String.format("%.0f%%", userPct))
+                    .append("). ");
+            analysis.append(userCount).append(" user apps causing majority of drain. ");
+            analysis.append("Consider restricting background activity for heavy drainers. ");
+        } else {
+            analysis.append("Balanced drain between system (")
+                    .append(String.format("%.0f%%", systemPct))
+                    .append(") and user (")
+                    .append(String.format("%.0f%%", userPct))
+                    .append(") apps. ");
+        }
+        
+        return analysis.toString().trim();
+    }
+
+    /**
+     * Build JSON array of top draining apps (using aggregated data)
+     */
+    private String buildTopDrainingAppsJson(List<AggregatedAppUsage> apps, int limit) {
+        try {
+            JSONArray array = new JSONArray();
+            int count = 0;
+            
+            for (AggregatedAppUsage app : apps) {
+                if (count >= limit) break;
+                
+                JSONObject obj = new JSONObject();
+                obj.put("package", app.packageName);
+                obj.put("name", app.appName != null ? app.appName : app.packageName);
+                obj.put("drain", app.totalDrain);
+                obj.put("isSystem", app.isSystemApp);
+                obj.put("efficiency", app.efficiencyRating);
+                array.put(obj);
+                count++;
+            }
+            
+            return array.toString();
+        } catch (Exception e) {
+            return "[]";
+        }
+    }
+
+    /**
+     * Build detailed JSON breakdown of all app drain (using aggregated data)
+     */
+    private String buildAppDrainBreakdownJson(List<AggregatedAppUsage> apps) {
+        try {
+            JSONObject breakdown = new JSONObject();
+            
+            // Group by app category
+            Map<String, Float> categoryDrain = new HashMap<>();
+            Map<String, Integer> categoryCount = new HashMap<>();
+            
+            for (AggregatedAppUsage app : apps) {
+                String category = app.appCategory != null ? app.appCategory : "other";
+                categoryDrain.merge(category, app.totalDrain, Float::sum);
+                categoryCount.merge(category, 1, Integer::sum);
+            }
+            
+            JSONObject categories = new JSONObject();
+            for (Map.Entry<String, Float> entry : categoryDrain.entrySet()) {
+                JSONObject cat = new JSONObject();
+                cat.put("drain", entry.getValue());
+                cat.put("count", categoryCount.get(entry.getKey()));
+                categories.put(entry.getKey(), cat);
+            }
+            breakdown.put("byCategory", categories);
+            
+            // Top 5 individual apps
+            JSONArray topApps = new JSONArray();
+            int count = 0;
+            for (AggregatedAppUsage app : apps) {
+                if (count >= 5) break;
+                JSONObject obj = new JSONObject();
+                obj.put("package", app.packageName);
+                obj.put("drain", app.totalDrain);
+                topApps.put(obj);
+                count++;
+            }
+            breakdown.put("topApps", topApps);
+            
+            return breakdown.toString();
+        } catch (Exception e) {
+            return "{}";
+        }
+    }
+
+    /**
+     * Build JSON array of worst offending apps (using aggregated data)
+     */
+    private String buildWorstOffendersJson(List<AggregatedAppUsage> apps) {
+        try {
+            JSONArray array = new JSONArray();
+            
+            for (AggregatedAppUsage app : apps) {
+                // Include apps with problematic efficiency or excessive background
+                if ("problematic".equals(app.efficiencyRating) || 
+                    app.hasExcessiveBackground ||
+                    app.totalDrain > 5.0f) {
+                    
+                    JSONObject offender = new JSONObject();
+                    offender.put("package", app.packageName);
+                    offender.put("name", app.appName);
+                    offender.put("drain", app.totalDrain);
+                    offender.put("efficiency", app.efficiencyRating);
+                    offender.put("excessiveBackground", app.hasExcessiveBackground);
+                    
+                    List<String> reasons = new ArrayList<>();
+                    if ("problematic".equals(app.efficiencyRating)) {
+                        reasons.add("Poor efficiency rating");
+                    }
+                    if (app.hasExcessiveBackground) {
+                        reasons.add("Excessive background activity");
+                    }
+                    if (app.totalDrain > 5.0f) {
+                        reasons.add("High battery usage (>" + String.format("%.1f", app.totalDrain) + "%)");
+                    }
+                    offender.put("reasons", new JSONArray(reasons));
+                    
+                    array.put(offender);
+                    
+                    if (array.length() >= 10) break; // Limit to 10 offenders
+                }
+            }
+            
+            return array.toString();
+        } catch (Exception e) {
+            return "[]";
+        }
+    }
+
+    // =========================================================================
+    // NETWORK & RESOURCE TRACKING (Group F)
+    // =========================================================================
+
+    /**
+     * Populate network statistics (dataSent, dataReceived) for the drain event.
+     * Calculates bytes transferred since drain tracking started.
+     */
+    private void populateNetworkStats(DrainEvent event) {
+        try {
+            // Get current total bytes
+            long currentTxBytes = TrafficStats.getTotalTxBytes();
+            long currentRxBytes = TrafficStats.getTotalRxBytes();
+            
+            // Calculate delta since drain start
+            if (currentTxBytes != TrafficStats.UNSUPPORTED && networkTxBytesStart > 0) {
+                event.dataSent = Math.max(0, currentTxBytes - networkTxBytesStart);
+            }
+            
+            if (currentRxBytes != TrafficStats.UNSUPPORTED && networkRxBytesStart > 0) {
+                event.dataReceived = Math.max(0, currentRxBytes - networkRxBytesStart);
+            }
+            
+        } catch (Exception e) {
+            // TrafficStats not available - leave as 0
+            event.dataSent = 0;
+            event.dataReceived = 0;
+        }
     }
 }
