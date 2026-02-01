@@ -104,14 +104,31 @@ public class CellularCollector {
         // Detect frozen signal (same as previous)
         detectFrozenSignal(snapshot);
 
-        // Set initial validation (detailed validation in NetworkValidationRules)
-        if (snapshot.hasSignalData()) {
-            snapshot.validationStatus = "unchecked";
-            snapshot.qualityScore = 70;
-        } else {
+        // Calculate confidence score based on data completeness
+        snapshot.confidence = calculateConfidence(snapshot);
+
+        // Calculate validation flags bitmask
+        snapshot.validationFlags = calculateValidationFlags(snapshot);
+
+        // Calculate quality score (0-100 scale based on confidence + signal strength
+        // penalty)
+        int qualityScore = (int) (snapshot.confidence * 100);
+        if (snapshot.signalStrengthDbm != null && snapshot.signalStrengthDbm < -110) {
+            qualityScore = Math.max(0, qualityScore - 15);
+        }
+        snapshot.qualityScore = qualityScore;
+
+        // Determine validation status based on confidence
+        if (snapshot.confidence >= 0.8f) {
+            snapshot.validationStatus = "valid";
+        } else if (snapshot.confidence >= 0.5f) {
             snapshot.validationStatus = "warning";
-            snapshot.qualityScore = 40;
-            snapshot.validationNotes = "No signal data available";
+            if (!snapshot.hasSignalData()) {
+                snapshot.validationNotes = "No signal data available";
+            }
+        } else {
+            snapshot.validationStatus = "invalid";
+            snapshot.validationNotes = "Insufficient data quality";
         }
 
         lastSnapshot = snapshot;
@@ -380,6 +397,13 @@ public class CellularCollector {
             // Roaming - explicit boolean
             snapshot.isRoaming = serviceState.getRoaming();
 
+            // Roaming type detection (domestic vs international)
+            if (snapshot.isRoaming != null && snapshot.isRoaming) {
+                snapshot.roamingType = determineRoamingType(snapshot.mcc);
+            } else if (snapshot.isRoaming != null) {
+                snapshot.roamingType = "NONE";
+            }
+
             // Emergency only - use reflection for broader compatibility
             try {
                 java.lang.reflect.Method method = serviceState.getClass().getMethod("isEmergencyOnly");
@@ -627,5 +651,98 @@ public class CellularCollector {
      */
     public long getSessionId() {
         return sessionId;
+    }
+
+    /**
+     * Calculate confidence score based on data completeness.
+     * 
+     * @return Confidence score 0.0-1.0 (1.0 = high confidence)
+     */
+    private float calculateConfidence(NetworkCellularSnapshot snapshot) {
+        float confidence = 1.0f;
+        // Critical fields (subtract 0.1 for each missing)
+        if (snapshot.rsrp == null)
+            confidence -= 0.10f;
+        if (snapshot.cellId == null)
+            confidence -= 0.10f;
+        if (snapshot.mcc == null)
+            confidence -= 0.10f;
+        if (snapshot.mnc == null)
+            confidence -= 0.10f;
+        if (snapshot.radioTechnology == null)
+            confidence -= 0.10f;
+        // Optional fields (subtract 0.05 for each missing)
+        if (snapshot.rsrq == null)
+            confidence -= 0.05f;
+        if (snapshot.sinr == null)
+            confidence -= 0.05f;
+        if (snapshot.pci == null)
+            confidence -= 0.05f;
+        if (snapshot.band == null)
+            confidence -= 0.05f;
+        if (snapshot.tac == null)
+            confidence -= 0.05f;
+        return Math.max(0.0f, Math.min(1.0f, confidence));
+    }
+
+    /**
+     * Calculate validation flags bitmask.
+     * Bit 0: rsrp_in_range, Bit 1: rsrq_in_range, Bit 2: sinr_in_range,
+     * Bit 3: no_frozen_signal, Bit 4: no_spike, Bit 5: timestamp_valid, Bit 6:
+     * cell_id_valid
+     */
+    private int calculateValidationFlags(NetworkCellularSnapshot snapshot) {
+        int flags = 0;
+        // Bit 0: rsrp_in_range (-140 to -44 dBm)
+        if (snapshot.rsrp != null && snapshot.rsrp >= -140 && snapshot.rsrp <= -44)
+            flags |= (1 << 0);
+        // Bit 1: rsrq_in_range (-34 to +3 dB)
+        if (snapshot.rsrq != null && snapshot.rsrq >= -34 && snapshot.rsrq <= 3)
+            flags |= (1 << 1);
+        // Bit 2: sinr_in_range (-23 to +40 dB)
+        if (snapshot.sinr != null && snapshot.sinr >= -23 && snapshot.sinr <= 40)
+            flags |= (1 << 2);
+        // Bit 3: no_frozen_signal
+        if (snapshot.signalDataChanged)
+            flags |= (1 << 3);
+        // Bit 4: no_spike_detected (placeholder - always pass)
+        flags |= (1 << 4);
+        // Bit 5: timestamp_valid
+        if (snapshot.timestamp > 0)
+            flags |= (1 << 5);
+        // Bit 6: cell_id_valid
+        if (snapshot.cellId != null && snapshot.cellId > 0)
+            flags |= (1 << 6);
+        return flags;
+    }
+
+    /**
+     * Determine roaming type by comparing SIM MCC with network MCC.
+     * 
+     * @param networkMcc Current network MCC
+     * @return "DOMESTIC", "INTERNATIONAL", or "UNKNOWN"
+     */
+    private String determineRoamingType(String networkMcc) {
+        if (networkMcc == null)
+            return "UNKNOWN";
+        String simMcc = getSimMcc();
+        if (simMcc == null)
+            return "UNKNOWN";
+        return simMcc.equals(networkMcc) ? "DOMESTIC" : "INTERNATIONAL";
+    }
+
+    /**
+     * Get MCC from SIM operator.
+     */
+    private String getSimMcc() {
+        try {
+            String simOperator = telephonyManager.getSimOperator();
+            if (simOperator != null && simOperator.length() >= 3) {
+                return simOperator.substring(0, 3);
+            }
+        } catch (Exception e) {
+            Log.w(TAG, "Failed to get SIM MCC", e);
+        }
+        return null;
     }
 }

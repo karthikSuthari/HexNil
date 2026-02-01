@@ -1037,6 +1037,12 @@ public class BatteryMonitorService extends Service {
      * milliseconds.
      */
     private void checkAndRunAIAnalysis() {
+        // Guard: Check if executor is valid before submitting
+        if (!isExecutorValid()) {
+            Log.w(TAG, "Executor is shutdown, skipping AI analysis");
+            return;
+        }
+
         long now = System.currentTimeMillis();
 
         // Run Phase-2 Thermal/Performance analysis (hourly)
@@ -1101,6 +1107,12 @@ public class BatteryMonitorService extends Service {
      * Identifies root causes of heating, throttling, and performance degradation.
      */
     private void runPhase2Analysis(long now) {
+        // Guard: Check if executor is valid before submitting
+        if (!isExecutorValid()) {
+            Log.w(TAG, "Executor is shutdown, skipping Phase-2 analysis");
+            return;
+        }
+
         executor.execute(() -> {
             try {
                 Log.d(TAG, "Running Phase-2 thermal/performance analysis...");
@@ -1149,8 +1161,22 @@ public class BatteryMonitorService extends Service {
      * Force an immediate AI analysis (can be called from external sources).
      */
     public void triggerImmediateAIAnalysis() {
+        // Guard: Check if executor is valid before triggering
+        if (!isExecutorValid()) {
+            Log.w(TAG, "Executor is shutdown, cannot trigger AI analysis");
+            return;
+        }
         lastAIAnalysisTime = 0; // Reset timer to force immediate analysis
         checkAndRunAIAnalysis();
+    }
+
+    /**
+     * Check if executor is valid and can accept tasks.
+     * 
+     * @return true if executor is available and not shutdown
+     */
+    private boolean isExecutorValid() {
+        return executor != null && !executor.isShutdown() && !executor.isTerminated();
     }
 
     /**

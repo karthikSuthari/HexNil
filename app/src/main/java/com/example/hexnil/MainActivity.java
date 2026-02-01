@@ -1,9 +1,17 @@
 package com.example.hexnil;
 
+import android.Manifest;
+import android.content.pm.PackageManager;
+import android.os.Build;
 import android.os.Bundle;
+import android.widget.Toast;
 
+import androidx.activity.result.ActivityResultLauncher;
+import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.app.ActivityCompat;
+import androidx.core.content.ContextCompat;
 import androidx.fragment.app.Fragment;
 
 import com.example.hexnil.service.BatteryMonitorService;
@@ -23,7 +31,9 @@ import com.example.hexnil.ui.SettingsFragment;
 import com.example.hexnil.ui.ThermalFragment;
 import com.google.android.material.bottomnavigation.BottomNavigationView;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 public class MainActivity extends AppCompatActivity implements ModuleNavigator {
@@ -45,14 +55,37 @@ public class MainActivity extends AppCompatActivity implements ModuleNavigator {
     private final Map<String, Fragment> fragmentCache = new HashMap<>();
     private final Map<Integer, String> navMap = new HashMap<>();
 
+    // Permission request launcher
+    private ActivityResultLauncher<String[]> permissionLauncher;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        // Start monitoring services when UI opens
-        BatteryMonitorService.start(this);
-        RemoteMonitorServer.start(this);
+        // Initialize permission launcher
+        permissionLauncher = registerForActivityResult(
+                new ActivityResultContracts.RequestMultiplePermissions(),
+                results -> {
+                    boolean allGranted = true;
+                    for (Boolean granted : results.values()) {
+                        if (!granted) {
+                            allGranted = false;
+                            break;
+                        }
+                    }
+                    if (allGranted) {
+                        Toast.makeText(this, "All permissions granted", Toast.LENGTH_SHORT).show();
+                    } else {
+                        Toast.makeText(this, "Some permissions denied - limited functionality", Toast.LENGTH_LONG)
+                                .show();
+                    }
+                    // Start services after permission request (regardless of result)
+                    startMonitoringServices();
+                });
+
+        // Request permissions first
+        requestRequiredPermissions();
 
         // Bottom navigation mapping
         navMap.put(R.id.nav_dashboard, TAG_DASHBOARD);
@@ -76,6 +109,56 @@ public class MainActivity extends AppCompatActivity implements ModuleNavigator {
             bottomNav.setSelectedItemId(R.id.nav_dashboard);
             showFragment(TAG_DASHBOARD);
         }
+    }
+
+    /**
+     * Request all required runtime permissions.
+     */
+    private void requestRequiredPermissions() {
+        List<String> permissionsToRequest = new ArrayList<>();
+
+        // Phone state - required for TelephonyManager
+        if (ContextCompat.checkSelfPermission(this,
+                Manifest.permission.READ_PHONE_STATE) != PackageManager.PERMISSION_GRANTED) {
+            permissionsToRequest.add(Manifest.permission.READ_PHONE_STATE);
+        }
+
+        // Location - required for getAllCellInfo() on Android 10+
+        if (ContextCompat.checkSelfPermission(this,
+                Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+            permissionsToRequest.add(Manifest.permission.ACCESS_FINE_LOCATION);
+        }
+
+        // Bluetooth connect - required on Android 12+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            if (ContextCompat.checkSelfPermission(this,
+                    Manifest.permission.BLUETOOTH_CONNECT) != PackageManager.PERMISSION_GRANTED) {
+                permissionsToRequest.add(Manifest.permission.BLUETOOTH_CONNECT);
+            }
+        }
+
+        // Post notifications - required on Android 13+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            if (ContextCompat.checkSelfPermission(this,
+                    Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
+                permissionsToRequest.add(Manifest.permission.POST_NOTIFICATIONS);
+            }
+        }
+
+        if (!permissionsToRequest.isEmpty()) {
+            permissionLauncher.launch(permissionsToRequest.toArray(new String[0]));
+        } else {
+            // All permissions already granted, start services
+            startMonitoringServices();
+        }
+    }
+
+    /**
+     * Start monitoring services after permissions are handled.
+     */
+    private void startMonitoringServices() {
+        BatteryMonitorService.start(this);
+        RemoteMonitorServer.start(this);
     }
 
     /**

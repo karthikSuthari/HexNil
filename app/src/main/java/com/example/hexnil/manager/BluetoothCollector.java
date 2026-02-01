@@ -6,6 +6,7 @@ import android.bluetooth.BluetoothA2dp;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothHeadset;
+import android.bluetooth.BluetoothGatt;
 import android.bluetooth.BluetoothManager;
 import android.bluetooth.BluetoothProfile;
 import android.content.Context;
@@ -24,6 +25,7 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.List;
 import java.util.Set;
+import java.lang.reflect.Method;
 
 /**
  * OEM-Grade Bluetooth Data Collector
@@ -145,6 +147,7 @@ public class BluetoothCollector {
             snapshot.validationStatus = "warning";
             snapshot.validationNotes = "BLUETOOTH_CONNECT denied";
             snapshot.qualityScore = 30;
+            snapshot.confidence = 0.3f;
             return snapshot;
         }
 
@@ -157,12 +160,87 @@ public class BluetoothCollector {
         // Collect HFP profile data
         collectHeadsetData(snapshot);
 
-        // Set validation status
+        // Collect BLE/LE Audio data if available
+        collectLeAudioData(snapshot);
+
+        // Save reconnect count from tracked state
+        snapshot.reconnectCount = reconnectCount;
+
+        // Calculate confidence score based on data completeness
+        snapshot.confidence = calculateConfidence(snapshot);
+
+        // Set validation status and quality score
         snapshot.validationStatus = "unchecked";
-        snapshot.qualityScore = 70;
+        snapshot.qualityScore = calculateQualityScore(snapshot);
 
         lastSnapshot = snapshot;
         return snapshot;
+    }
+
+    /**
+     * Calculate confidence score based on data completeness (0.0-1.0).
+     */
+    private float calculateConfidence(NetworkBluetoothSnapshot snapshot) {
+        int dataPoints = 0;
+        int totalPossible = 10;
+
+        if (snapshot.adapterState != null)
+            dataPoints++;
+        if (snapshot.isEnabled != null)
+            dataPoints++;
+        if (snapshot.pairedDeviceCount != null)
+            dataPoints++;
+        if (snapshot.connectedDeviceCount != null)
+            dataPoints++;
+        if (snapshot.profileType != null)
+            dataPoints++;
+        if (snapshot.connectionState != null)
+            dataPoints++;
+        if (snapshot.remoteAddressHash != null)
+            dataPoints++;
+        if (snapshot.rssi != null)
+            dataPoints++;
+        if (snapshot.codecType != null)
+            dataPoints++;
+        if (snapshot.remoteDeviceName != null)
+            dataPoints++;
+
+        return (float) dataPoints / totalPossible;
+    }
+
+    /**
+     * Calculate quality score based on data validity (0-100).
+     */
+    private int calculateQualityScore(NetworkBluetoothSnapshot snapshot) {
+        int score = 50; // Base score
+
+        // Adapter state available
+        if (snapshot.adapterState != null)
+            score += 10;
+
+        // Device counts available
+        if (snapshot.pairedDeviceCount != null)
+            score += 5;
+        if (snapshot.connectedDeviceCount != null)
+            score += 5;
+
+        // Profile data available
+        if (snapshot.profileType != null)
+            score += 10;
+        if (snapshot.connectionState != null)
+            score += 5;
+
+        // Remote device info
+        if (snapshot.remoteAddressHash != null)
+            score += 5;
+        if (snapshot.rssi != null)
+            score += 5;
+
+        // Audio codec info (premium data)
+        if (snapshot.codecType != null)
+            score += 5;
+
+        return Math.min(100, score);
     }
 
     /**
@@ -262,6 +340,9 @@ public class BluetoothCollector {
                 snapshot.remoteDeviceClass = device.getBluetoothClass().getDeviceClass();
             }
 
+            // Collect RSSI for connected device
+            collectDeviceRssi(device, snapshot);
+
             // Codec info (API 26+)
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
                 collectA2dpCodecInfo(device, snapshot);
@@ -331,6 +412,25 @@ public class BluetoothCollector {
                     if (channelMode instanceof Integer) {
                         snapshot.channelMode = mapChannelMode((Integer) channelMode);
                     }
+
+                    // Try to get codec quality/priority via getCodecSpecific1
+                    // LDAC uses this for quality setting: 0=Best Effort, 1=Optimized, 2=Hi-Res
+                    try {
+                        java.lang.reflect.Method getCodecSpecific1 = codecConfig.getClass()
+                                .getMethod("getCodecSpecific1");
+                        Object codecSpecific1 = getCodecSpecific1.invoke(codecConfig);
+                        if (codecSpecific1 instanceof Long) {
+                            long specific1 = (Long) codecSpecific1;
+                            // Extract quality bits (varies by codec)
+                            // For LDAC: bits 0-2 represent quality
+                            // For aptX HD: usually 0
+                            if (specific1 > 0 && specific1 < 100) {
+                                snapshot.codecQuality = (int) specific1;
+                            }
+                        }
+                    } catch (NoSuchMethodException nsme) {
+                        // getCodecSpecific1 not available
+                    }
                 }
             }
         } catch (Exception e) {
@@ -370,10 +470,90 @@ public class BluetoothCollector {
             snapshot.remoteDeviceName = device.getName();
             snapshot.remoteDeviceType = device.getType();
 
+            // Collect RSSI for connected device
+            collectDeviceRssi(device, snapshot);
+
         } catch (SecurityException e) {
             Log.w(TAG, "Headset data access denied", e);
         } catch (Exception e) {
             Log.w(TAG, "Failed to get headset data", e);
+        }
+    }
+
+    /**
+     * Collect RSSI (signal strength) for a connected Bluetooth device.
+     * Uses reflection as readRemoteRssi is primarily for BLE devices.
+     */
+    @SuppressLint("MissingPermission")
+    private void collectDeviceRssi(BluetoothDevice device, NetworkBluetoothSnapshot snapshot) {
+        if (device == null)
+            return;
+
+        try {
+            // For classic Bluetooth, RSSI is not directly available after connection
+            // We can try to get it via reflection on BluetoothSocket or during scanning
+            // For LE devices, we need an active GATT connection
+
+            // Try to get TX power level via reflection (if available)
+            try {
+                Method getTxPowerLevel = device.getClass().getMethod("getTxPowerLevel");
+                Object result = getTxPowerLevel.invoke(device);
+                if (result instanceof Integer) {
+                    snapshot.txPowerLevel = (Integer) result;
+                }
+            } catch (NoSuchMethodException e) {
+                // Method not available on this device/API level
+            }
+
+            // Note: For accurate RSSI, we would need:
+            // 1. BLE: Active GATT connection with readRemoteRssi callback
+            // 2. Classic: Inquiry scan results (only during discovery)
+            // Setting to null to indicate unavailable (per three-state semantics)
+            // Future enhancement: Register BLE callback for continuous RSSI monitoring
+
+        } catch (Exception e) {
+            Log.d(TAG, "RSSI collection not available: " + e.getMessage());
+        }
+    }
+
+    /**
+     * Collect LE Audio / BLE specific data.
+     * Includes connection parameters like interval and latency.
+     */
+    @SuppressLint("MissingPermission")
+    private void collectLeAudioData(NetworkBluetoothSnapshot snapshot) {
+        // LE Audio support requires API 33+
+        if (Build.VERSION.SDK_INT < 33) {
+            return;
+        }
+
+        try {
+            // Check for LE Audio profile proxy
+            // Note: BluetoothLeAudio is @SystemApi on many devices
+            // Connection interval and latency are only available via GATT callbacks
+            // during an active BLE connection
+
+            // For connected LE devices, try to get connection parameters
+            if (snapshot.remoteDeviceType != null &&
+                    (snapshot.remoteDeviceType == BluetoothDevice.DEVICE_TYPE_LE ||
+                            snapshot.remoteDeviceType == BluetoothDevice.DEVICE_TYPE_DUAL)) {
+
+                // Mark profile type as LE_AUDIO if not already set and device is LE
+                if (snapshot.profileType == null && snapshot.connectionState != null &&
+                        snapshot.connectionState == BluetoothProfile.STATE_CONNECTED) {
+                    snapshot.profileType = "LE_AUDIO";
+                    snapshot.profileTypeConstant = 22; // BluetoothProfile.LE_AUDIO
+                }
+
+                // Note: Actual connection interval/latency requires:
+                // 1. Establishing a GATT connection
+                // 2. Receiving onConnectionUpdatedCallback with interval, latency, timeout
+                // This would require significant refactoring to maintain GATT connections
+                // For now, these remain null indicating "not available"
+            }
+
+        } catch (Exception e) {
+            Log.d(TAG, "LE Audio data collection not available: " + e.getMessage());
         }
     }
 

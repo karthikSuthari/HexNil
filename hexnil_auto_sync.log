@@ -345,3 +345,5 @@ Auto-sync stopped by user
 2026-01-29 23:38:34,801 [INFO] Sync successful: {'success': True, 'message': 'Accepted for processing', 'device_id': 'a6a9f331d869db9e', 'records_received': {'battery_snapshots': 0, 'charging_sessions': 0, 'thermal_events': 0, 'drain_events': 0, 'idle_drain_sessions': 0, 'battery_health': 0, 'safety_events': 0, 'calibration_data': 2, 'ai_analysis_results': 6, 'app_battery_usage': 320, 'app_drain_ranks': 15}, 'records_stored': {'battery_snapshots': 0, 'charging_sessions': 0, 'thermal_events': 0, 'drain_events': 0, 'idle_drain_sessions': 0, 'battery_health': 0, 'safety_events': 0, 'calibration_data': 0, 'ai_analysis_results': 0, 'app_battery_usage': 0, 'app_drain_ranks': 0}, 'errors': [], 'sync_id': 36}
 2026-01-29 23:38:34,803 [INFO] Sync state saved
 2026-01-29 23:38:34,803 [INFO] Auto-sync completed successfully!
+2026-01-29 23:48:51,441 [INFO] Device disconnected
+2026-01-29 23:48:51,583 [INFO] Device disconnected
