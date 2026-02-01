@@ -656,16 +656,16 @@ def process_device(conn, device_id: str) -> None:
         ("battery_snapshots", "timestamp"),
         ("charging_sessions", "start_time"),
         ("thermal_events", "timestamp"),
-        ("drain_events", "start_time"),
+        ("drain_events", "timestamp"),
         ("idle_drain_sessions", "start_time"),
         ("battery_health", "timestamp"),
         ("safety_events", "timestamp"),
         # App usage data
         ("app_battery_usage", "timestamp"),
-        ("app_drain_ranks", "timestamp"),
+        ("app_drain_ranks", "window_start"),
         # Refresh rate tracking
         ("refresh_rate_sessions", "start_time"),
-        ("refresh_rate_anomalies", "timestamp"),
+        ("refresh_rate_anomalies", "detected_at"),
         # Thermal aggregation
         ("thermal_heat_buckets", "start_time"),
         # Calibration and AI results
