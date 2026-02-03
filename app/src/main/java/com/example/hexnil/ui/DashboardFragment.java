@@ -19,11 +19,26 @@ import androidx.fragment.app.Fragment;
 import com.example.hexnil.ModuleNavigator;
 import com.example.hexnil.R;
 import com.example.hexnil.database.HexNilDatabase;
+import com.example.hexnil.model.AIAnalysisResult;
 import com.example.hexnil.model.BatteryHealth;
 import com.example.hexnil.model.BatterySnapshot;
 import com.example.hexnil.service.RemoteMonitorServer;
+import com.example.hexnil.ui.chart.OemChartConfig;
+import com.github.mikephil.charting.charts.LineChart;
+import com.github.mikephil.charting.data.Entry;
+import com.github.mikephil.charting.data.LineData;
+import com.github.mikephil.charting.data.LineDataSet;
+import com.github.mikephil.charting.interfaces.datasets.ILineDataSet;
 import com.google.android.material.button.MaterialButton;
 import com.google.android.material.switchmaterial.SwitchMaterial;
+
+import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.List;
+import java.util.Locale;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 import java.util.Locale;
 import java.util.concurrent.ExecutorService;
@@ -45,13 +60,16 @@ public class DashboardFragment extends Fragment {
     // UI Elements
     private TextView tvServiceStatus;
     private TextView tvUptime;
+    private TextView tvLastAiRun;
     private TextView tvBatteryLevel;
     private TextView tvChargingStatus;
+    private TextView tvGraphTimeWindow;
     private ProgressBar progressBattery;
     private TextView tvTemperature;
     private TextView tvVoltage;
     private TextView tvCurrent;
     private TextView tvHealth;
+    private TextView tvDataIntegrity;
     private TextView tvSnapshotCount;
     private TextView tvSessionCount;
     private TextView tvEventCount;
@@ -60,6 +78,10 @@ public class DashboardFragment extends Fragment {
     private SwitchMaterial switchRemote;
     private View statusIndicator;
     private View remoteStatusIndicator;
+    
+    // Chart
+    private LineChart chartBatteryLevel;
+    private long chartBaseTimestamp;
 
     private static long serviceStartTime = System.currentTimeMillis();
     private static final int REFRESH_INTERVAL_MS = 3000;
@@ -83,6 +105,7 @@ public class DashboardFragment extends Fragment {
         handler = new Handler(Looper.getMainLooper());
 
         initViews(root);
+        setupChart();
         setupNavButtons(root);
         setupRemoteSwitch();
 
@@ -96,13 +119,16 @@ public class DashboardFragment extends Fragment {
     private void initViews(View root) {
         tvServiceStatus = root.findViewById(R.id.tv_service_status);
         tvUptime = root.findViewById(R.id.tv_uptime);
+        tvLastAiRun = root.findViewById(R.id.tv_last_ai_run);
         tvBatteryLevel = root.findViewById(R.id.tv_battery_level);
         tvChargingStatus = root.findViewById(R.id.tv_charging_status);
+        tvGraphTimeWindow = root.findViewById(R.id.tv_graph_time_window);
         progressBattery = root.findViewById(R.id.progress_battery);
         tvTemperature = root.findViewById(R.id.tv_temperature);
         tvVoltage = root.findViewById(R.id.tv_voltage);
         tvCurrent = root.findViewById(R.id.tv_current);
         tvHealth = root.findViewById(R.id.tv_health);
+        tvDataIntegrity = root.findViewById(R.id.tv_data_integrity);
         tvSnapshotCount = root.findViewById(R.id.tv_snapshot_count);
         tvSessionCount = root.findViewById(R.id.tv_session_count);
         tvEventCount = root.findViewById(R.id.tv_event_count);
@@ -111,11 +137,32 @@ public class DashboardFragment extends Fragment {
         switchRemote = root.findViewById(R.id.switch_remote);
         statusIndicator = root.findViewById(R.id.status_indicator);
         remoteStatusIndicator = root.findViewById(R.id.remote_status_indicator);
+        chartBatteryLevel = root.findViewById(R.id.chart_battery_level);
 
         ImageButton btnRefresh = root.findViewById(R.id.btn_refresh);
         if (btnRefresh != null) {
             btnRefresh.setOnClickListener(v -> refreshData());
         }
+    }
+    
+    /**
+     * Initialize battery level chart with OEM styling.
+     */
+    private void setupChart() {
+        if (chartBatteryLevel == null) return;
+        
+        OemChartConfig.configureLineChart(chartBatteryLevel, requireContext());
+        
+        // Set Y-axis range for battery percentage
+        chartBatteryLevel.getAxisLeft().setAxisMinimum(0f);
+        chartBatteryLevel.getAxisLeft().setAxisMaximum(100f);
+        chartBatteryLevel.getAxisLeft().setValueFormatter(new OemChartConfig.PercentAxisFormatter());
+        
+        // Configure for time series with sliding (show ~6 hours at a time)
+        OemChartConfig.configureTimeSeriesChart(chartBatteryLevel, 72); // 72 points = ~6 hours at 5-min intervals
+        
+        // Add charging threshold line
+        OemChartConfig.addSafeThreshold(chartBatteryLevel.getAxisLeft(), 20f, "LOW");
     }
 
     private void setupNavButtons(View root) {
@@ -177,6 +224,7 @@ public class DashboardFragment extends Fragment {
                 // Get latest snapshot
                 BatterySnapshot snapshot = database.batterySnapshotDao().getLatest();
                 BatteryHealth health = database.batteryHealthDao().getLatest();
+                AIAnalysisResult aiResult = database.miscDao().getLatestAIAnalysis();
 
                 // Get counts
                 int snapshotCount = database.batterySnapshotDao().getCount();
@@ -185,9 +233,19 @@ public class DashboardFragment extends Fragment {
                 int drainCount = database.drainEventDao().getCount();
                 int safetyCount = database.safetyEventDao().getCount();
                 int totalEvents = thermalCount + drainCount + safetyCount;
+                
+                // Get snapshots for chart (last 24 hours)
+                long twentyFourHoursAgo = System.currentTimeMillis() - (24 * 60 * 60 * 1000);
+                List<BatterySnapshot> chartSnapshots = database.batterySnapshotDao().getSnapshotsSince(twentyFourHoursAgo);
+                
+                // Count data gaps
+                int dataGaps = countDataGaps(chartSnapshots);
 
                 // Update UI on main thread
-                handler.post(() -> updateUI(snapshot, health, snapshotCount, sessionCount, totalEvents));
+                handler.post(() -> {
+                    updateUI(snapshot, health, aiResult, snapshotCount, sessionCount, totalEvents, dataGaps);
+                    updateChart(chartSnapshots);
+                });
             } catch (Exception e) {
                 e.printStackTrace();
             }
@@ -196,9 +254,75 @@ public class DashboardFragment extends Fragment {
         // Schedule next refresh
         handler.postDelayed(refreshRunnable, REFRESH_INTERVAL_MS);
     }
+    
+    /**
+     * Count significant data gaps (>10 min between snapshots).
+     */
+    private int countDataGaps(List<BatterySnapshot> snapshots) {
+        int gaps = 0;
+        if (snapshots == null || snapshots.size() < 2) return 0;
+        
+        for (int i = 1; i < snapshots.size(); i++) {
+            long diff = snapshots.get(i).timestamp - snapshots.get(i-1).timestamp;
+            if (diff > 10 * 60 * 1000) { // 10 minutes
+                gaps++;
+            }
+        }
+        return gaps;
+    }
+    
+    /**
+     * Update the battery level chart with snapshot data.
+     */
+    private void updateChart(List<BatterySnapshot> snapshots) {
+        if (chartBatteryLevel == null || snapshots == null || snapshots.isEmpty()) {
+            return;
+        }
+        
+        // Set base timestamp for X-axis formatting
+        chartBaseTimestamp = snapshots.get(0).timestamp;
+        chartBatteryLevel.getXAxis().setValueFormatter(new OemChartConfig.TimeAxisFormatter(chartBaseTimestamp));
+        
+        // Create entries for battery level
+        List<Entry> levelEntries = new ArrayList<>();
+        List<Entry> chargingEntries = new ArrayList<>();
+        
+        for (int i = 0; i < snapshots.size(); i++) {
+            BatterySnapshot s = snapshots.get(i);
+            float x = (s.timestamp - chartBaseTimestamp) / (60f * 1000f); // Convert to minutes
+            
+            levelEntries.add(new Entry(x, s.level));
+            
+            // Create separate entries for charging periods
+            if (s.isCharging) {
+                chargingEntries.add(new Entry(x, s.level));
+            }
+        }
+        
+        // Create data sets
+        List<ILineDataSet> dataSets = new ArrayList<>();
+        
+        // Primary battery level line
+        LineDataSet levelDataSet = OemChartConfig.createPrimaryDataSet(levelEntries, "Battery %");
+        dataSets.add(levelDataSet);
+        
+        // Charging overlay (dashed line)
+        if (!chargingEntries.isEmpty()) {
+            LineDataSet chargingDataSet = OemChartConfig.createChargingDataSet(chargingEntries, "Charging");
+            dataSets.add(chargingDataSet);
+        }
+        
+        // Apply data to chart
+        LineData data = new LineData(dataSets);
+        chartBatteryLevel.setData(data);
+        
+        // Move to show latest data
+        OemChartConfig.moveToLatest(chartBatteryLevel, levelEntries.size());
+        chartBatteryLevel.invalidate();
+    }
 
-    private void updateUI(BatterySnapshot snapshot, BatteryHealth health,
-            int snapshotCount, int sessionCount, int eventCount) {
+    private void updateUI(BatterySnapshot snapshot, BatteryHealth health, AIAnalysisResult aiResult,
+            int snapshotCount, int sessionCount, int eventCount, int dataGaps) {
         if (!isAdded())
             return;
 
@@ -209,10 +333,20 @@ public class DashboardFragment extends Fragment {
         // Uptime
         long uptimeMs = System.currentTimeMillis() - serviceStartTime;
         tvUptime.setText("Uptime: " + formatUptime(uptimeMs));
+        
+        // Last AI run
+        if (tvLastAiRun != null) {
+            if (aiResult != null && aiResult.timestamp > 0) {
+                SimpleDateFormat sdf = new SimpleDateFormat("HH:mm", Locale.getDefault());
+                tvLastAiRun.setText("AI: " + sdf.format(new Date(aiResult.timestamp)));
+            } else {
+                tvLastAiRun.setText("AI: --");
+            }
+        }
 
         if (snapshot != null) {
             // Battery level
-            tvBatteryLevel.setText(String.valueOf(snapshot.level));
+            tvBatteryLevel.setText(String.format(Locale.US, "%d%%", snapshot.level));
             progressBattery.setProgress(snapshot.level);
 
             // Charging status
@@ -258,6 +392,20 @@ public class DashboardFragment extends Fragment {
             } else {
                 tvHealth.setTextColor(ContextCompat.getColor(requireContext(), R.color.oem_status_safe));
             }
+        }
+        
+        // Data Integrity (monospace technical block)
+        if (tvDataIntegrity != null) {
+            StringBuilder integrity = new StringBuilder();
+            integrity.append(String.format(Locale.US, "Snapshots collected: %s\n", formatCount(snapshotCount)));
+            integrity.append(String.format(Locale.US, "Events detected: %s\n", formatCount(eventCount)));
+            integrity.append(String.format(Locale.US, "Data gaps (24h): %d\n", dataGaps));
+            if (aiResult != null && aiResult.overallConfidenceScore > 0) {
+                integrity.append(String.format(Locale.US, "AI confidence: %.0f%%", aiResult.overallConfidenceScore * 100));
+            } else {
+                integrity.append("AI confidence: --");
+            }
+            tvDataIntegrity.setText(integrity.toString());
         }
 
         // Database stats

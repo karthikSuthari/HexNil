@@ -127,6 +127,8 @@ public class AppLaunchMetric {
     // =========================================================================
 
     public AppLaunchMetric() {
+        // Default value for ttfdMs - 0 when not reported by app
+        this.ttfdMs = 0L;
     }
 
     public AppLaunchMetric(String packageName, String launchType, long launchDurationMs) {
@@ -135,6 +137,7 @@ public class AppLaunchMetric {
         this.launchType = launchType;
         this.launchDurationMs = launchDurationMs;
         this.ttidMs = launchDurationMs; // Default TTID to launch duration
+        this.ttfdMs = 0L; // 0 when app doesn't report fully drawn
     }
 
     // =========================================================================

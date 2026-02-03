@@ -123,6 +123,9 @@ public class RefreshRateAnomaly {
     public RefreshRateAnomaly() {
         this.detectedAt = System.currentTimeMillis();
         this.screenOn = true;
+        // Default values for context fields that must not be NULL
+        this.temperature = 0f; // 0 when not measured
+        this.batteryCurrent = 0f; // 0 when not measured
     }
 
     /**

@@ -93,6 +93,42 @@
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
 
+        <!-- Temperature Graph Card (Swipeable) -->
+        <com.google.android.material.card.MaterialCardView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="@dimen/oem_margin_medium"
+            style="@style/Widget.HexNil.Card">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="@dimen/oem_card_padding">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="TEMPERATURE TREND"
+                    android:textAppearance="@style/TextAppearance_HexNil_Headline3" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="@dimen/oem_padding_tiny"
+                    android:text="Temperature over time (°C) | Swipe to navigate"
+                    android:textAppearance="@style/TextAppearance_HexNil_Caption"
+                    android:textColor="@color/oem_text_tertiary" />
+
+                <!-- Temperature Line Chart -->
+                <com.github.mikephil.charting.charts.LineChart
+                    android:id="@+id/chart_temperature"
+                    android:layout_width="match_parent"
+                    android:layout_height="180dp"
+                    android:layout_marginTop="@dimen/oem_margin_small" />
+            </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
+
         <!-- Key Metrics Card -->
         <com.google.android.material.card.MaterialCardView
             android:layout_width="match_parent"

@@ -2,22 +2,26 @@
 <menu xmlns:android="http://schemas.android.com/apk/res/android">
     <item
         android:id="@+id/nav_dashboard"
-        android:icon="@drawable/ic_launcher_foreground"
+        android:icon="@drawable/ic_nav_dashboard"
         android:title="@string/nav_dashboard" />
     <item
-        android:id="@+id/nav_charging"
-        android:icon="@drawable/ic_launcher_foreground"
-        android:title="@string/nav_charging" />
+        android:id="@+id/nav_health"
+        android:icon="@drawable/ic_nav_health"
+        android:title="@string/nav_health" />
     <item
         android:id="@+id/nav_thermal"
-        android:icon="@drawable/ic_launcher_foreground"
+        android:icon="@drawable/ic_nav_thermal"
         android:title="@string/nav_thermal" />
     <item
         android:id="@+id/nav_drain"
-        android:icon="@drawable/ic_launcher_foreground"
+        android:icon="@drawable/ic_nav_drain"
         android:title="@string/nav_drain" />
     <item
-        android:id="@+id/nav_safety"
-        android:icon="@drawable/ic_launcher_foreground"
-        android:title="@string/nav_safety" />
+        android:id="@+id/nav_calibration"
+        android:icon="@drawable/ic_nav_calibration"
+        android:title="@string/nav_calibration" />
+    <item
+        android:id="@+id/nav_logs"
+        android:icon="@drawable/ic_nav_logs"
+        android:title="@string/nav_logs" />
 </menu>

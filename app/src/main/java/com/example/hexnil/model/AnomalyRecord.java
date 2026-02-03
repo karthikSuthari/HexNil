@@ -70,6 +70,8 @@ public class AnomalyRecord {
         this.acknowledged = false;
         this.resolved = false;
         this.occurrenceCount = 1;
+        // Default screenOn to false - safe default when device state unknown
+        this.screenOn = false;
     }
     
     /**

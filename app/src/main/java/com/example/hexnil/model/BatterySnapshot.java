@@ -209,6 +209,12 @@ public class BatterySnapshot {
         this.validationFlags = 0;
         this.sensorDataChanged = true;
         this.timeSincePreviousMs = -1;
+        // Default values for fields that must not be NULL
+        // energyCounter stays null (three-state: unavailable on many devices)
+        this.chargeRate = 0f; // 0 when not charging
+        this.screenOn = null; // Three-state: null = unavailable (retained)
+        this.chargingType = "unknown"; // Safe default
+        // chargerVendorId/chargerProductId stay null (only valid for USB)
     }
     
     /**

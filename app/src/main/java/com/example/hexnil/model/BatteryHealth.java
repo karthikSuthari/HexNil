@@ -368,6 +368,10 @@ public class BatteryHealth {
         this.degradationTrend = "unknown";
         this.overallConfidence = 0;
         this.eolConfidence = 0; // Explicit init for NOT NULL constraint
+        // Default values for columns that must not be NULL
+        this.measuredCapacityMah = 0f;
+        this.degradationAcceleration = 0f;
+        this.predictedEOL = 0f;
     }
 
     // =========================================================================

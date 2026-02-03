@@ -58,18 +58,32 @@
                         app:tint="@color/oem_text_tertiary" />
                 </LinearLayout>
 
-                <TextView
-                    android:id="@+id/tv_uptime"
-                    android:layout_width="wrap_content"
+                <LinearLayout
+                    android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="@dimen/oem_padding_tiny"
-                    android:text="Uptime: --"
-                    android:textAppearance="@style/TextAppearance_HexNil_Caption" />
+                    android:orientation="horizontal">
+
+                    <TextView
+                        android:id="@+id/tv_uptime"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="Uptime: --"
+                        android:textAppearance="@style/TextAppearance_HexNil_Caption" />
+
+                    <TextView
+                        android:id="@+id/tv_last_ai_run"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="AI: --"
+                        android:textAppearance="@style/TextAppearance_HexNil_Caption" />
+                </LinearLayout>
 
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
 
-        <!-- Primary Metrics Card -->
+        <!-- Primary Battery Graph Card (Sliding) -->
         <com.google.android.material.card.MaterialCardView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -80,14 +94,20 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="vertical"
-                android:padding="@dimen/oem_padding_large">
+                android:padding="@dimen/oem_card_padding">
 
-                <!-- Battery Level -->
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:gravity="center"
-                    android:orientation="vertical">
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical">
+
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="BATTERY LEVEL"
+                        android:textAppearance="@style/TextAppearance_HexNil_Headline3" />
 
                     <TextView
                         android:id="@+id/tv_battery_level"
@@ -95,36 +115,43 @@
                         android:layout_height="wrap_content"
                         android:text="--"
                         android:textAppearance="@style/TextAppearance_HexNil_Metric"
-                        android:textSize="56sp"
-                        tools:text="85" />
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="@dimen/oem_padding_small"
-                        android:text="BATTERY LEVEL"
-                        android:textAppearance="@style/TextAppearance_HexNil_Label" />
-
-                    <TextView
-                        android:id="@+id/tv_charging_status"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="@dimen/oem_margin_small"
-                        android:text="DISCHARGING"
-                        android:textAppearance="@style/TextAppearance_HexNil_Body"
-                        tools:text="CHARGING" />
-
-                    <ProgressBar
-                        android:id="@+id/progress_battery"
-                        style="@style/Widget.AppCompat.ProgressBar.Horizontal"
-                        android:layout_width="match_parent"
-                        android:layout_height="6dp"
-                        android:layout_marginTop="@dimen/oem_margin_medium"
-                        android:max="100"
-                        android:progress="0"
-                        android:progressTint="@color/oem_accent" />
+                        android:textSize="32sp"
+                        tools:text="85%" />
                 </LinearLayout>
 
+                <TextView
+                    android:id="@+id/tv_charging_status"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="DISCHARGING"
+                    android:textAppearance="@style/TextAppearance_HexNil_Caption"
+                    tools:text="CHARGING" />
+
+                <TextView
+                    android:id="@+id/tv_graph_time_window"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="@dimen/oem_margin_small"
+                    android:text="Last 24 hours | Swipe to navigate"
+                    android:textAppearance="@style/TextAppearance_HexNil_Caption"
+                    android:textColor="@color/oem_text_tertiary" />
+
+                <!-- Battery Level Line Chart (Sliding) -->
+                <com.github.mikephil.charting.charts.LineChart
+                    android:id="@+id/chart_battery_level"
+                    android:layout_width="match_parent"
+                    android:layout_height="180dp"
+                    android:layout_marginTop="@dimen/oem_margin_small" />
+
+                <ProgressBar
+                    android:id="@+id/progress_battery"
+                    style="@style/Widget.AppCompat.ProgressBar.Horizontal"
+                    android:layout_width="match_parent"
+                    android:layout_height="4dp"
+                    android:layout_marginTop="@dimen/oem_margin_small"
+                    android:max="100"
+                    android:progress="0"
+                    android:progressTint="@color/oem_accent" />
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
 
@@ -271,6 +298,45 @@
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
         </LinearLayout>
+
+        <!-- Data Integrity Card (Monospace Technical Block) -->
+        <com.google.android.material.card.MaterialCardView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="@dimen/oem_margin_medium"
+            style="@style/Widget.HexNil.Card"
+            app:cardBackgroundColor="@color/oem_bg_elevated">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="@dimen/oem_card_padding">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="DATA INTEGRITY"
+                    android:textAppearance="@style/TextAppearance_HexNil_Headline3" />
+
+                <View
+                    android:layout_width="match_parent"
+                    android:layout_height="@dimen/oem_divider_height"
+                    android:layout_marginTop="@dimen/oem_margin_medium"
+                    android:layout_marginBottom="@dimen/oem_margin_medium"
+                    android:background="@color/oem_divider" />
+
+                <TextView
+                    android:id="@+id/tv_data_integrity"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:fontFamily="monospace"
+                    android:lineSpacingExtra="4dp"
+                    android:text="Snapshots collected: --\nEvents detected: --\nData gaps: --\nAI confidence: --"
+                    android:textAppearance="@style/TextAppearance_HexNil_Monospace"
+                    android:textColor="@color/oem_text_secondary" />
+            </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
 
         <!-- Remote Access Card -->
         <com.google.android.material.card.MaterialCardView

@@ -239,6 +239,10 @@ public class NetworkBluetoothSnapshot {
         this.validationStatus = "unchecked";
         this.qualityScore = -1;
         this.validationFlags = 0;
+        // Default values for fields that must not be NULL
+        // rssi stays null (three-state: unavailable when no device connected)
+        // txPowerLevel stays null (three-state: unavailable on most devices)
+        this.isPlaying = false; // Safe default - not playing audio
     }
 
     /** Creates a snapshot with specified context. */

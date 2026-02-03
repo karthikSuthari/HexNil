@@ -242,6 +242,12 @@ public class AIAnalysisResult {
         this.timestamp = System.currentTimeMillis();
         this.analysisVersion = "1.0.0";
         this.includesAIContent = false;
+        // Default values for AI readiness fields that must not be NULL
+        this.aiWasAllowedToRun = false;
+        this.observationHoursAvailable = 0L;
+        this.dataGaps = "[]"; // Empty JSON array
+        this.dataQualityIssues = "[]"; // Empty JSON array
+        this.passedSafetyChecks = false;
     }
     
     /**

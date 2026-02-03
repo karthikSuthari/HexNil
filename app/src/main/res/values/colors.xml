@@ -29,6 +29,13 @@
     <color name="oem_status_critical">#DA3633</color>    <!-- Red (critical) -->
     <color name="oem_status_info">#58A6FF</color>        <!-- Blue (info) -->
     
+    <!-- Chart Colors -->
+    <color name="oem_chart_line_primary">#58A6FF</color> <!-- Primary chart line (cyan) -->
+    <color name="oem_chart_accent">#79C0FF</color>       <!-- Secondary/accent line -->
+    <color name="oem_chart_fill">#1A58A6FF</color>       <!-- Chart fill (10% alpha) -->
+    <color name="oem_chart_grid">#21262D</color>         <!-- Grid lines -->
+    <color name="oem_chart_text">#8B949E</color>         <!-- Axis labels -->
+    
     <!-- Border/Divider -->
     <color name="oem_divider">#21262D</color>            <!-- Divider line -->
     <color name="oem_border">#30363D</color>             <!-- Border -->

@@ -5,6 +5,10 @@
     <string name="nav_thermal">Thermal</string>
     <string name="nav_drain">Drain</string>
     <string name="nav_safety">Safety</string>
+    <string name="nav_health">Health</string>
+    <string name="nav_calibration">Calibration</string>
+    <string name="nav_ai">AI</string>
+    <string name="nav_logs">Logs</string>
     <string name="screen_health">Health</string>
     <string name="screen_idle">Idle</string>
     <string name="screen_calibration">Calibration</string>

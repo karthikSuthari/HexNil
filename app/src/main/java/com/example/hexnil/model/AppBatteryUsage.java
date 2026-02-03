@@ -60,6 +60,9 @@ public class AppBatteryUsage {
     
     public AppBatteryUsage() {
         this.timestamp = System.currentTimeMillis();
+        // Default values for resource metrics that must not be NULL
+        this.networkBytes = 0L;
+        this.networkWakeCount = 0;
     }
     
     public float getTotalActiveTime() {

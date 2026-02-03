@@ -161,6 +161,10 @@ public class ThermalEvent {
         this.thresholdLevel = "normal";
         this.thermalTrend = "stable";
         this.thermalZone = "<35";
+        // Default values for context fields that must not be NULL
+        this.skinTemp = 0f; // 0 when not measured (many devices don't expose)
+        this.screenOn = false; // Safe default
+        this.isNavigation = false; // Safe default
     }
     
     public boolean isCritical() {

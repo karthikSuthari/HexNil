@@ -1,32 +1,339 @@
 <?xml version="1.0" encoding="utf-8"?>
 <ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:padding="16dp"
-    android:background="?attr/colorSurface">
+    android:background="@color/oem_bg_primary"
+    android:fillViewport="true">
 
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:orientation="vertical">
+        android:orientation="vertical"
+        android:padding="@dimen/oem_padding_medium">
 
-        <TextView
-            android:layout_width="wrap_content"
+        <!-- Calibration Status Card -->
+        <com.google.android.material.card.MaterialCardView
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="Calibration"
-            android:textAppearance="@style/TextAppearance.Material3.TitleLarge" />
+            android:layout_marginBottom="@dimen/oem_margin_medium"
+            style="@style/Widget.HexNil.Card">
 
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Drift: -- %"
-            android:textAppearance="@style/TextAppearance.Material3.BodyLarge" />
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="@dimen/oem_card_padding">
 
-        <TextView
-            android:layout_width="wrap_content"
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="CALIBRATION STATUS"
+                    android:textAppearance="@style/TextAppearance_HexNil_Headline3" />
+
+                <View
+                    android:layout_width="match_parent"
+                    android:layout_height="@dimen/oem_divider_height"
+                    android:layout_marginTop="@dimen/oem_margin_medium"
+                    android:layout_marginBottom="@dimen/oem_margin_medium"
+                    android:background="@color/oem_divider" />
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal">
+
+                    <LinearLayout
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:orientation="vertical">
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="DRIFT"
+                            android:textAppearance="@style/TextAppearance_HexNil_Label" />
+
+                        <TextView
+                            android:id="@+id/tv_drift"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="@dimen/oem_padding_tiny"
+                            android:text="--%"
+                            android:textAppearance="@style/TextAppearance_HexNil_Metric"
+                            android:textSize="32sp"
+                            tools:text="2.5%" />
+                    </LinearLayout>
+
+                    <LinearLayout
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:orientation="vertical">
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="CONFIDENCE"
+                            android:textAppearance="@style/TextAppearance_HexNil_Label" />
+
+                        <TextView
+                            android:id="@+id/tv_confidence"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="@dimen/oem_padding_tiny"
+                            android:text="--%"
+                            android:textAppearance="@style/TextAppearance_HexNil_Metric"
+                            android:textSize="32sp"
+                            tools:text="94%" />
+                    </LinearLayout>
+                </LinearLayout>
+            </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
+
+        <!-- SOC Drift Graph Card (Swipeable) -->
+        <com.google.android.material.card.MaterialCardView
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="Suggested action: --"
-            android:textAppearance="@style/TextAppearance.Material3.BodyLarge" />
+            android:layout_marginBottom="@dimen/oem_margin_medium"
+            style="@style/Widget.HexNil.Card">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="@dimen/oem_card_padding">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="SOC DRIFT TREND"
+                    android:textAppearance="@style/TextAppearance_HexNil_Headline3" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="@dimen/oem_padding_tiny"
+                    android:text="Reported vs Estimated SOC | Swipe to navigate"
+                    android:textAppearance="@style/TextAppearance_HexNil_Caption"
+                    android:textColor="@color/oem_text_tertiary" />
+
+                <!-- SOC Comparison Line Chart -->
+                <com.github.mikephil.charting.charts.LineChart
+                    android:id="@+id/chart_soc_drift"
+                    android:layout_width="match_parent"
+                    android:layout_height="180dp"
+                    android:layout_marginTop="@dimen/oem_margin_small" />
+            </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
+
+        <!-- Calibration Verdict Card -->
+        <com.google.android.material.card.MaterialCardView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="@dimen/oem_margin_medium"
+            style="@style/Widget.HexNil.Card"
+            app:cardBackgroundColor="@color/oem_bg_elevated">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="@dimen/oem_card_padding">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal">
+
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="CALIBRATION NEEDED"
+                        android:textAppearance="@style/TextAppearance_HexNil_Headline3" />
+
+                    <TextView
+                        android:id="@+id/tv_calibration_verdict"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="--"
+                        android:textAppearance="@style/TextAppearance_HexNil_Metric"
+                        android:textSize="20sp"
+                        tools:text="NO" />
+                </LinearLayout>
+
+                <View
+                    android:layout_width="match_parent"
+                    android:layout_height="@dimen/oem_divider_height"
+                    android:layout_marginTop="@dimen/oem_margin_medium"
+                    android:layout_marginBottom="@dimen/oem_margin_medium"
+                    android:background="@color/oem_divider" />
+
+                <TextView
+                    android:id="@+id/tv_calibration_details"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:fontFamily="monospace"
+                    android:lineSpacingExtra="4dp"
+                    android:text="Drift %: --\nConfidence: --\nMethod agreement: --\nDays since calibration: --"
+                    android:textAppearance="@style/TextAppearance_HexNil_Monospace"
+                    android:textColor="@color/oem_text_secondary" />
+            </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
+
+        <!-- Key Metrics Card -->
+        <com.google.android.material.card.MaterialCardView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="@dimen/oem_margin_medium"
+            style="@style/Widget.HexNil.Card">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="@dimen/oem_card_padding">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="METRICS"
+                    android:textAppearance="@style/TextAppearance_HexNil_Headline3" />
+
+                <View
+                    android:layout_width="match_parent"
+                    android:layout_height="@dimen/oem_divider_height"
+                    android:layout_marginTop="@dimen/oem_margin_medium"
+                    android:layout_marginBottom="@dimen/oem_margin_medium"
+                    android:background="@color/oem_divider" />
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginBottom="@dimen/oem_margin_medium"
+                    android:orientation="horizontal">
+
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="Reported SOC"
+                        android:textAppearance="@style/TextAppearance_HexNil_Body" />
+
+                    <TextView
+                        android:id="@+id/tv_reported_soc"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="--%"
+                        android:textAppearance="@style/TextAppearance_HexNil_Body"
+                        android:textStyle="bold" />
+                </LinearLayout>
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginBottom="@dimen/oem_margin_medium"
+                    android:orientation="horizontal">
+
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="Estimated SOC"
+                        android:textAppearance="@style/TextAppearance_HexNil_Body" />
+
+                    <TextView
+                        android:id="@+id/tv_estimated_soc"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="--%"
+                        android:textAppearance="@style/TextAppearance_HexNil_Body"
+                        android:textStyle="bold" />
+                </LinearLayout>
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginBottom="@dimen/oem_margin_medium"
+                    android:orientation="horizontal">
+
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="Drift Direction"
+                        android:textAppearance="@style/TextAppearance_HexNil_Body" />
+
+                    <TextView
+                        android:id="@+id/tv_drift_direction"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="--"
+                        android:textAppearance="@style/TextAppearance_HexNil_Body"
+                        android:textStyle="bold" />
+                </LinearLayout>
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal">
+
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="Sudden Drops"
+                        android:textAppearance="@style/TextAppearance_HexNil_Body" />
+
+                    <TextView
+                        android:id="@+id/tv_sudden_drops"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="--"
+                        android:textAppearance="@style/TextAppearance_HexNil_Body"
+                        android:textStyle="bold" />
+                </LinearLayout>
+            </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
+
+        <!-- Assessment Card -->
+        <com.google.android.material.card.MaterialCardView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="@dimen/oem_margin_large"
+            style="@style/Widget.HexNil.Card">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="@dimen/oem_card_padding">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="ASSESSMENT"
+                    android:textAppearance="@style/TextAppearance_HexNil_Headline3" />
+
+                <View
+                    android:layout_width="match_parent"
+                    android:layout_height="@dimen/oem_divider_height"
+                    android:layout_marginTop="@dimen/oem_margin_medium"
+                    android:layout_marginBottom="@dimen/oem_margin_medium"
+                    android:background="@color/oem_divider" />
+
+                <TextView
+                    android:id="@+id/tv_assessment"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Insufficient calibration data."
+                    android:textAppearance="@style/TextAppearance_HexNil_Body" />
+            </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
 
     </LinearLayout>
 </ScrollView>

@@ -33,6 +33,7 @@ import com.example.hexnil.ui.DeviceInfoFragment;
 import com.example.hexnil.ui.DrainFragment;
 import com.example.hexnil.ui.HealthFragment;
 import com.example.hexnil.ui.IdleFragment;
+import com.example.hexnil.ui.LogsFragment;
 import com.example.hexnil.ui.ReportsFragment;
 import com.example.hexnil.ui.SafetyFragment;
 import com.example.hexnil.ui.SettingsFragment;
@@ -57,6 +58,7 @@ public class MainActivity extends AppCompatActivity implements ModuleNavigator {
     private static final String TAG_IDLE = "idle";
     private static final String TAG_CALIBRATION = "calibration";
     private static final String TAG_AI = "ai";
+    private static final String TAG_LOGS = "logs";
     private static final String TAG_REPORTS = "reports";
     private static final String TAG_COMPLIANCE = "compliance";
     private static final String TAG_DEVICE = "device";
@@ -139,10 +141,11 @@ public class MainActivity extends AppCompatActivity implements ModuleNavigator {
 
         // Bottom navigation mapping
         navMap.put(R.id.nav_dashboard, TAG_DASHBOARD);
-        navMap.put(R.id.nav_charging, TAG_CHARGING);
+        navMap.put(R.id.nav_health, TAG_HEALTH);
         navMap.put(R.id.nav_thermal, TAG_THERMAL);
         navMap.put(R.id.nav_drain, TAG_DRAIN);
-        navMap.put(R.id.nav_safety, TAG_SAFETY);
+        navMap.put(R.id.nav_calibration, TAG_CALIBRATION);
+        navMap.put(R.id.nav_logs, TAG_LOGS);
 
         BottomNavigationView bottomNav = findViewById(R.id.bottom_nav);
         bottomNav.setOnItemSelectedListener(item -> {
@@ -418,6 +421,8 @@ public class MainActivity extends AppCompatActivity implements ModuleNavigator {
                 return new CalibrationFragment();
             case TAG_AI:
                 return new AiAnalysisFragment();
+            case TAG_LOGS:
+                return new LogsFragment();
             case TAG_REPORTS:
                 return new ReportsFragment();
             case TAG_COMPLIANCE:

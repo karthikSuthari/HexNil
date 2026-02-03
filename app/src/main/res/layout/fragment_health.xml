@@ -93,6 +93,94 @@
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
 
+        <!-- Health Trend Graph Card (Swipeable) -->
+        <com.google.android.material.card.MaterialCardView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="@dimen/oem_margin_medium"
+            style="@style/Widget.HexNil.Card">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="@dimen/oem_card_padding">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal">
+
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="HEALTH TREND"
+                        android:textAppearance="@style/TextAppearance_HexNil_Headline3" />
+
+                    <TextView
+                        android:id="@+id/tv_health_trend_label"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="STABLE"
+                        android:textAppearance="@style/TextAppearance_HexNil_Label"
+                        android:textColor="@color/oem_status_safe" />
+                </LinearLayout>
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="@dimen/oem_padding_tiny"
+                    android:text="Swipe to navigate time"
+                    android:textAppearance="@style/TextAppearance_HexNil_Caption"
+                    android:textColor="@color/oem_text_tertiary" />
+
+                <!-- Health % Line Chart -->
+                <com.github.mikephil.charting.charts.LineChart
+                    android:id="@+id/chart_health_trend"
+                    android:layout_width="match_parent"
+                    android:layout_height="180dp"
+                    android:layout_marginTop="@dimen/oem_margin_small" />
+            </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
+
+        <!-- Capacity Trend Graph Card -->
+        <com.google.android.material.card.MaterialCardView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="@dimen/oem_margin_medium"
+            style="@style/Widget.HexNil.Card">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="@dimen/oem_card_padding">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="CAPACITY TREND"
+                    android:textAppearance="@style/TextAppearance_HexNil_Headline3" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="@dimen/oem_padding_tiny"
+                    android:text="Estimated capacity over time (mAh)"
+                    android:textAppearance="@style/TextAppearance_HexNil_Caption"
+                    android:textColor="@color/oem_text_tertiary" />
+
+                <!-- Capacity Line Chart -->
+                <com.github.mikephil.charting.charts.LineChart
+                    android:id="@+id/chart_capacity_trend"
+                    android:layout_width="match_parent"
+                    android:layout_height="160dp"
+                    android:layout_marginTop="@dimen/oem_margin_small" />
+            </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
+
         <!-- Key Metrics Card -->
         <com.google.android.material.card.MaterialCardView
             android:layout_width="match_parent"

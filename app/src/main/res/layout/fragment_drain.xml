@@ -93,6 +93,78 @@
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
 
+        <!-- Drain Rate Graph Card (Swipeable) -->
+        <com.google.android.material.card.MaterialCardView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="@dimen/oem_margin_medium"
+            style="@style/Widget.HexNil.Card">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="@dimen/oem_card_padding">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="DRAIN RATE TREND"
+                    android:textAppearance="@style/TextAppearance_HexNil_Headline3" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="@dimen/oem_padding_tiny"
+                    android:text="Screen ON vs Screen OFF drain (%/hr) | Swipe to navigate"
+                    android:textAppearance="@style/TextAppearance_HexNil_Caption"
+                    android:textColor="@color/oem_text_tertiary" />
+
+                <!-- Drain Rate Line Chart -->
+                <com.github.mikephil.charting.charts.LineChart
+                    android:id="@+id/chart_drain_rate"
+                    android:layout_width="match_parent"
+                    android:layout_height="180dp"
+                    android:layout_marginTop="@dimen/oem_margin_small" />
+            </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
+
+        <!-- Idle Drain Sessions Graph Card -->
+        <com.google.android.material.card.MaterialCardView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="@dimen/oem_margin_medium"
+            style="@style/Widget.HexNil.Card">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="@dimen/oem_card_padding">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="IDLE DRAIN SESSIONS"
+                    android:textAppearance="@style/TextAppearance_HexNil_Headline3" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="@dimen/oem_padding_tiny"
+                    android:text="Standby drain per session (%/hr)"
+                    android:textAppearance="@style/TextAppearance_HexNil_Caption"
+                    android:textColor="@color/oem_text_tertiary" />
+
+                <!-- Idle Drain Bar Chart -->
+                <com.github.mikephil.charting.charts.BarChart
+                    android:id="@+id/chart_idle_drain"
+                    android:layout_width="match_parent"
+                    android:layout_height="160dp"
+                    android:layout_marginTop="@dimen/oem_margin_small" />
+            </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
+
         <!-- Key Metrics Card -->
         <com.google.android.material.card.MaterialCardView
             android:layout_width="match_parent"

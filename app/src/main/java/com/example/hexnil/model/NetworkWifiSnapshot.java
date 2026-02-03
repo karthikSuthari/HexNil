@@ -244,6 +244,10 @@ public class NetworkWifiSnapshot {
         this.qualityScore = -1;
         this.validationFlags = 0;
         this.signalDataChanged = true;
+        // Default values for fields that must not be NULL
+        this.isMetered = false; // Safe default - assume unmetered
+        this.dhcpLatencyMs = 0L; // 0 when not measured
+        this.timeSinceAuthMs = 0L; // 0 when unknown
     }
 
     /** Creates a snapshot with specified context. */
