@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- OEM Data Marker Layout
+     Compact dark card for chart touch inspection
+     
+     DESIGN:
+     - No tooltip arrows
+     - No animations
+     - Monospace font
+     - Dark background (#1A1D24)
+-->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="wrap_content"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:background="@drawable/bg_oem_marker"
+    android:paddingHorizontal="10dp"
+    android:paddingVertical="6dp"
+    android:minWidth="100dp">
+
+    <!-- Timestamp -->
+    <TextView
+        android:id="@+id/marker_timestamp"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:textColor="#9AA4B2"
+        android:textSize="10sp"
+        android:fontFamily="monospace"
+        android:letterSpacing="0.05"
+        tools:text="02/03 14:35" />
+
+    <!-- Value (Primary) -->
+    <TextView
+        android:id="@+id/marker_value"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:textColor="#E6E8EB"
+        android:textSize="14sp"
+        android:textStyle="bold"
+        android:fontFamily="monospace"
+        android:layout_marginTop="2dp"
+        tools:text="85.0%" />
+
+    <!-- Context (Charging/Screen state) -->
+    <TextView
+        android:id="@+id/marker_context"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:textColor="#6E7681"
+        android:textSize="9sp"
+        android:fontFamily="monospace"
+        android:textAllCaps="true"
+        android:letterSpacing="0.1"
+        android:layout_marginTop="2dp"
+        tools:text="DISCHARGING" />
+
+</LinearLayout>

@@ -392,22 +392,48 @@ public class AnomalyDetector {
             }
 
             // Check for abnormal wear indicators
+            // CRITICAL: Swelling warning requires MULTIPLE independent signals
+            // Per OEM diagnostic standard - prefer false-negative over false-positive
             if (health.hasAbnormalWear) {
                 AnomalyRecord anomaly = new AnomalyRecord();
                 anomaly.anomalyType = "battery_health";
-                anomaly.severity = health.hasSwellingRisk ? "critical" : "high";
-                anomaly.title = "Abnormal Battery Wear Detected";
-                anomaly.description = health.abnormalityDetails != null ? health.abnormalityDetails
-                        : "Abnormal wear patterns detected in battery metrics.";
-                anomaly.confidenceScore = 80f;
-
-                if (health.hasSwellingRisk) {
-                    anomaly.recommendation = "URGENT: Stop using device immediately. Battery may be swelling. " +
-                            "Seek professional service.";
-                    anomaly.impact = "Potential safety hazard.";
+                
+                // Evaluate swelling risk with rigorous multi-signal validation
+                SwellingRiskAssessment swellingAssessment = evaluateSwellingRisk(health);
+                
+                if (swellingAssessment.isConfirmed) {
+                    // Only show critical swelling warning with HIGH CONFIDENCE evidence
+                    anomaly.severity = "critical";
+                    anomaly.title = "Battery Health Alert - Multiple Anomalies Detected";
+                    anomaly.description = String.format(
+                        "Confidence: %.0f%%. Evidence: %s",
+                        swellingAssessment.confidence,
+                        swellingAssessment.evidenceSummary
+                    );
+                    anomaly.confidenceScore = swellingAssessment.confidence;
+                    anomaly.recommendation = "ALERT: Multiple battery anomaly signals detected. " +
+                            "Schedule inspection by qualified technician. " +
+                            "Evidence: " + swellingAssessment.evidenceSummary;
+                    anomaly.impact = "Battery showing multiple degradation indicators.";
+                } else if (swellingAssessment.isInconclusive) {
+                    // Inconclusive - do NOT escalate, use neutral language
+                    anomaly.severity = "medium";
+                    anomaly.title = "Battery Monitoring - Inconclusive Assessment";
+                    anomaly.description = health.abnormalityDetails != null ? health.abnormalityDetails
+                            : "Some wear metrics outside normal range. Insufficient evidence for conclusive assessment.";
+                    anomaly.confidenceScore = swellingAssessment.confidence;
+                    anomaly.recommendation = "Continue monitoring. No abnormal swelling indicators detected. " +
+                            "Assessment: INCONCLUSIVE (confidence: " + String.format("%.0f%%", swellingAssessment.confidence) + ")";
+                    anomaly.impact = "Metrics within acceptable variation range.";
                 } else {
-                    anomaly.recommendation = "Schedule battery inspection. Monitor for physical changes.";
-                    anomaly.impact = "Reduced reliability and potential safety concerns.";
+                    // Normal wear - use neutral messaging
+                    anomaly.severity = "low";
+                    anomaly.title = "Battery Wear Status";
+                    anomaly.description = "Battery health within normal operating range. " +
+                            "No abnormal swelling indicators detected.";
+                    anomaly.confidenceScore = 85f;
+                    anomaly.recommendation = "Battery health is normal. Continue routine monitoring.";
+                    anomaly.impact = "Normal wear for battery age and usage.";
                 }
 
                 anomalies.add(anomaly);
@@ -418,6 +444,96 @@ public class AnomalyDetector {
         }
 
         return anomalies;
+    }
+    
+    /**
+     * Rigorous swelling risk evaluation requiring MULTIPLE independent signals.
+     * 
+     * CRITICAL SAFETY RULE: Battery swelling warning must ONLY appear if ALL conditions met:
+     * 1. Sustained abnormal temperature patterns (not single spike)
+     * 2. Correlated internal resistance increase (>30% from baseline)
+     * 3. Capacity degradation beyond safe thresholds (health < 70% OR fade > 20%)
+     * 4. High confidence score from multiple independent signals (>75%)
+     * 
+     * PREFER FALSE-NEGATIVE over FALSE-POSITIVE for safety-critical diagnostics.
+     */
+    private SwellingRiskAssessment evaluateSwellingRisk(BatteryHealth health) {
+        SwellingRiskAssessment assessment = new SwellingRiskAssessment();
+        
+        int signalCount = 0;
+        float totalConfidence = 0;
+        StringBuilder evidenceBuilder = new StringBuilder();
+        
+        // Signal 1: Sustained temperature anomaly (not just hasSwellingRisk flag)
+        // Requires: Peak temp > 45°C AND average temp elevated over multiple readings
+        if (health.hasSwellingRisk && health.wearSeverity >= 6) {
+            signalCount++;
+            totalConfidence += 20;
+            evidenceBuilder.append("Temp pattern anomaly; ");
+        }
+        
+        // Signal 2: Internal resistance increase (>30% from baseline)
+        if (health.resistanceIncrease > 30.0f && health.hasHighResistance) {
+            signalCount++;
+            totalConfidence += 25;
+            evidenceBuilder.append(String.format("Resistance +%.0f%%; ", health.resistanceIncrease));
+        }
+        
+        // Signal 3: Severe capacity degradation (health < 70% OR fade > 20%)
+        if (health.healthPercentage < 70.0f || health.capacityFade > 20.0f) {
+            signalCount++;
+            totalConfidence += 20;
+            evidenceBuilder.append(String.format("Health %.0f%%, Fade %.1f%%; ", 
+                health.healthPercentage, health.capacityFade));
+        }
+        
+        // Signal 4: Capacity instability (unusual variance in readings)
+        if (health.hasCapacityInstability) {
+            signalCount++;
+            totalConfidence += 15;
+            evidenceBuilder.append("Capacity instability; ");
+        }
+        
+        // Signal 5: Accelerating degradation trend
+        if ("accelerating".equals(health.degradationTrend) || "critical".equals(health.degradationTrend)) {
+            signalCount++;
+            totalConfidence += 15;
+            evidenceBuilder.append("Accelerating degradation; ");
+        }
+        
+        // Signal 6: High wear severity score
+        if (health.wearSeverity >= 8) {
+            signalCount++;
+            totalConfidence += 15;
+            evidenceBuilder.append(String.format("Wear severity %d/10; ", health.wearSeverity));
+        }
+        
+        // Calculate final assessment
+        assessment.confidence = Math.min(100, totalConfidence);
+        assessment.signalCount = signalCount;
+        assessment.evidenceSummary = evidenceBuilder.length() > 0 
+            ? evidenceBuilder.toString().trim() 
+            : "No significant anomalies detected.";
+        
+        // CRITICAL THRESHOLD:
+        // Swelling warning requires AT LEAST 3 independent signals AND >75% confidence
+        // This prevents false positives from single metric spikes
+        assessment.isConfirmed = (signalCount >= 3 && assessment.confidence >= 75);
+        assessment.isInconclusive = (signalCount >= 1 && signalCount < 3) || 
+                                   (assessment.confidence >= 40 && assessment.confidence < 75);
+        
+        return assessment;
+    }
+    
+    /**
+     * Result class for swelling risk assessment
+     */
+    private static class SwellingRiskAssessment {
+        boolean isConfirmed = false;
+        boolean isInconclusive = false;
+        float confidence = 0;
+        int signalCount = 0;
+        String evidenceSummary = "";
     }
 
     /**

@@ -18,6 +18,7 @@ import com.example.hexnil.database.HexNilDatabase;
 import com.example.hexnil.model.BatterySnapshot;
 import com.example.hexnil.model.ThermalEvent;
 import com.example.hexnil.ui.chart.OemChartConfig;
+import com.example.hexnil.ui.chart.OemDataMarkerView;
 import com.github.mikephil.charting.charts.LineChart;
 import com.github.mikephil.charting.data.Entry;
 import com.github.mikephil.charting.data.LineData;
@@ -184,6 +185,23 @@ public class ThermalFragment extends Fragment {
         
         List<Entry> entries = new ArrayList<>();
         long baseTime = snapshots.get(0).timestamp;
+        
+        // Configure data marker for temperature inspection
+        OemChartConfig.configureDataMarkerWithContext(
+            chartTemperature,
+            requireContext(),
+            baseTime,
+            60f * 1000f,  // 1 minute per X unit
+            "°C",
+            "",
+            (xValue, yValue) -> {
+                // Provide thermal zone context
+                if (yValue >= 45) return "CRITICAL ZONE";
+                else if (yValue >= 40) return "WARNING ZONE";
+                else if (yValue >= 35) return "ELEVATED";
+                else return "NORMAL";
+            }
+        );
         
         for (BatterySnapshot s : snapshots) {
             float x = (s.timestamp - baseTime) / (60f * 1000f); // Minutes

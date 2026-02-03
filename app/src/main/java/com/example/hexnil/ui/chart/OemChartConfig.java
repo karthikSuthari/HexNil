@@ -13,6 +13,7 @@ import com.github.mikephil.charting.charts.LineChart;
 import com.github.mikephil.charting.components.AxisBase;
 import com.github.mikephil.charting.components.Legend;
 import com.github.mikephil.charting.components.LimitLine;
+import com.github.mikephil.charting.components.MarkerView;
 import com.github.mikephil.charting.components.XAxis;
 import com.github.mikephil.charting.components.YAxis;
 import com.github.mikephil.charting.data.BarData;
@@ -22,6 +23,8 @@ import com.github.mikephil.charting.data.LineData;
 import com.github.mikephil.charting.data.LineDataSet;
 import com.github.mikephil.charting.formatter.ValueFormatter;
 import com.github.mikephil.charting.interfaces.datasets.ILineDataSet;
+import com.github.mikephil.charting.listener.OnChartValueSelectedListener;
+import com.github.mikephil.charting.highlight.Highlight;
 
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -161,6 +164,64 @@ public class OemChartConfig {
         // No data text
         chart.setNoDataText("NO DATA AVAILABLE");
         chart.setNoDataTextColor(COLOR_TEXT_TERTIARY);
+    }
+    
+    // ═══════════════════════════════════════════════════════════════════════════════
+    // DATA MARKER CONFIGURATION (Interactive Inspection)
+    // ═══════════════════════════════════════════════════════════════════════════════
+    
+    /**
+     * Configure chart with OEM data marker for interactive inspection.
+     * When user drags/touches graph, shows floating marker with:
+     * - Timestamp
+     * - Metric value with unit
+     * - Context (charging state, screen state if available)
+     * 
+     * @param chart The LineChart to configure
+     * @param context Android context
+     * @param baseTimestamp Epoch timestamp for x=0
+     * @param timeScaleFactor Milliseconds per X unit (e.g., 60000 for minutes)
+     * @param valueUnit Unit string for display (e.g., "%", "°C", "mAh")
+     */
+    public static void configureDataMarker(LineChart chart, Context context, 
+                                           long baseTimestamp, float timeScaleFactor, 
+                                           String valueUnit) {
+        OemDataMarkerView marker = new OemDataMarkerView(context);
+        marker.setTimeBase(baseTimestamp, timeScaleFactor);
+        marker.setValueUnit(valueUnit);
+        marker.setChartView(chart);
+        chart.setMarker(marker);
+        
+        // Ensure highlight is enabled
+        chart.setHighlightPerDragEnabled(true);
+        chart.setHighlightPerTapEnabled(true);
+    }
+    
+    /**
+     * Configure chart with marker and context resolver for detailed inspection.
+     * 
+     * @param chart The LineChart to configure
+     * @param context Android context
+     * @param baseTimestamp Epoch timestamp for x=0
+     * @param timeScaleFactor Milliseconds per X unit
+     * @param valueUnit Unit string
+     * @param valueSuffix Suffix for rates (e.g., "/hr")
+     * @param contextResolver Resolver for context strings
+     */
+    public static void configureDataMarkerWithContext(LineChart chart, Context context,
+                                                       long baseTimestamp, float timeScaleFactor,
+                                                       String valueUnit, String valueSuffix,
+                                                       OemDataMarkerView.ContextResolver contextResolver) {
+        OemDataMarkerView marker = new OemDataMarkerView(context);
+        marker.setTimeBase(baseTimestamp, timeScaleFactor);
+        marker.setValueUnit(valueUnit);
+        marker.setValueSuffix(valueSuffix);
+        marker.setContextResolver(contextResolver);
+        marker.setChartView(chart);
+        chart.setMarker(marker);
+        
+        chart.setHighlightPerDragEnabled(true);
+        chart.setHighlightPerTapEnabled(true);
     }
     
     /**

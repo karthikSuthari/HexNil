@@ -24,6 +24,7 @@ import com.example.hexnil.model.BatteryHealth;
 import com.example.hexnil.model.BatterySnapshot;
 import com.example.hexnil.service.RemoteMonitorServer;
 import com.example.hexnil.ui.chart.OemChartConfig;
+import com.example.hexnil.ui.chart.OemDataMarkerView;
 import com.github.mikephil.charting.charts.LineChart;
 import com.github.mikephil.charting.data.Entry;
 import com.github.mikephil.charting.data.LineData;
@@ -283,6 +284,33 @@ public class DashboardFragment extends Fragment {
         chartBaseTimestamp = snapshots.get(0).timestamp;
         chartBatteryLevel.getXAxis().setValueFormatter(new OemChartConfig.TimeAxisFormatter(chartBaseTimestamp));
         
+        // Configure data marker for interactive inspection
+        // Time scale: 1 unit = 1 minute (60,000 ms)
+        OemChartConfig.configureDataMarkerWithContext(
+            chartBatteryLevel, 
+            requireContext(),
+            chartBaseTimestamp,
+            60f * 1000f,  // 1 minute per X unit
+            "%",
+            "",
+            (xValue, yValue) -> {
+                // Find snapshot for this X value to get context
+                long targetTime = chartBaseTimestamp + (long)(xValue * 60 * 1000);
+                for (BatterySnapshot s : snapshots) {
+                    if (Math.abs(s.timestamp - targetTime) < 5 * 60 * 1000) { // Within 5 min
+                        if (s.isCharging) {
+                            return s.isFastCharging ? "FAST CHARGING" : "CHARGING";
+                        } else if (s.screenOn != null && s.screenOn == 1) {
+                            return "DISCHARGING • SCREEN ON";
+                        } else {
+                            return "DISCHARGING";
+                        }
+                    }
+                }
+                return null;
+            }
+        );
+        
         // Create entries for battery level
         List<Entry> levelEntries = new ArrayList<>();
         List<Entry> chargingEntries = new ArrayList<>();
@@ -291,7 +319,12 @@ public class DashboardFragment extends Fragment {
             BatterySnapshot s = snapshots.get(i);
             float x = (s.timestamp - chartBaseTimestamp) / (60f * 1000f); // Convert to minutes
             
-            levelEntries.add(new Entry(x, s.level));
+            // Store context in entry data for marker
+            boolean screenOnBool = s.screenOn != null && s.screenOn == 1;
+            OemDataMarkerView.EntryContext ctx = new OemDataMarkerView.EntryContext(s.isCharging, screenOnBool);
+            Entry entry = new Entry(x, s.level);
+            entry.setData(ctx);
+            levelEntries.add(entry);
             
             // Create separate entries for charging periods
             if (s.isCharging) {

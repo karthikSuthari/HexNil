@@ -16,6 +16,7 @@ import com.example.hexnil.database.HexNilDatabase;
 import com.example.hexnil.databinding.FragmentCalibrationBinding;
 import com.example.hexnil.model.CalibrationData;
 import com.example.hexnil.ui.chart.OemChartConfig;
+import com.example.hexnil.ui.chart.OemDataMarkerView;
 import com.github.mikephil.charting.charts.LineChart;
 import com.github.mikephil.charting.data.Entry;
 import com.github.mikephil.charting.data.LineData;
@@ -173,6 +174,31 @@ public class CalibrationFragment extends Fragment {
             binding.chartSocDrift.invalidate();
             return;
         }
+        
+        // Get base timestamp for marker display
+        long baseTime = history.get(history.size() - 1).timestamp;
+        
+        // Configure data marker for SOC drift inspection
+        OemChartConfig.configureDataMarkerWithContext(
+            binding.chartSocDrift,
+            requireContext(),
+            baseTime,
+            1f,  // Index-based X axis (not time-scaled)
+            "%",
+            "",
+            (xValue, yValue) -> {
+                // Find closest calibration data point for drift context
+                int index = Math.round(xValue);
+                if (index >= 0 && index < history.size()) {
+                    CalibrationData data = history.get(history.size() - 1 - index);
+                    float drift = Math.abs(data.levelDrift);
+                    if (drift > 5) return "HIGH DRIFT";
+                    else if (drift > 2) return "MODERATE DRIFT";
+                    else return "ACCURATE";
+                }
+                return null;
+            }
+        );
 
         // Prepare entries for both reported and estimated SOC
         List<Entry> reportedEntries = new ArrayList<>();

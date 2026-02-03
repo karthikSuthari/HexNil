@@ -12,14 +12,21 @@ import android.os.Bundle;
 import android.os.PowerManager;
 import android.provider.Settings;
 import android.util.Log;
+import android.view.View;
+import android.view.WindowInsets;
 import android.widget.Toast;
 
+import androidx.activity.EdgeToEdge;
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
+import androidx.core.graphics.Insets;
+import androidx.core.view.ViewCompat;
+import androidx.core.view.WindowCompat;
+import androidx.core.view.WindowInsetsCompat;
 import androidx.fragment.app.Fragment;
 
 import com.example.hexnil.service.BatteryMonitorService;
@@ -78,7 +85,14 @@ public class MainActivity extends AppCompatActivity implements ModuleNavigator {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        
+        // Enable edge-to-edge display
+        WindowCompat.setDecorFitsSystemWindows(getWindow(), false);
+        
         setContentView(R.layout.activity_main);
+        
+        // Apply window insets for safe area compliance
+        setupWindowInsets();
 
         // Initialize permission launcher for runtime permissions
         permissionLauncher = registerForActivityResult(
@@ -162,6 +176,42 @@ public class MainActivity extends AppCompatActivity implements ModuleNavigator {
             bottomNav.setSelectedItemId(R.id.nav_dashboard);
             showFragment(TAG_DASHBOARD);
         }
+    }
+    
+    /**
+     * Setup window insets for safe area compliance.
+     * Ensures UI never overlaps:
+     * - Camera cutout (notch / punch hole)
+     * - Status bar
+     * - Navigation gestures
+     */
+    private void setupWindowInsets() {
+        View root = findViewById(R.id.root);
+        View fragmentContainer = findViewById(R.id.fragment_container);
+        BottomNavigationView bottomNav = findViewById(R.id.bottom_nav);
+        
+        ViewCompat.setOnApplyWindowInsetsListener(root, (v, windowInsets) -> {
+            Insets insets = windowInsets.getInsets(WindowInsetsCompat.Type.systemBars());
+            Insets displayCutout = windowInsets.getInsets(WindowInsetsCompat.Type.displayCutout());
+            
+            // Combine system bars and display cutout insets
+            int topInset = Math.max(insets.top, displayCutout.top);
+            int bottomInset = Math.max(insets.bottom, displayCutout.bottom);
+            int leftInset = Math.max(insets.left, displayCutout.left);
+            int rightInset = Math.max(insets.right, displayCutout.right);
+            
+            // Apply top padding to fragment container (below status bar and cutout)
+            if (fragmentContainer != null) {
+                fragmentContainer.setPadding(leftInset, topInset, rightInset, 0);
+            }
+            
+            // Apply bottom padding to bottom navigation (above gesture nav)
+            if (bottomNav != null) {
+                bottomNav.setPadding(leftInset, 0, rightInset, bottomInset);
+            }
+            
+            return WindowInsetsCompat.CONSUMED;
+        });
     }
 
     /**

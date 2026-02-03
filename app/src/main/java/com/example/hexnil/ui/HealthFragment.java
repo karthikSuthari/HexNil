@@ -18,6 +18,7 @@ import com.example.hexnil.database.HexNilDatabase;
 import com.example.hexnil.databinding.FragmentHealthBinding;
 import com.example.hexnil.model.BatteryHealth;
 import com.example.hexnil.ui.chart.OemChartConfig;
+import com.example.hexnil.ui.chart.OemDataMarkerView;
 import com.github.mikephil.charting.charts.LineChart;
 import com.github.mikephil.charting.data.Entry;
 import com.github.mikephil.charting.data.LineData;
@@ -171,6 +172,16 @@ public class HealthFragment extends Fragment {
         List<Entry> entries = new ArrayList<>();
         long baseTime = history.get(history.size() - 1).timestamp;
         
+        // Configure data marker
+        // Time scale: 1 unit = 1 day (24*60*60*1000 ms)
+        OemChartConfig.configureDataMarker(
+            chartHealthTrend,
+            requireContext(),
+            baseTime,
+            24f * 60f * 60f * 1000f,  // 1 day per X unit
+            "%"
+        );
+        
         // Reverse to chronological order
         for (int i = history.size() - 1; i >= 0; i--) {
             BatteryHealth h = history.get(i);
@@ -209,6 +220,15 @@ public class HealthFragment extends Fragment {
         }
         
         if (entries.isEmpty()) return;
+        
+        // Configure data marker
+        OemChartConfig.configureDataMarker(
+            chartCapacityTrend,
+            requireContext(),
+            baseTime,
+            24f * 60f * 60f * 1000f,
+            " mAh"
+        );
         
         // Set Y-axis range based on data
         chartCapacityTrend.getAxisLeft().setAxisMinimum(Math.max(0, minCap - 200));

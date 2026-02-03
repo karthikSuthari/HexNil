@@ -18,6 +18,7 @@ import com.example.hexnil.database.HexNilDatabase;
 import com.example.hexnil.model.DrainEvent;
 import com.example.hexnil.model.IdleDrainSession;
 import com.example.hexnil.ui.chart.OemChartConfig;
+import com.example.hexnil.ui.chart.OemDataMarkerView;
 import com.github.mikephil.charting.charts.BarChart;
 import com.github.mikephil.charting.charts.LineChart;
 import com.github.mikephil.charting.data.BarData;
@@ -184,6 +185,22 @@ public class DrainFragment extends Fragment {
         List<Entry> screenOffEntries = new ArrayList<>();
         
         long baseTime = events.get(events.size() - 1).startTime;
+        
+        // Configure data marker for drain rate inspection
+        OemChartConfig.configureDataMarkerWithContext(
+            chartDrainRate,
+            requireContext(),
+            baseTime,
+            60f * 60f * 1000f,  // 1 hour per X unit
+            "%",
+            "/hr",
+            (xValue, yValue) -> {
+                // Context based on drain rate
+                if (yValue > 2.0f) return "HIGH DRAIN";
+                else if (yValue > 1.0f) return "ELEVATED";
+                else return "NORMAL";
+            }
+        );
         
         // Process events (oldest first)
         for (int i = events.size() - 1; i >= 0; i--) {

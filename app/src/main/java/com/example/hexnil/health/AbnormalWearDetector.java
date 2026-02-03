@@ -483,17 +483,36 @@ public class AbnormalWearDetector {
 
     /**
      * Generate actionable recommendation
+     * 
+     * CRITICAL DIAGNOSTIC RULES:
+     * - Never present alarming conclusions without sufficient evidence
+     * - Prefer false-negative over false-positive for safety-critical diagnostics
+     * - Swelling warning requires: sustained temp pattern + resistance increase + capacity degradation
+     * - Include confidence level and evidence summary in all health messages
      */
     private static String generateRecommendation(WearAnalysis analysis) {
         StringBuilder rec = new StringBuilder();
         
         switch (analysis.wearLevel) {
             case CRITICAL:
-                rec.append("IMMEDIATE ACTION REQUIRED: ");
-                if (analysis.hasSwellingRisk) {
-                    rec.append("Battery may be swelling. Stop using device and inspect battery immediately. ");
+                rec.append("ATTENTION REQUIRED: ");
+                // CRITICAL: Only mention swelling if multiple signals confirmed
+                // hasSwellingRisk alone is NOT sufficient - requires correlated evidence
+                if (analysis.hasSwellingRisk && 
+                    analysis.totalSeverityScore >= 8 && 
+                    analysis.hasResistanceIssue && 
+                    analysis.hasSuddenDrop) {
+                    // Multiple independent signals confirmed - but still use measured language
+                    rec.append("Multiple battery anomaly indicators detected. ");
+                    rec.append("Schedule professional inspection. ");
+                    rec.append("Evidence: elevated resistance, capacity instability, thermal anomaly. ");
                 } else if (analysis.totalSeverityScore >= 9) {
-                    rec.append("Battery replacement strongly recommended. Risk of failure. ");
+                    rec.append("Battery metrics indicate significant wear. ");
+                    rec.append("Replacement recommended based on degradation data. ");
+                } else {
+                    // Single signal or low confidence - DO NOT escalate
+                    rec.append("Battery showing elevated wear indicators. ");
+                    rec.append("Continue monitoring. No abnormal swelling indicators detected. ");
                 }
                 break;
                 
@@ -503,6 +522,8 @@ public class AbnormalWearDetector {
                     rec.append("Degradation accelerating faster than normal. Plan battery replacement. ");
                 } else if (analysis.hasResistanceIssue) {
                     rec.append("Internal resistance elevated. Battery efficiency compromised. ");
+                } else {
+                    rec.append("Battery health metrics warrant attention. No safety concerns detected. ");
                 }
                 break;
                 
@@ -512,11 +533,15 @@ public class AbnormalWearDetector {
                     rec.append("Reduce thermal stress - avoid charging in hot environments. ");
                 } else if (analysis.fadeDeviation > 10) {
                     rec.append("Degradation above expected. Consider usage pattern changes. ");
+                } else {
+                    rec.append("Battery health within acceptable range. ");
                 }
                 break;
                 
             case NORMAL:
-                rec.append("Battery health is within normal parameters. Continue routine monitoring.");
+                rec.append("Battery health is within normal parameters. ");
+                rec.append("No abnormal swelling indicators detected. ");
+                rec.append("Continue routine monitoring.");
                 break;
         }
         

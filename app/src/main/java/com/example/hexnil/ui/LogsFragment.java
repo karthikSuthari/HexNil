@@ -317,8 +317,8 @@ public class LogsFragment extends Fragment {
             case "over_voltage": return "Over Voltage";
             case "over_current": return "Over Current";
             case "over_discharge": return "Over Discharge";
-            case "swelling_risk": return "Swelling Risk";
-            case "abuse": return "Battery Abuse Detected";
+            case "swelling_risk": return "Battery Analysis";
+            case "abuse": return "Usage Alert";
             default: return "Safety Event";
         }
     }
@@ -335,7 +335,18 @@ public class LogsFragment extends Fragment {
             case "over_discharge":
                 return String.format(Locale.US, "Voltage dropped to %.2fV", event.lowestVoltage);
             case "swelling_risk":
-                return String.format(Locale.US, "Swelling risk score: %.0f%%", event.swellingRiskScore * 100);
+                // Use measured, evidence-based language - never alarming without proof
+                if (event.swellingRiskScore >= 0.75f) {
+                    return String.format(Locale.US, 
+                        "Multiple anomaly indicators detected (confidence: %.0f%%). Schedule inspection.",
+                        event.swellingRiskScore * 100);
+                } else if (event.swellingRiskScore >= 0.4f) {
+                    return String.format(Locale.US,
+                        "Battery metrics inconclusive (confidence: %.0f%%). Continue monitoring.",
+                        event.swellingRiskScore * 100);
+                } else {
+                    return "Battery health within normal operating range. No abnormal indicators.";
+                }
             case "abuse":
                 return event.abuseType != null ? "Abuse detected: " + event.abuseType : "Battery abuse detected";
             default:
