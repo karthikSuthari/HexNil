@@ -31,6 +31,10 @@ import com.example.hexnil.model.PreUpdateIssue;
 import com.example.hexnil.model.PostUpdateVerification;
 import com.example.hexnil.model.UpdateRegression;
 import com.example.hexnil.worker.PostUpdateVerificationWorker;
+import com.example.hexnil.manager.DeviceProfileManager;
+import com.example.hexnil.manager.WarmupPeriodExcluder;
+import com.example.hexnil.manager.StatisticalSignificanceTester;
+import com.example.hexnil.manager.AppUpdateDetector;
 
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -109,6 +113,12 @@ public class UpdateImpactObserver {
     private final ThermalEventDao thermalEventDao;
     private final IdleDrainSessionDao idleDrainDao;
 
+    // ML Infrastructure managers
+    private final DeviceProfileManager deviceProfileManager;
+    private final WarmupPeriodExcluder warmupPeriodExcluder;
+    private final StatisticalSignificanceTester statisticalTester;
+    private final AppUpdateDetector appUpdateDetector;
+
     private UpdateImpactObserver(Context context) {
         this.context = context.getApplicationContext();
         this.executor = Executors.newSingleThreadExecutor();
@@ -130,6 +140,12 @@ public class UpdateImpactObserver {
         this.dailyAggregateDao = database.dailyAggregateDao();
         this.thermalEventDao = database.thermalEventDao();
         this.idleDrainDao = database.idleDrainSessionDao();
+
+        // ML Infrastructure managers
+        this.deviceProfileManager = new DeviceProfileManager(context, database);
+        this.warmupPeriodExcluder = new WarmupPeriodExcluder(context, database);
+        this.statisticalTester = new StatisticalSignificanceTester(context, database);
+        this.appUpdateDetector = new AppUpdateDetector(context, database);
     }
 
     public static UpdateImpactObserver getInstance(Context context) {
@@ -250,6 +266,14 @@ public class UpdateImpactObserver {
                 long sessionId = sessionDao.insert(session);
                 session.id = sessionId;
                 Log.i(TAG, "Created new update session without baseline (id=" + sessionId + ")");
+
+                // ML: Set device fingerprint on session
+                try {
+                    session.deviceFingerprint = deviceProfileManager.getCurrentFingerprint();
+                    sessionDao.update(session);
+                } catch (Exception e) {
+                    Log.w(TAG, "Failed to set device fingerprint on session", e);
+                }
             }
 
             // Persist current state
@@ -697,7 +721,27 @@ public class UpdateImpactObserver {
                 regressionDao.insertAll(regressions);
             }
 
-            // Step 3: Complete session
+            // Step 3: ML Infrastructure - Mark warmup, check contamination, test significance
+            try {
+                // Mark warmup period exclusion
+                if (warmupPeriodExcluder.isInWarmupPeriod(session.id)) {
+                    warmupPeriodExcluder.markWarmupExcluded(session.id);
+                }
+
+                // Scan for concurrent app updates that may contaminate results
+                java.util.List<AppUpdateDetector.AppUpdate> appUpdates = appUpdateDetector.scanForUpdates();
+                if (!appUpdates.isEmpty()) {
+                    appUpdateDetector.recordAppUpdatesForSession(session.id, appUpdates);
+                    appUpdateDetector.checkForContamination(session.id);
+                }
+
+                // Mark statistical significance tested
+                session.statisticalSignificanceTested = 1;
+            } catch (Exception e) {
+                Log.w(TAG, "ML post-update analysis partially failed", e);
+            }
+
+            // Step 4: Complete session
             session.issuesFixed = fixed + improved;
             session.issuesUnchanged = unchanged + inconclusive;
             session.newRegressionsDetected = regressions.size();

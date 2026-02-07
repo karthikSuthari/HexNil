@@ -1,5 +1,6 @@
 package com.example.hexnil.model;
 
+import androidx.room.ColumnInfo;
 import androidx.room.Entity;
 import androidx.room.PrimaryKey;
 
@@ -75,7 +76,13 @@ public class SafetyEvent {
     public String deviceModel;
     public String firmwareVersion;
     public String batteryPartNumber;
-    
+
+    // ML Infrastructure
+    public String deviceFingerprint;     // Device SKU fingerprint for fleet analysis
+    public Long mlPredictionId;          // FK to ml_predictions if ML-detected
+    @ColumnInfo(defaultValue = "heuristic")
+    public String detectionMethod;       // "heuristic", "ml_model", "hybrid"
+
     public SafetyEvent() {
         this.timestamp = System.currentTimeMillis();
     }

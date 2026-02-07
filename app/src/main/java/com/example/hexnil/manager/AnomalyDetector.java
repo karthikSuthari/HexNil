@@ -13,6 +13,8 @@ import com.example.hexnil.model.RefreshRateSession;
 import com.example.hexnil.model.SafetyEvent;
 import com.example.hexnil.model.DrainEvent;
 
+import android.content.Context;
+
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
@@ -45,10 +47,18 @@ public class AnomalyDetector {
 
     private final HexNilDatabase database;
     private final SimpleDateFormat dateFormat;
+    private final DeviceProfileManager deviceProfileManager;
 
     public AnomalyDetector(HexNilDatabase database) {
         this.database = database;
         this.dateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault());
+        this.deviceProfileManager = null; // Legacy constructor — no ML enrichment
+    }
+
+    public AnomalyDetector(Context context, HexNilDatabase database) {
+        this.database = database;
+        this.dateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault());
+        this.deviceProfileManager = new DeviceProfileManager(context, database);
     }
 
     /**
@@ -100,6 +110,14 @@ public class AnomalyDetector {
                     if (anomaly.batteryLevel == 0) anomaly.batteryLevel = latestSnapshot.level;
                     anomaly.wasCharging = latestSnapshot.isCharging;
                     anomaly.screenOn = latestSnapshot.isScreenOnOrFalse();
+                }
+
+                // ML Infrastructure: populate device fingerprint and detection method
+                anomaly.detectionMethod = "heuristic";
+                if (deviceProfileManager != null) {
+                    try {
+                        anomaly.deviceFingerprint = deviceProfileManager.getCurrentFingerprint();
+                    } catch (Exception ignored) { }
                 }
             }
 

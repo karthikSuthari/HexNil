@@ -68,11 +68,15 @@ public class SafetyMonitor {
     private int overCurrentAbuseCount = 0;
     private int overDischargeAbuseCount = 0;
 
+    // ML Infrastructure
+    private final DeviceProfileManager deviceProfileManager;
+
     public SafetyMonitor(Context context, HexNilDatabase database) {
         this.context = context;
         this.database = database;
         this.deviceModel = Build.MODEL;
         this.firmwareVersion = Build.FINGERPRINT;
+        this.deviceProfileManager = new DeviceProfileManager(context, database);
     }
 
     // =========================================================================
@@ -155,6 +159,12 @@ public class SafetyMonitor {
         
         // Calculate expected voltage for current battery level
         event.expectedVoltage = estimateExpectedVoltage(snapshot.level);
+
+        // ML Infrastructure: populate device fingerprint and detection method
+        event.detectionMethod = "heuristic";
+        try {
+            event.deviceFingerprint = deviceProfileManager.getCurrentFingerprint();
+        } catch (Exception ignored) { }
 
         return event;
     }
@@ -383,6 +393,12 @@ public class SafetyMonitor {
         event.exceedsRegulatory = false;
         event.requiresReport = false;
 
+        // ML Infrastructure
+        event.detectionMethod = "heuristic";
+        try {
+            event.deviceFingerprint = deviceProfileManager.getCurrentFingerprint();
+        } catch (Exception ignored) { }
+
         database.safetyEventDao().insert(event);
     }
 
@@ -399,6 +415,12 @@ public class SafetyMonitor {
         event.measurementUnit = "°C";
         event.triggerValue = tempC;
         event.wasCharging = false;
+
+        // ML Infrastructure
+        event.detectionMethod = "heuristic";
+        try {
+            event.deviceFingerprint = deviceProfileManager.getCurrentFingerprint();
+        } catch (Exception ignored) { }
 
         // Severity classification
         if (tempC >= OVER_TEMP_EMERGENCY) {

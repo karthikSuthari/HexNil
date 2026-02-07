@@ -89,7 +89,17 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
-        
+
+        <!-- ML Engineer Tools (diagnostic, not user-facing) -->
+        <activity
+            android:name=".activity.LabelingQueueActivity"
+            android:exported="false"
+            android:theme="@style/Theme.HexNil" />
+        <activity
+            android:name=".activity.MLPerformanceDashboardActivity"
+            android:exported="false"
+            android:theme="@style/Theme.HexNil" />
+
         <!-- Feature screens are implemented as Fragments, not Activities -->
         
         <!-- Battery Monitoring Service -->

@@ -192,7 +192,13 @@ public class BatterySnapshot {
     public String dataSource;
     /** 0.0–1.0; 1.0 = high confidence */
     public Float confidence;
-    
+
+    // ML Infrastructure
+    /** Device state label: "idle", "light_active", "heavy_active", "gaming", "charging", "doze" */
+    public String deviceState;
+    /** Confidence score for state classification, 0.0-1.0 */
+    public Float stateConfidence;
+
     // =====================================================================
     // CONSTRUCTORS
     // =====================================================================

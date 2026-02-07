@@ -72,6 +72,14 @@ public class UpdateSession {
     public boolean userDismissed;
     public String notes;
 
+    // ML Infrastructure
+    public String deviceFingerprint;             // Device SKU fingerprint for fleet analysis
+    public Integer warmupPeriodExcluded;          // 1 if first 48hr post-update data was excluded
+    public Integer statisticalSignificanceTested; // 1 if statistical tests were run
+    public String concurrentAppUpdatesJson;       // JSON list of app updates during same period
+    public String contaminationFlags;             // Comma-separated contamination flags
+    public Long mlImpactPredictionId;             // FK to ml_predictions for predicted impact
+
     public UpdateSession() {
     }
 

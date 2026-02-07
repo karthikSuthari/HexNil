@@ -45,6 +45,14 @@ import com.example.hexnil.model.PreUpdateSnapshot;
 import com.example.hexnil.model.PreUpdateIssue;
 import com.example.hexnil.model.PostUpdateVerification;
 import com.example.hexnil.model.UpdateRegression;
+import com.example.hexnil.model.DeviceProfile;
+import com.example.hexnil.model.DeviceBaselineThreshold;
+import com.example.hexnil.model.HumanLabel;
+import com.example.hexnil.model.LabelStatistics;
+import com.example.hexnil.model.NegativeExample;
+import com.example.hexnil.model.MLModel;
+import com.example.hexnil.model.MLPrediction;
+import com.example.hexnil.model.ComparisonStatistics;
 
 /**
  * Main Room Database for HexNil Battery Analysis
@@ -87,8 +95,16 @@ import com.example.hexnil.model.UpdateRegression;
                 PreUpdateSnapshot.class,
                 PreUpdateIssue.class,
                 PostUpdateVerification.class,
-                UpdateRegression.class
-}, version = 28, exportSchema = true)
+                UpdateRegression.class,
+                DeviceProfile.class,
+                DeviceBaselineThreshold.class,
+                HumanLabel.class,
+                LabelStatistics.class,
+                NegativeExample.class,
+                MLModel.class,
+                MLPrediction.class,
+                ComparisonStatistics.class
+}, version = 29, exportSchema = true)
 public abstract class HexNilDatabase extends RoomDatabase {
 
         private static final String DATABASE_NAME = "hexnil_battery_db";
@@ -161,6 +177,23 @@ public abstract class HexNilDatabase extends RoomDatabase {
 
         public abstract UpdateRegressionDao updateRegressionDao();
 
+        // ML Infrastructure DAOs
+        public abstract DeviceProfileDao deviceProfileDao();
+
+        public abstract DeviceBaselineThresholdDao deviceBaselineThresholdDao();
+
+        public abstract HumanLabelDao humanLabelDao();
+
+        public abstract LabelStatisticsDao labelStatisticsDao();
+
+        public abstract NegativeExampleDao negativeExampleDao();
+
+        public abstract MLModelDao mlModelDao();
+
+        public abstract MLPredictionDao mlPredictionDao();
+
+        public abstract ComparisonStatisticsDao comparisonStatisticsDao();
+
         public static HexNilDatabase getInstance(Context context) {
                 if (INSTANCE == null) {
                         synchronized (HexNilDatabase.class) {
@@ -184,7 +217,8 @@ public abstract class HexNilDatabase extends RoomDatabase {
                                                                         MIGRATION_24_25,
                                                                         MIGRATION_25_26,
                                                                         MIGRATION_26_27,
-                                                                        MIGRATION_27_28)
+                                                                        MIGRATION_27_28,
+                                                                        MIGRATION_28_29)
                                                         .build();
                                 }
                         }
@@ -2007,6 +2041,264 @@ public abstract class HexNilDatabase extends RoomDatabase {
                         db.execSQL("CREATE UNIQUE INDEX IF NOT EXISTS index_update_regressions_regressionUuid ON update_regressions(regressionUuid)");
                         db.execSQL("CREATE INDEX IF NOT EXISTS index_update_regressions_regressionType ON update_regressions(regressionType)");
                         db.execSQL("CREATE INDEX IF NOT EXISTS index_update_regressions_severity ON update_regressions(severity)");
+                }
+        };
+
+        // =================================================================
+        // MIGRATION 28 → 29: ML Infrastructure Tables + Existing Table Enhancements
+        // =================================================================
+        static final Migration MIGRATION_28_29 = new Migration(28, 29) {
+                @Override
+                public void migrate(SupportSQLiteDatabase db) {
+
+                        // =====================================================================
+                        // device_profiles: Per-device-model hardware profiles
+                        // =====================================================================
+                        db.execSQL("CREATE TABLE IF NOT EXISTS `device_profiles` (" +
+                                        "`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, " +
+                                        "`deviceFingerprint` TEXT NOT NULL, " +
+                                        "`manufacturer` TEXT, " +
+                                        "`model` TEXT, " +
+                                        "`marketName` TEXT, " +
+                                        "`soc` TEXT, " +
+                                        "`socBinning` TEXT, " +
+                                        "`ramGB` INTEGER, " +
+                                        "`storageGB` INTEGER, " +
+                                        "`batteryDesignCapacityMah` INTEGER, " +
+                                        "`screenSizeInches` REAL, " +
+                                        "`screenResolution` TEXT, " +
+                                        "`deviceCount` INTEGER NOT NULL, " +
+                                        "`firstSeen` INTEGER NOT NULL, " +
+                                        "`lastUpdated` INTEGER NOT NULL, " +
+                                        "`idleDrainMean` REAL, " +
+                                        "`idleDrainStdDev` REAL, " +
+                                        "`activeDrainMean` REAL, " +
+                                        "`activeDrainStdDev` REAL, " +
+                                        "`thermalEnvelopeCpu` REAL, " +
+                                        "`thermalEnvelopeGpu` REAL, " +
+                                        "`thermalEnvelopeBattery` REAL, " +
+                                        "`avgColdLaunchMs` REAL, " +
+                                        "`avgJankPercent` REAL, " +
+                                        "`avgFps` REAL, " +
+                                        "`crashesPerDayMean` REAL, " +
+                                        "`anrsPerDayMean` REAL)");
+                        db.execSQL("CREATE UNIQUE INDEX IF NOT EXISTS index_device_profiles_deviceFingerprint ON device_profiles(deviceFingerprint)");
+                        db.execSQL("CREATE INDEX IF NOT EXISTS index_device_profiles_manufacturer ON device_profiles(manufacturer)");
+                        db.execSQL("CREATE INDEX IF NOT EXISTS index_device_profiles_model ON device_profiles(model)");
+                        db.execSQL("CREATE INDEX IF NOT EXISTS index_device_profiles_soc ON device_profiles(soc)");
+
+                        // =====================================================================
+                        // device_baseline_thresholds: Per-device statistical baselines
+                        // =====================================================================
+                        db.execSQL("CREATE TABLE IF NOT EXISTS `device_baseline_thresholds` (" +
+                                        "`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, " +
+                                        "`deviceFingerprint` TEXT NOT NULL, " +
+                                        "`metricName` TEXT NOT NULL, " +
+                                        "`p50` REAL, " +
+                                        "`p95` REAL, " +
+                                        "`p99` REAL, " +
+                                        "`mean` REAL, " +
+                                        "`stdDev` REAL, " +
+                                        "`sampleSize` INTEGER NOT NULL, " +
+                                        "`confidenceLevel` REAL NOT NULL, " +
+                                        "`lastUpdated` INTEGER NOT NULL)");
+                        db.execSQL("CREATE UNIQUE INDEX IF NOT EXISTS index_device_baseline_thresholds_deviceFingerprint_metricName ON device_baseline_thresholds(deviceFingerprint, metricName)");
+                        db.execSQL("CREATE INDEX IF NOT EXISTS index_device_baseline_thresholds_deviceFingerprint ON device_baseline_thresholds(deviceFingerprint)");
+
+                        // =====================================================================
+                        // human_labels: Ground truth labels from engineers
+                        // =====================================================================
+                        db.execSQL("CREATE TABLE IF NOT EXISTS `human_labels` (" +
+                                        "`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, " +
+                                        "`anomalyRecordId` INTEGER, " +
+                                        "`safetyEventId` INTEGER, " +
+                                        "`regressionEventId` INTEGER, " +
+                                        "`thermalEventId` INTEGER, " +
+                                        "`updateSessionId` INTEGER, " +
+                                        "`labelerId` TEXT NOT NULL, " +
+                                        "`labelerRole` TEXT, " +
+                                        "`groundTruthVerdict` TEXT NOT NULL, " +
+                                        "`severityCorrected` TEXT, " +
+                                        "`rootCauseCorrected` TEXT, " +
+                                        "`rmaTicketId` TEXT, " +
+                                        "`labTestId` TEXT, " +
+                                        "`userReportId` TEXT, " +
+                                        "`labeledAt` INTEGER NOT NULL, " +
+                                        "`labelConfidence` REAL NOT NULL, " +
+                                        "`notes` TEXT)");
+                        db.execSQL("CREATE INDEX IF NOT EXISTS index_human_labels_anomalyRecordId ON human_labels(anomalyRecordId)");
+                        db.execSQL("CREATE INDEX IF NOT EXISTS index_human_labels_safetyEventId ON human_labels(safetyEventId)");
+                        db.execSQL("CREATE INDEX IF NOT EXISTS index_human_labels_thermalEventId ON human_labels(thermalEventId)");
+                        db.execSQL("CREATE INDEX IF NOT EXISTS index_human_labels_updateSessionId ON human_labels(updateSessionId)");
+                        db.execSQL("CREATE INDEX IF NOT EXISTS index_human_labels_groundTruthVerdict ON human_labels(groundTruthVerdict)");
+                        db.execSQL("CREATE INDEX IF NOT EXISTS index_human_labels_labelerId ON human_labels(labelerId)");
+                        db.execSQL("CREATE INDEX IF NOT EXISTS index_human_labels_labeledAt ON human_labels(labeledAt)");
+
+                        // =====================================================================
+                        // label_statistics: Confusion matrix tracking per anomaly type
+                        // =====================================================================
+                        db.execSQL("CREATE TABLE IF NOT EXISTS `label_statistics` (" +
+                                        "`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, " +
+                                        "`computedAt` INTEGER NOT NULL, " +
+                                        "`periodStart` INTEGER NOT NULL, " +
+                                        "`periodEnd` INTEGER NOT NULL, " +
+                                        "`anomalyType` TEXT, " +
+                                        "`truePositives` INTEGER NOT NULL, " +
+                                        "`falsePositives` INTEGER NOT NULL, " +
+                                        "`trueNegatives` INTEGER NOT NULL, " +
+                                        "`falseNegatives` INTEGER NOT NULL, " +
+                                        "`precision` REAL, " +
+                                        "`recall` REAL, " +
+                                        "`f1Score` REAL, " +
+                                        "`accuracy` REAL, " +
+                                        "`totalLabeled` INTEGER NOT NULL, " +
+                                        "`analysisEngineVersion` TEXT, " +
+                                        "`thresholdSetVersion` TEXT, " +
+                                        "`modelVersion` TEXT)");
+                        db.execSQL("CREATE INDEX IF NOT EXISTS index_label_statistics_anomalyType ON label_statistics(anomalyType)");
+                        db.execSQL("CREATE INDEX IF NOT EXISTS index_label_statistics_computedAt ON label_statistics(computedAt)");
+
+                        // =====================================================================
+                        // negative_examples: Normal high-stress scenarios for ML training
+                        // =====================================================================
+                        db.execSQL("CREATE TABLE IF NOT EXISTS `negative_examples` (" +
+                                        "`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, " +
+                                        "`conditionType` TEXT DEFAULT '' NOT NULL, " +
+                                        "`deviceFingerprint` TEXT, " +
+                                        "`timestamp` INTEGER NOT NULL, " +
+                                        "`durationMs` INTEGER NOT NULL, " +
+                                        "`metricsJson` TEXT, " +
+                                        "`expectedBehavior` TEXT DEFAULT '' NOT NULL, " +
+                                        "`normalCauseRootCause` TEXT, " +
+                                        "`detectedActivity` TEXT, " +
+                                        "`foregroundApp` TEXT, " +
+                                        "`foregroundAppName` TEXT, " +
+                                        "`batteryLevel` INTEGER NOT NULL, " +
+                                        "`temperature` REAL NOT NULL, " +
+                                        "`cpuUsage` INTEGER NOT NULL, " +
+                                        "`drainRate` REAL NOT NULL, " +
+                                        "`labeledAsNormal` INTEGER NOT NULL DEFAULT 1, " +
+                                        "`labeledBy` TEXT, " +
+                                        "`usedInTraining` INTEGER NOT NULL DEFAULT 0, " +
+                                        "`trainingSetVersion` TEXT)");
+                        db.execSQL("CREATE INDEX IF NOT EXISTS index_negative_examples_conditionType ON negative_examples(conditionType)");
+                        db.execSQL("CREATE INDEX IF NOT EXISTS index_negative_examples_deviceFingerprint ON negative_examples(deviceFingerprint)");
+                        db.execSQL("CREATE INDEX IF NOT EXISTS index_negative_examples_timestamp ON negative_examples(timestamp)");
+                        db.execSQL("CREATE INDEX IF NOT EXISTS index_negative_examples_foregroundApp ON negative_examples(foregroundApp)");
+
+                        // =====================================================================
+                        // ml_models: ML model lifecycle registry
+                        // =====================================================================
+                        db.execSQL("CREATE TABLE IF NOT EXISTS `ml_models` (" +
+                                        "`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, " +
+                                        "`modelName` TEXT NOT NULL, " +
+                                        "`modelVersion` TEXT NOT NULL, " +
+                                        "`modelType` TEXT, " +
+                                        "`taskType` TEXT, " +
+                                        "`trainedOn` INTEGER NOT NULL, " +
+                                        "`trainingSampleCount` INTEGER NOT NULL, " +
+                                        "`validationAccuracy` REAL, " +
+                                        "`validationPrecision` REAL, " +
+                                        "`validationRecall` REAL, " +
+                                        "`validationF1` REAL, " +
+                                        "`validationAucRoc` REAL, " +
+                                        "`deviceModelsSupported` TEXT, " +
+                                        "`featureListJson` TEXT, " +
+                                        "`hyperparametersJson` TEXT, " +
+                                        "`deployedAt` INTEGER, " +
+                                        "`retiredAt` INTEGER, " +
+                                        "`isActive` INTEGER NOT NULL, " +
+                                        "`modelFilePath` TEXT, " +
+                                        "`modelSizeBytes` INTEGER NOT NULL, " +
+                                        "`notes` TEXT)");
+                        db.execSQL("CREATE INDEX IF NOT EXISTS index_ml_models_modelName ON ml_models(modelName)");
+                        db.execSQL("CREATE INDEX IF NOT EXISTS index_ml_models_taskType ON ml_models(taskType)");
+                        db.execSQL("CREATE INDEX IF NOT EXISTS index_ml_models_isActive ON ml_models(isActive)");
+                        db.execSQL("CREATE UNIQUE INDEX IF NOT EXISTS index_ml_models_modelName_modelVersion ON ml_models(modelName, modelVersion)");
+
+                        // =====================================================================
+                        // ml_predictions: ML prediction audit trail
+                        // =====================================================================
+                        db.execSQL("CREATE TABLE IF NOT EXISTS `ml_predictions` (" +
+                                        "`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, " +
+                                        "`modelId` INTEGER NOT NULL, " +
+                                        "`predictionTimestamp` INTEGER NOT NULL, " +
+                                        "`inputFeaturesJson` TEXT, " +
+                                        "`predictedClass` TEXT, " +
+                                        "`predictionConfidence` REAL NOT NULL, " +
+                                        "`predictedSeverity` TEXT, " +
+                                        "`groundTruthLabel` TEXT, " +
+                                        "`wasCorrect` INTEGER, " +
+                                        "`deviceFingerprint` TEXT, " +
+                                        "`relatedRecordId` INTEGER NOT NULL, " +
+                                        "`relatedRecordTable` TEXT, " +
+                                        "`inferenceTimeMs` INTEGER NOT NULL, " +
+                                        "`modelVersion` TEXT)");
+                        db.execSQL("CREATE INDEX IF NOT EXISTS index_ml_predictions_modelId ON ml_predictions(modelId)");
+                        db.execSQL("CREATE INDEX IF NOT EXISTS index_ml_predictions_predictionTimestamp ON ml_predictions(predictionTimestamp)");
+                        db.execSQL("CREATE INDEX IF NOT EXISTS index_ml_predictions_deviceFingerprint ON ml_predictions(deviceFingerprint)");
+                        db.execSQL("CREATE INDEX IF NOT EXISTS index_ml_predictions_relatedRecordTable ON ml_predictions(relatedRecordTable)");
+                        db.execSQL("CREATE INDEX IF NOT EXISTS index_ml_predictions_wasCorrect ON ml_predictions(wasCorrect)");
+
+                        // =====================================================================
+                        // comparison_statistics: OTA statistical significance tests
+                        // =====================================================================
+                        db.execSQL("CREATE TABLE IF NOT EXISTS `comparison_statistics` (" +
+                                        "`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, " +
+                                        "`verificationId` INTEGER NOT NULL, " +
+                                        "`sessionId` INTEGER NOT NULL, " +
+                                        "`computedAt` INTEGER NOT NULL, " +
+                                        "`metricName` TEXT, " +
+                                        "`preUpdateMean` REAL, " +
+                                        "`preUpdateStdDev` REAL, " +
+                                        "`preUpdateN` INTEGER NOT NULL, " +
+                                        "`postUpdateMean` REAL, " +
+                                        "`postUpdateStdDev` REAL, " +
+                                        "`postUpdateN` INTEGER NOT NULL, " +
+                                        "`tStatistic` REAL, " +
+                                        "`pValue` REAL, " +
+                                        "`cohenD` REAL, " +
+                                        "`statisticallySignificant` INTEGER NOT NULL, " +
+                                        "`practicallySignificant` INTEGER NOT NULL, " +
+                                        "`testType` TEXT, " +
+                                        "`notes` TEXT, " +
+                                        "FOREIGN KEY(`verificationId`) REFERENCES `post_update_verifications`(`id`) ON DELETE CASCADE, " +
+                                        "FOREIGN KEY(`sessionId`) REFERENCES `update_sessions`(`id`) ON DELETE CASCADE)");
+                        db.execSQL("CREATE INDEX IF NOT EXISTS index_comparison_statistics_verificationId ON comparison_statistics(verificationId)");
+                        db.execSQL("CREATE INDEX IF NOT EXISTS index_comparison_statistics_sessionId ON comparison_statistics(sessionId)");
+                        db.execSQL("CREATE INDEX IF NOT EXISTS index_comparison_statistics_metricName ON comparison_statistics(metricName)");
+
+                        // =====================================================================
+                        // ALTER existing tables: Add ML fields
+                        // =====================================================================
+
+                        // anomaly_records: add device fingerprint and ML tracking
+                        db.execSQL("ALTER TABLE anomaly_records ADD COLUMN `deviceFingerprint` TEXT");
+                        db.execSQL("ALTER TABLE anomaly_records ADD COLUMN `mlPredictionId` INTEGER");
+                        db.execSQL("ALTER TABLE anomaly_records ADD COLUMN `detectionMethod` TEXT DEFAULT 'heuristic'");
+                        db.execSQL("ALTER TABLE anomaly_records ADD COLUMN `modelVersion` TEXT");
+
+                        // safety_events: add device fingerprint and ML tracking
+                        db.execSQL("ALTER TABLE safety_events ADD COLUMN `deviceFingerprint` TEXT");
+                        db.execSQL("ALTER TABLE safety_events ADD COLUMN `mlPredictionId` INTEGER");
+                        db.execSQL("ALTER TABLE safety_events ADD COLUMN `detectionMethod` TEXT DEFAULT 'heuristic'");
+
+                        // thermal_events: add device fingerprint and ML tracking
+                        db.execSQL("ALTER TABLE thermal_events ADD COLUMN `deviceFingerprint` TEXT");
+                        db.execSQL("ALTER TABLE thermal_events ADD COLUMN `isNormalForActivity` INTEGER");
+                        db.execSQL("ALTER TABLE thermal_events ADD COLUMN `mlPredictionId` INTEGER");
+
+                        // update_sessions: add fingerprint, warm-up exclusion, and contamination tracking
+                        db.execSQL("ALTER TABLE update_sessions ADD COLUMN `deviceFingerprint` TEXT");
+                        db.execSQL("ALTER TABLE update_sessions ADD COLUMN `warmupPeriodExcluded` INTEGER");
+                        db.execSQL("ALTER TABLE update_sessions ADD COLUMN `statisticalSignificanceTested` INTEGER");
+                        db.execSQL("ALTER TABLE update_sessions ADD COLUMN `concurrentAppUpdatesJson` TEXT");
+                        db.execSQL("ALTER TABLE update_sessions ADD COLUMN `contaminationFlags` TEXT");
+                        db.execSQL("ALTER TABLE update_sessions ADD COLUMN `mlImpactPredictionId` INTEGER");
+
+                        // battery_snapshots: add device state and confidence
+                        db.execSQL("ALTER TABLE battery_snapshots ADD COLUMN `deviceState` TEXT");
+                        db.execSQL("ALTER TABLE battery_snapshots ADD COLUMN `stateConfidence` REAL");
                 }
         };
 }

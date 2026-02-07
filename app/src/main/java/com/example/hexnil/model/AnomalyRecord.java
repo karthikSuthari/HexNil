@@ -1,5 +1,6 @@
 package com.example.hexnil.model;
 
+import androidx.room.ColumnInfo;
 import androidx.room.Entity;
 import androidx.room.PrimaryKey;
 
@@ -64,7 +65,14 @@ public class AnomalyRecord {
     public long relatedAnomalyId;        // If this is part of a pattern
     public int occurrenceCount;          // How many times this has occurred
     public boolean isRecurring;          // Is this a recurring issue
-    
+
+    // ML Infrastructure
+    public String deviceFingerprint;     // Device SKU fingerprint for fleet analysis
+    public Long mlPredictionId;          // FK to ml_predictions if ML-detected
+    @ColumnInfo(defaultValue = "heuristic")
+    public String detectionMethod;       // "heuristic", "ml_model", "hybrid"
+    public String modelVersion;          // Version of ML model that detected this
+
     public AnomalyRecord() {
         this.detectedAt = System.currentTimeMillis();
         this.acknowledged = false;

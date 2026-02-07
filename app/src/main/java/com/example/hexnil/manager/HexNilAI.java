@@ -37,7 +37,7 @@ public class HexNilAI {
         this.rollupManager = new MetricsRollupManager(database);
         this.riskEvaluator = new RiskEvaluator();
         this.drainRanker = new AppDrainRanker(database);
-        this.anomalyDetector = new AnomalyDetector(database);
+        this.anomalyDetector = new AnomalyDetector(context, database);
     }
 
     public AIAnalysisResult runComprehensiveAnalysis(String periodLabel, long startTime) {

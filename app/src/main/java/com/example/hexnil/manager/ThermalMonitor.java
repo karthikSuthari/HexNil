@@ -82,7 +82,10 @@ public class ThermalMonitor {
     
     // NEW: Temperature samples for event
     private List<TempSample> eventTempSamples = new ArrayList<>();
-    
+
+    // ML Infrastructure
+    private final DeviceProfileManager deviceProfileManager;
+
     private static class TempSample {
         long timestamp;
         float temp;
@@ -95,6 +98,7 @@ public class ThermalMonitor {
         this.thermalIntelligence = new ThermalIntelligence();
         this.correlationEngine = new ThermalCorrelationEngine(database);
         this.activityDetector = new ActivityDetector(context);
+        this.deviceProfileManager = new DeviceProfileManager(context, database);
     }
 
     /**
@@ -172,10 +176,15 @@ public class ThermalMonitor {
         activeEvent.batteryLevel = snapshot.level;
         activeEvent.currentDraw = snapshot.dischargeRate;
         activeEvent.networkType = snapshot.networkState;
-        
+
         // Detect heavy network activity
         activeEvent.heavyNetworkActivity = isHeavyNetworkActivity();
-        
+
+        // ML Infrastructure: populate device fingerprint
+        try {
+            activeEvent.deviceFingerprint = deviceProfileManager.getCurrentFingerprint();
+        } catch (Exception ignored) { }
+
         // Set trigger activity based on detected type
         if (activity.isGaming) {
             activeEvent.triggerActivity = "gaming";

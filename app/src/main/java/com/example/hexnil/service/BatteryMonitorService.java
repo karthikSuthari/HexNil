@@ -64,6 +64,13 @@ import com.example.hexnil.manager.CellularCollector;
 import com.example.hexnil.manager.WifiCollector;
 import com.example.hexnil.manager.BluetoothCollector;
 import com.example.hexnil.manager.ModemFirmwareTracker;
+import com.example.hexnil.manager.DeviceProfileManager;
+import com.example.hexnil.manager.BaselineThresholdService;
+import com.example.hexnil.manager.DeviceStateClassifier;
+import com.example.hexnil.manager.NegativeExampleCollector;
+import com.example.hexnil.manager.WarmupPeriodExcluder;
+import com.example.hexnil.manager.AppUpdateDetector;
+import com.example.hexnil.manager.FeatureExtractor;
 import com.example.hexnil.model.NetworkCellularSnapshot;
 import com.example.hexnil.model.NetworkWifiSnapshot;
 import com.example.hexnil.model.NetworkBluetoothSnapshot;
@@ -195,6 +202,15 @@ public class BatteryMonitorService extends Service {
     private WifiCollector wifiCollector;
     private BluetoothCollector bluetoothCollector;
     private ModemFirmwareTracker modemFirmwareTracker;
+
+    // ML Infrastructure managers
+    private DeviceProfileManager deviceProfileManager;
+    private BaselineThresholdService baselineThresholdService;
+    private DeviceStateClassifier deviceStateClassifier;
+    private NegativeExampleCollector negativeExampleCollector;
+    private WarmupPeriodExcluder warmupPeriodExcluder;
+    private AppUpdateDetector appUpdateDetector;
+    private FeatureExtractor featureExtractor;
 
     // AI Analysis tracking
     private volatile long lastPhase2AnalysisTime = 0;
@@ -345,6 +361,25 @@ public class BatteryMonitorService extends Service {
         // Record initial firmware state on app start
         modemFirmwareTracker.checkAndRecordVersion("APP_START");
         Log.d(TAG, "Network & Connectivity collectors initialized");
+
+        // Initialize ML Infrastructure managers
+        deviceProfileManager = new DeviceProfileManager(this, database);
+        baselineThresholdService = new BaselineThresholdService(this, database);
+        deviceStateClassifier = new DeviceStateClassifier(this);
+        negativeExampleCollector = new NegativeExampleCollector(this, database);
+        warmupPeriodExcluder = new WarmupPeriodExcluder(this, database);
+        appUpdateDetector = new AppUpdateDetector(this, database);
+        featureExtractor = new FeatureExtractor(this, database);
+        // Initialize device profile on startup
+        executor.execute(() -> {
+            try {
+                deviceProfileManager.getOrCreateProfile();
+                Log.d(TAG, "Device profile initialized: " + deviceProfileManager.getCurrentFingerprint());
+            } catch (Exception e) {
+                Log.e(TAG, "Failed to initialize device profile", e);
+            }
+        });
+        Log.d(TAG, "ML Infrastructure managers initialized");
 
         // Track service start time for AI analysis periods
         serviceStartTime = System.currentTimeMillis();
@@ -695,6 +730,17 @@ public class BatteryMonitorService extends Service {
                 long insertedId = database.batterySnapshotDao().insert(snapshot);
                 snapshot.id = insertedId;
 
+                // ML Infrastructure: Enrich snapshot with device state and fingerprint
+                try {
+                    deviceStateClassifier.enrichSnapshot(snapshot);
+                    snapshot.deviceState = snapshot.deviceState; // already set by enrichSnapshot
+                    String fingerprint = deviceProfileManager.getCurrentFingerprint();
+                    // Update snapshot in DB with enriched fields
+                    database.batterySnapshotDao().update(snapshot);
+                } catch (Exception e) {
+                    Log.w(TAG, "ML enrichment failed, continuing without", e);
+                }
+
                 Log.d(TAG, "Snapshot captured: id=" + insertedId +
                         ", seq=" + snapshot.sequenceNumber +
                         ", level=" + snapshot.level + "%" +
@@ -836,6 +882,34 @@ public class BatteryMonitorService extends Service {
 
         // Collect app launch events periodically (every 5 minutes)
         collectAppLaunchMetrics(snapshot);
+
+        // ML Infrastructure: Collect negative examples for training
+        try {
+            if (negativeExampleCollector != null) {
+                String foregroundApp = snapshot.snapshotTrigger; // Use available context
+                String fingerprint = deviceProfileManager != null
+                        ? deviceProfileManager.getCurrentFingerprint() : null;
+                negativeExampleCollector.collectIfApplicable(
+                        foregroundApp,
+                        null, // foregroundAppName not available here
+                        snapshot.level,
+                        snapshot.temperature / 10.0f,
+                        0, // cpuUsage would come from CpuGpuCollector
+                        snapshot.chargeRate,
+                        fingerprint);
+            }
+        } catch (Exception e) {
+            Log.w(TAG, "Negative example collection failed", e);
+        }
+
+        // ML Infrastructure: Periodic app update scanning
+        try {
+            if (appUpdateDetector != null && appUpdateDetector.shouldScan()) {
+                appUpdateDetector.scanForUpdates();
+            }
+        } catch (Exception e) {
+            Log.w(TAG, "App update scan failed", e);
+        }
     }
 
     /**

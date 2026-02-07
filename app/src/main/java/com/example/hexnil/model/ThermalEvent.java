@@ -151,7 +151,12 @@ public class ThermalEvent {
     // =====================================================================
     public int sampleCount;              // Number of samples during event
     public String temperatureSamplesJson;// JSON array of temperature samples
-    
+
+    // ML Infrastructure
+    public String deviceFingerprint;     // Device SKU fingerprint for fleet analysis
+    public Integer isNormalForActivity;  // Null=unknown, 1=normal for detected activity, 0=abnormal
+    public Long mlPredictionId;          // FK to ml_predictions if ML-detected
+
     public ThermalEvent() {
         this.timestamp = System.currentTimeMillis();
         this.severity = "normal";
