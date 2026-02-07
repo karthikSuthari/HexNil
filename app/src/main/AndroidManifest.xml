@@ -122,6 +122,15 @@
             </intent-filter>
         </receiver>
         
+        <!-- Update Receiver for A/B OTA and seamless update detection -->
+        <receiver
+            android:name=".receiver.UpdateReceiver"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.MY_PACKAGE_REPLACED"/>
+            </intent-filter>
+        </receiver>
+        
         <!-- Battery Change Receiver -->
         <receiver
             android:name=".receiver.BatteryReceiver"

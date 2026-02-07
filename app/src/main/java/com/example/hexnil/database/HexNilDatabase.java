@@ -40,6 +40,11 @@ import com.example.hexnil.model.NetworkCellularSnapshot;
 import com.example.hexnil.model.NetworkWifiSnapshot;
 import com.example.hexnil.model.NetworkBluetoothSnapshot;
 import com.example.hexnil.model.ModemFirmwareEvent;
+import com.example.hexnil.model.UpdateSession;
+import com.example.hexnil.model.PreUpdateSnapshot;
+import com.example.hexnil.model.PreUpdateIssue;
+import com.example.hexnil.model.PostUpdateVerification;
+import com.example.hexnil.model.UpdateRegression;
 
 /**
  * Main Room Database for HexNil Battery Analysis
@@ -77,8 +82,13 @@ import com.example.hexnil.model.ModemFirmwareEvent;
                 NetworkCellularSnapshot.class,
                 NetworkWifiSnapshot.class,
                 NetworkBluetoothSnapshot.class,
-                ModemFirmwareEvent.class
-}, version = 27, exportSchema = true)
+                ModemFirmwareEvent.class,
+                UpdateSession.class,
+                PreUpdateSnapshot.class,
+                PreUpdateIssue.class,
+                PostUpdateVerification.class,
+                UpdateRegression.class
+}, version = 28, exportSchema = true)
 public abstract class HexNilDatabase extends RoomDatabase {
 
         private static final String DATABASE_NAME = "hexnil_battery_db";
@@ -141,6 +151,16 @@ public abstract class HexNilDatabase extends RoomDatabase {
 
         public abstract ModemFirmwareEventDao modemFirmwareEventDao();
 
+        public abstract UpdateSessionDao updateSessionDao();
+
+        public abstract PreUpdateSnapshotDao preUpdateSnapshotDao();
+
+        public abstract PreUpdateIssueDao preUpdateIssueDao();
+
+        public abstract PostUpdateVerificationDao postUpdateVerificationDao();
+
+        public abstract UpdateRegressionDao updateRegressionDao();
+
         public static HexNilDatabase getInstance(Context context) {
                 if (INSTANCE == null) {
                         synchronized (HexNilDatabase.class) {
@@ -163,7 +183,8 @@ public abstract class HexNilDatabase extends RoomDatabase {
                                                                         MIGRATION_23_24,
                                                                         MIGRATION_24_25,
                                                                         MIGRATION_25_26,
-                                                                        MIGRATION_26_27)
+                                                                        MIGRATION_26_27,
+                                                                        MIGRATION_27_28)
                                                         .build();
                                 }
                         }
@@ -1808,6 +1829,184 @@ public abstract class HexNilDatabase extends RoomDatabase {
                         db.execSQL("CREATE INDEX IF NOT EXISTS index_modem_firmware_events_timestamp ON modem_firmware_events(timestamp)");
                         db.execSQL("CREATE INDEX IF NOT EXISTS index_modem_firmware_events_eventType ON modem_firmware_events(eventType)");
                         db.execSQL("CREATE INDEX IF NOT EXISTS index_modem_firmware_events_currentVersion ON modem_firmware_events(currentVersion)");
+                }
+        };
+
+        // Migration 27->28: Add Update Impact Observer tables
+        // These tables enable tracking and verification of system update impacts
+        static final Migration MIGRATION_27_28 = new Migration(27, 28) {
+                @Override
+                public void migrate(SupportSQLiteDatabase db) {
+                        // =====================================================================
+                        // update_sessions: Master table tracking each system update event
+                        // =====================================================================
+                        db.execSQL("CREATE TABLE IF NOT EXISTS `update_sessions` (" +
+                                        "`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, " +
+                                        "`sessionUuid` TEXT, " +
+                                        "`detectedAt` INTEGER NOT NULL, " +
+                                        "`preSnapshotLockedAt` INTEGER, " +
+                                        "`updateInstalledAt` INTEGER, " +
+                                        "`verificationCompletedAt` INTEGER, " +
+                                        "`previousBuildFingerprint` TEXT, " +
+                                        "`currentBuildFingerprint` TEXT, " +
+                                        "`previousAndroidVersion` TEXT, " +
+                                        "`currentAndroidVersion` TEXT, " +
+                                        "`previousSecurityPatch` TEXT, " +
+                                        "`currentSecurityPatch` TEXT, " +
+                                        "`previousModemVersion` TEXT, " +
+                                        "`currentModemVersion` TEXT, " +
+                                        "`status` TEXT, " +
+                                        "`updateType` TEXT, " +
+                                        "`detectionMethod` TEXT, " +
+                                        "`knownIssuesCount` INTEGER NOT NULL DEFAULT 0, " +
+                                        "`preUpdateDataQuality` REAL, " +
+                                        "`preUpdateObservationHours` REAL, " +
+                                        "`preUpdateSnapshotCount` INTEGER, " +
+                                        "`issuesFixed` INTEGER NOT NULL DEFAULT 0, " +
+                                        "`issuesUnchanged` INTEGER NOT NULL DEFAULT 0, " +
+                                        "`newRegressionsDetected` INTEGER NOT NULL DEFAULT 0, " +
+                                        "`updateImpactScore` REAL, " +
+                                        "`overallVerdict` TEXT, " +
+                                        "`userWasNotified` INTEGER NOT NULL DEFAULT 0, " +
+                                        "`userDismissed` INTEGER NOT NULL DEFAULT 0, " +
+                                        "`notes` TEXT)");
+                        db.execSQL("CREATE UNIQUE INDEX IF NOT EXISTS index_update_sessions_sessionUuid ON update_sessions(sessionUuid)");
+                        db.execSQL("CREATE INDEX IF NOT EXISTS index_update_sessions_status ON update_sessions(status)");
+                        db.execSQL("CREATE INDEX IF NOT EXISTS index_update_sessions_detectedAt ON update_sessions(detectedAt)");
+                        db.execSQL("CREATE INDEX IF NOT EXISTS index_update_sessions_currentBuildFingerprint ON update_sessions(currentBuildFingerprint)");
+
+                        // =====================================================================
+                        // pre_update_snapshots: Frozen baseline state before update
+                        // =====================================================================
+                        db.execSQL("CREATE TABLE IF NOT EXISTS `pre_update_snapshots` (" +
+                                        "`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, " +
+                                        "`sessionId` INTEGER NOT NULL, " +
+                                        "`capturedAt` INTEGER NOT NULL, " +
+                                        "`buildFingerprint` TEXT, " +
+                                        "`androidVersion` TEXT, " +
+                                        "`securityPatch` TEXT, " +
+                                        "`modemVersion` TEXT, " +
+                                        "`avgDrainRatePerHour` REAL, " +
+                                        "`idleDrainRatePerHour` REAL, " +
+                                        "`batteryHealthPercent` REAL, " +
+                                        "`cycleCount` INTEGER, " +
+                                        "`avgChargingTemp` REAL, " +
+                                        "`avgColdLaunchMs` REAL, " +
+                                        "`avgJankPercent` REAL, " +
+                                        "`avgFps` REAL, " +
+                                        "`avgMemoryUsedPercent` REAL, " +
+                                        "`crashesPerDay` REAL, " +
+                                        "`anrsPerDay` REAL, " +
+                                        "`thermalEventsPerDay` REAL, " +
+                                        "`avgOperatingTemp` REAL, " +
+                                        "`maxTempRecorded` REAL, " +
+                                        "`timeAbove40C` INTEGER, " +
+                                        "`timeAbove45C` INTEGER, " +
+                                        "`knownIssuesJson` TEXT, " +
+                                        "`anomalyCountTotal` INTEGER, " +
+                                        "`highSeverityAnomalies` INTEGER, " +
+                                        "`dataQualityScore` REAL, " +
+                                        "`observationDays` INTEGER, " +
+                                        "`snapshotCount` INTEGER, " +
+                                        "FOREIGN KEY(`sessionId`) REFERENCES `update_sessions`(`id`) ON DELETE CASCADE)");
+                        db.execSQL("CREATE INDEX IF NOT EXISTS index_pre_update_snapshots_sessionId ON pre_update_snapshots(sessionId)");
+                        db.execSQL("CREATE INDEX IF NOT EXISTS index_pre_update_snapshots_capturedAt ON pre_update_snapshots(capturedAt)");
+
+                        // =====================================================================
+                        // pre_update_issues: Known bugs/anomalies detected before update
+                        // =====================================================================
+                        db.execSQL("CREATE TABLE IF NOT EXISTS `pre_update_issues` (" +
+                                        "`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, " +
+                                        "`sessionId` INTEGER NOT NULL, " +
+                                        "`issueUuid` TEXT, " +
+                                        "`detectedAt` INTEGER NOT NULL, " +
+                                        "`issueType` TEXT, " +
+                                        "`component` TEXT, " +
+                                        "`severity` TEXT, " +
+                                        "`issueTitle` TEXT, " +
+                                        "`issueDescription` TEXT, " +
+                                        "`technicalDetails` TEXT, " +
+                                        "`metricName` TEXT, " +
+                                        "`baselineValue` REAL, " +
+                                        "`actualValue` REAL, " +
+                                        "`deviationPercent` REAL, " +
+                                        "`unit` TEXT, " +
+                                        "`occurrenceCount` INTEGER, " +
+                                        "`firstObserved` INTEGER, " +
+                                        "`lastObserved` INTEGER, " +
+                                        "`impactScore` REAL, " +
+                                        "`affectsUserExperience` INTEGER NOT NULL DEFAULT 1, " +
+                                        "`evidenceTableName` TEXT, " +
+                                        "`evidenceQuery` TEXT, " +
+                                        "`evidenceCount` INTEGER, " +
+                                        "`sourcePackageName` TEXT, " +
+                                        "`sourceAppLabel` TEXT, " +
+                                        "FOREIGN KEY(`sessionId`) REFERENCES `update_sessions`(`id`) ON DELETE CASCADE)");
+                        db.execSQL("CREATE INDEX IF NOT EXISTS index_pre_update_issues_sessionId ON pre_update_issues(sessionId)");
+                        db.execSQL("CREATE UNIQUE INDEX IF NOT EXISTS index_pre_update_issues_issueUuid ON pre_update_issues(issueUuid)");
+                        db.execSQL("CREATE INDEX IF NOT EXISTS index_pre_update_issues_issueType ON pre_update_issues(issueType)");
+                        db.execSQL("CREATE INDEX IF NOT EXISTS index_pre_update_issues_severity ON pre_update_issues(severity)");
+
+                        // =====================================================================
+                        // post_update_verifications: Comparison results for each issue
+                        // =====================================================================
+                        db.execSQL("CREATE TABLE IF NOT EXISTS `post_update_verifications` (" +
+                                        "`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, " +
+                                        "`sessionId` INTEGER NOT NULL, " +
+                                        "`preUpdateIssueId` INTEGER NOT NULL, " +
+                                        "`verifiedAt` INTEGER NOT NULL, " +
+                                        "`issueUuid` TEXT, " +
+                                        "`issueType` TEXT, " +
+                                        "`issueTitle` TEXT, " +
+                                        "`preUpdateValue` REAL, " +
+                                        "`preUpdateOccurrences` INTEGER, " +
+                                        "`postUpdateValue` REAL, " +
+                                        "`postUpdateOccurrences` INTEGER, " +
+                                        "`absoluteChange` REAL, " +
+                                        "`percentChange` REAL, " +
+                                        "`verificationStatus` TEXT, " +
+                                        "`confidenceScore` REAL, " +
+                                        "`postUpdateEvidenceJson` TEXT, " +
+                                        "`comparisonDetails` TEXT, " +
+                                        "`userNoticeable` INTEGER NOT NULL DEFAULT 0, " +
+                                        "FOREIGN KEY(`sessionId`) REFERENCES `update_sessions`(`id`) ON DELETE CASCADE, "
+                                        +
+                                        "FOREIGN KEY(`preUpdateIssueId`) REFERENCES `pre_update_issues`(`id`) ON DELETE CASCADE)");
+                        db.execSQL("CREATE INDEX IF NOT EXISTS index_post_update_verifications_sessionId ON post_update_verifications(sessionId)");
+                        db.execSQL("CREATE INDEX IF NOT EXISTS index_post_update_verifications_preUpdateIssueId ON post_update_verifications(preUpdateIssueId)");
+                        db.execSQL("CREATE INDEX IF NOT EXISTS index_post_update_verifications_verificationStatus ON post_update_verifications(verificationStatus)");
+
+                        // =====================================================================
+                        // update_regressions: New problems introduced by update
+                        // =====================================================================
+                        db.execSQL("CREATE TABLE IF NOT EXISTS `update_regressions` (" +
+                                        "`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, " +
+                                        "`sessionId` INTEGER NOT NULL, " +
+                                        "`regressionUuid` TEXT, " +
+                                        "`detectedAt` INTEGER NOT NULL, " +
+                                        "`regressionType` TEXT, " +
+                                        "`component` TEXT, " +
+                                        "`severity` TEXT, " +
+                                        "`title` TEXT, " +
+                                        "`description` TEXT, " +
+                                        "`technicalDetails` TEXT, " +
+                                        "`metricName` TEXT, " +
+                                        "`preUpdateBaseline` REAL, " +
+                                        "`postUpdateValue` REAL, " +
+                                        "`deltaPercent` REAL, " +
+                                        "`unit` TEXT, " +
+                                        "`firstOccurrence` INTEGER, " +
+                                        "`occurrenceCount` INTEGER, " +
+                                        "`evidenceJson` TEXT, " +
+                                        "`impactScore` REAL, " +
+                                        "`userNoticeable` INTEGER NOT NULL DEFAULT 0, " +
+                                        "`acknowledged` INTEGER NOT NULL DEFAULT 0, " +
+                                        "`userReported` INTEGER NOT NULL DEFAULT 0, " +
+                                        "FOREIGN KEY(`sessionId`) REFERENCES `update_sessions`(`id`) ON DELETE CASCADE)");
+                        db.execSQL("CREATE INDEX IF NOT EXISTS index_update_regressions_sessionId ON update_regressions(sessionId)");
+                        db.execSQL("CREATE UNIQUE INDEX IF NOT EXISTS index_update_regressions_regressionUuid ON update_regressions(regressionUuid)");
+                        db.execSQL("CREATE INDEX IF NOT EXISTS index_update_regressions_regressionType ON update_regressions(regressionType)");
+                        db.execSQL("CREATE INDEX IF NOT EXISTS index_update_regressions_severity ON update_regressions(severity)");
                 }
         };
 }
