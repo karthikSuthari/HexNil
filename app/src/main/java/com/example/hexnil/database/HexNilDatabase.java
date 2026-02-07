@@ -2163,12 +2163,12 @@ public abstract class HexNilDatabase extends RoomDatabase {
                         // =====================================================================
                         db.execSQL("CREATE TABLE IF NOT EXISTS `negative_examples` (" +
                                         "`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, " +
-                                        "`conditionType` TEXT DEFAULT '' NOT NULL, " +
+                                        "`conditionType` TEXT DEFAULT '', " +
                                         "`deviceFingerprint` TEXT, " +
                                         "`timestamp` INTEGER NOT NULL, " +
                                         "`durationMs` INTEGER NOT NULL, " +
                                         "`metricsJson` TEXT, " +
-                                        "`expectedBehavior` TEXT DEFAULT '' NOT NULL, " +
+                                        "`expectedBehavior` TEXT DEFAULT '', " +
                                         "`normalCauseRootCause` TEXT, " +
                                         "`detectedActivity` TEXT, " +
                                         "`foregroundApp` TEXT, " +
