@@ -1525,6 +1525,194 @@ CREATE TABLE IF NOT EXISTS modem_firmware_events (
     FOREIGN KEY (device_id) REFERENCES devices(device_id) ON DELETE CASCADE
 ) ENGINE=InnoDB;
 
+-- ============================================================================
+-- UPDATE IMPACT OBSERVER TABLES
+-- ============================================================================
+
+-- Update Sessions: Master table tracking each system update event
+CREATE TABLE IF NOT EXISTS update_sessions (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    device_id VARCHAR(64) NOT NULL,
+    session_uuid VARCHAR(64) NOT NULL,
+    detected_at BIGINT NOT NULL,
+    pre_snapshot_locked_at BIGINT,
+    update_installed_at BIGINT,
+    verification_completed_at BIGINT,
+    previous_build_fingerprint VARCHAR(256),
+    current_build_fingerprint VARCHAR(256),
+    previous_android_version VARCHAR(32),
+    current_android_version VARCHAR(32),
+    previous_security_patch VARCHAR(32),
+    current_security_patch VARCHAR(32),
+    previous_modem_version VARCHAR(128),
+    current_modem_version VARCHAR(128),
+    status VARCHAR(32),
+    update_type VARCHAR(32),
+    detection_method VARCHAR(32),
+    known_issues_count INT DEFAULT 0,
+    pre_update_data_quality FLOAT,
+    pre_update_observation_hours FLOAT,
+    pre_update_snapshot_count INT,
+    issues_fixed INT DEFAULT 0,
+    issues_unchanged INT DEFAULT 0,
+    new_regressions_detected INT DEFAULT 0,
+    update_impact_score FLOAT,
+    overall_verdict VARCHAR(32),
+    user_was_notified BOOLEAN DEFAULT FALSE,
+    user_dismissed BOOLEAN DEFAULT FALSE,
+    notes TEXT,
+    received_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    
+    INDEX idx_session_device (device_id),
+    INDEX idx_session_uuid (session_uuid),
+    INDEX idx_session_status (status),
+    INDEX idx_session_detected (detected_at),
+    UNIQUE KEY uk_device_session (device_id, session_uuid),
+    FOREIGN KEY (device_id) REFERENCES devices(device_id) ON DELETE CASCADE
+) ENGINE=InnoDB;
+
+-- Pre-Update Snapshots: Frozen baseline state before update
+CREATE TABLE IF NOT EXISTS pre_update_snapshots (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    device_id VARCHAR(64) NOT NULL,
+    session_id BIGINT NOT NULL,
+    captured_at BIGINT NOT NULL,
+    build_fingerprint VARCHAR(256),
+    android_version VARCHAR(32),
+    security_patch VARCHAR(32),
+    modem_version VARCHAR(128),
+    avg_drain_rate_per_hour FLOAT,
+    idle_drain_rate_per_hour FLOAT,
+    battery_health_percent FLOAT,
+    cycle_count INT,
+    avg_charging_temp FLOAT,
+    avg_cold_launch_ms FLOAT,
+    avg_jank_percent FLOAT,
+    avg_fps FLOAT,
+    avg_memory_used_percent FLOAT,
+    crashes_per_day FLOAT,
+    anrs_per_day FLOAT,
+    thermal_events_per_day FLOAT,
+    avg_operating_temp FLOAT,
+    max_temp_recorded FLOAT,
+    time_above_40c BIGINT,
+    time_above_45c BIGINT,
+    known_issues_json JSON,
+    anomaly_count_total INT,
+    high_severity_anomalies INT,
+    data_quality_score FLOAT,
+    observation_days INT,
+    snapshot_count INT,
+    received_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    
+    INDEX idx_pre_snapshot_device (device_id),
+    INDEX idx_pre_snapshot_session (session_id),
+    INDEX idx_pre_snapshot_captured (captured_at),
+    FOREIGN KEY (device_id) REFERENCES devices(device_id) ON DELETE CASCADE
+) ENGINE=InnoDB;
+
+-- Pre-Update Issues: Known bugs/anomalies detected before update
+CREATE TABLE IF NOT EXISTS pre_update_issues (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    device_id VARCHAR(64) NOT NULL,
+    session_id BIGINT NOT NULL,
+    issue_uuid VARCHAR(64) NOT NULL,
+    detected_at BIGINT NOT NULL,
+    issue_type VARCHAR(64),
+    component VARCHAR(64),
+    severity VARCHAR(16),
+    issue_title VARCHAR(256),
+    issue_description TEXT,
+    technical_details JSON,
+    metric_name VARCHAR(64),
+    baseline_value FLOAT,
+    actual_value FLOAT,
+    deviation_percent FLOAT,
+    unit VARCHAR(16),
+    occurrence_count INT,
+    first_observed BIGINT,
+    last_observed BIGINT,
+    impact_score FLOAT,
+    affects_user_experience BOOLEAN DEFAULT TRUE,
+    evidence_table_name VARCHAR(64),
+    evidence_query TEXT,
+    evidence_count INT,
+    source_package_name VARCHAR(256),
+    source_app_label VARCHAR(128),
+    received_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    
+    INDEX idx_pre_issue_device (device_id),
+    INDEX idx_pre_issue_session (session_id),
+    INDEX idx_pre_issue_uuid (issue_uuid),
+    INDEX idx_pre_issue_type (issue_type),
+    INDEX idx_pre_issue_severity (severity),
+    FOREIGN KEY (device_id) REFERENCES devices(device_id) ON DELETE CASCADE
+) ENGINE=InnoDB;
+
+-- Post-Update Verifications: Comparison results for each issue
+CREATE TABLE IF NOT EXISTS post_update_verifications (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    device_id VARCHAR(64) NOT NULL,
+    session_id BIGINT NOT NULL,
+    pre_update_issue_id BIGINT NOT NULL,
+    verified_at BIGINT NOT NULL,
+    issue_uuid VARCHAR(64),
+    issue_type VARCHAR(64),
+    issue_title VARCHAR(256),
+    pre_update_value FLOAT,
+    pre_update_occurrences INT,
+    post_update_value FLOAT,
+    post_update_occurrences INT,
+    absolute_change FLOAT,
+    percent_change FLOAT,
+    verification_status VARCHAR(32),
+    confidence_score FLOAT,
+    post_update_evidence_json JSON,
+    comparison_details TEXT,
+    user_noticeable BOOLEAN DEFAULT FALSE,
+    received_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    
+    INDEX idx_post_verify_device (device_id),
+    INDEX idx_post_verify_session (session_id),
+    INDEX idx_post_verify_status (verification_status),
+    FOREIGN KEY (device_id) REFERENCES devices(device_id) ON DELETE CASCADE
+) ENGINE=InnoDB;
+
+-- Update Regressions: New problems introduced by update
+CREATE TABLE IF NOT EXISTS update_regressions (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    device_id VARCHAR(64) NOT NULL,
+    session_id BIGINT NOT NULL,
+    regression_uuid VARCHAR(64) NOT NULL,
+    detected_at BIGINT NOT NULL,
+    regression_type VARCHAR(64),
+    component VARCHAR(64),
+    severity VARCHAR(16),
+    title VARCHAR(256),
+    description TEXT,
+    technical_details JSON,
+    metric_name VARCHAR(64),
+    pre_update_baseline FLOAT,
+    post_update_value FLOAT,
+    delta_percent FLOAT,
+    unit VARCHAR(16),
+    first_occurrence BIGINT,
+    occurrence_count INT,
+    evidence_json JSON,
+    impact_score FLOAT,
+    user_noticeable BOOLEAN DEFAULT FALSE,
+    acknowledged BOOLEAN DEFAULT FALSE,
+    user_reported BOOLEAN DEFAULT FALSE,
+    received_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    
+    INDEX idx_regression_device (device_id),
+    INDEX idx_regression_session (session_id),
+    INDEX idx_regression_uuid (regression_uuid),
+    INDEX idx_regression_type (regression_type),
+    INDEX idx_regression_severity (severity),
+    FOREIGN KEY (device_id) REFERENCES devices(device_id) ON DELETE CASCADE
+) ENGINE=InnoDB;
+
 -- Grant permissions for new tables
 GRANT SELECT, INSERT ON hexnil.thermal_heat_buckets TO 'hexnil_backend'@'localhost';
 GRANT SELECT, INSERT ON hexnil.stress_test_results TO 'hexnil_backend'@'localhost';
@@ -1571,6 +1759,12 @@ GRANT SELECT, INSERT ON hexnil.network_wifi_snapshots TO 'hexnil_backend'@'%';
 GRANT SELECT, INSERT ON hexnil.network_bluetooth_snapshots TO 'hexnil_backend'@'%';
 -- Modem Firmware Events (baseband version tracking)
 GRANT SELECT, INSERT ON hexnil.modem_firmware_events TO 'hexnil_backend'@'%';
+-- Update Impact Observer tables
+GRANT SELECT, INSERT ON hexnil.update_sessions TO 'hexnil_backend'@'%';
+GRANT SELECT, INSERT ON hexnil.pre_update_snapshots TO 'hexnil_backend'@'%';
+GRANT SELECT, INSERT ON hexnil.pre_update_issues TO 'hexnil_backend'@'%';
+GRANT SELECT, INSERT ON hexnil.post_update_verifications TO 'hexnil_backend'@'%';
+GRANT SELECT, INSERT ON hexnil.update_regressions TO 'hexnil_backend'@'%';
 
 GRANT SELECT ON hexnil.thermal_heat_buckets TO 'hexnil_ai'@'localhost';
 GRANT SELECT ON hexnil.stress_test_results TO 'hexnil_ai'@'localhost';
@@ -1593,6 +1787,11 @@ GRANT SELECT ON hexnil.network_cellular_snapshots TO 'hexnil_ai'@'localhost';
 GRANT SELECT ON hexnil.network_wifi_snapshots TO 'hexnil_ai'@'localhost';
 GRANT SELECT ON hexnil.network_bluetooth_snapshots TO 'hexnil_ai'@'localhost';
 GRANT SELECT ON hexnil.modem_firmware_events TO 'hexnil_ai'@'localhost';
+GRANT SELECT ON hexnil.update_sessions TO 'hexnil_ai'@'localhost';
+GRANT SELECT ON hexnil.pre_update_snapshots TO 'hexnil_ai'@'localhost';
+GRANT SELECT ON hexnil.pre_update_issues TO 'hexnil_ai'@'localhost';
+GRANT SELECT ON hexnil.post_update_verifications TO 'hexnil_ai'@'localhost';
+GRANT SELECT ON hexnil.update_regressions TO 'hexnil_ai'@'localhost';
 
 -- Same grants for wildcard host
 GRANT SELECT ON hexnil.thermal_heat_buckets TO 'hexnil_ai'@'%';
@@ -1616,6 +1815,11 @@ GRANT SELECT ON hexnil.network_cellular_snapshots TO 'hexnil_ai'@'%';
 GRANT SELECT ON hexnil.network_wifi_snapshots TO 'hexnil_ai'@'%';
 GRANT SELECT ON hexnil.network_bluetooth_snapshots TO 'hexnil_ai'@'%';
 GRANT SELECT ON hexnil.modem_firmware_events TO 'hexnil_ai'@'%';
+GRANT SELECT ON hexnil.update_sessions TO 'hexnil_ai'@'%';
+GRANT SELECT ON hexnil.pre_update_snapshots TO 'hexnil_ai'@'%';
+GRANT SELECT ON hexnil.pre_update_issues TO 'hexnil_ai'@'%';
+GRANT SELECT ON hexnil.post_update_verifications TO 'hexnil_ai'@'%';
+GRANT SELECT ON hexnil.update_regressions TO 'hexnil_ai'@'%';
 
 FLUSH PRIVILEGES;
 

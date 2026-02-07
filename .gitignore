@@ -13,3 +13,7 @@
 .externalNativeBuild
 .cxx
 local.properties
+
+backend/hexnil_ingest_spool.sqlite
+backend/hexnil_ingest_spool.sqlite-shm
+backend/hexnil_ingest_spool.sqlite-wal

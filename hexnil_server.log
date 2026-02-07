@@ -57,3 +57,8 @@
 2026-02-01 18:01:13,633 - hexnil.server - INFO - Sync request accepted from device: backend_smoke_device
 2026-02-01 18:01:15,351 - hexnil.server - INFO - Sync request accepted from device: backend_smoke_device
 2026-02-01 18:01:15,402 - hexnil.server - INFO - Sync request accepted from device: backend_smoke_device
+2026-02-06 13:37:57,908 - hexnil.server - INFO - Starting HexNil Backend Server...
+2026-02-06 13:37:58,339 - hexnil.server - INFO - Database pool initialized: 10 connections
+2026-02-06 13:37:58,340 - hexnil.server - INFO - Ingestion spool worker started
+2026-02-06 13:38:30,249 - hexnil.server - INFO - Sync request accepted from device: a6a9f331d869db9e
+2026-02-06 13:38:49,546 - hexnil.server - ERROR - Error inserting daily aggregates: 1406 (22001): Data too long for column 'app_version' at row 101

@@ -269,63 +269,115 @@ public class UpdateImpactObserver {
     // ========================================================================
 
     /**
-     * Locks the current state as the pre-update baseline.
-     * Call this when an update is pending.
+     * Refreshes the pre-update baseline if appropriate.
+     * Called automatically on every app start via HexNilApplication.
+     *
+     * Rules:
+     * - Skip if there's already an active session (pending / baseline_locked / installed_monitoring)
+     * - Skip if a baseline was locked within the last 24 hours (avoid churn)
+     * - Otherwise, lock a fresh baseline so one always exists before the next OTA
      */
-    public void lockPreUpdateBaseline() {
+    public void refreshBaselineIfNeeded() {
         executor.execute(() -> {
             try {
-                // Avoid duplicate baselines
+                // Don't overwrite an active session
                 UpdateSession activeSession = sessionDao.getActiveSession();
                 if (activeSession != null) {
-                    Log.w(TAG, "Active session already exists (status=" + activeSession.status
-                            + "), skipping baseline lock");
+                    Log.d(TAG, "Active session exists (status=" + activeSession.status
+                            + "), skipping baseline refresh");
                     return;
                 }
 
-                // Create new session
-                String sessionUuid = UUID.randomUUID().toString();
-                UpdateSession session = UpdateSession.createPending(
-                        sessionUuid,
-                        Build.FINGERPRINT,
-                        getCurrentAndroidVersion(),
-                        getCurrentSecurityPatch(),
-                        getModemVersion(),
-                        "manual_lock");
-
-                long sessionId = sessionDao.insert(session);
-                session.id = sessionId;
-
-                // Capture pre-update snapshot with real aggregated data
-                PreUpdateSnapshot snapshot = captureCurrentSnapshot(sessionId);
-                snapshotDao.insert(snapshot);
-
-                // Capture known issues from anomaly records
-                List<PreUpdateIssue> knownIssues = captureKnownIssues(sessionId);
-                if (!knownIssues.isEmpty()) {
-                    issueDao.insertAll(knownIssues);
+                // Check if we locked a baseline recently (within 24h)
+                long lastLockTime = prefs.getLong("last_baseline_lock_time", 0);
+                long hoursSinceLastLock = (System.currentTimeMillis() - lastLockTime) / (3600L * 1000);
+                if (hoursSinceLastLock < 24) {
+                    Log.d(TAG, "Baseline locked " + hoursSinceLastLock + "h ago, skipping");
+                    return;
                 }
 
-                // Lock the baseline
-                double dataQuality = calculateDataQuality();
-                double observationHours = calculateObservationHours();
+                // Check that we have enough data for a meaningful baseline
                 int snapshotCount = getSnapshotCount();
-                session.lockBaseline(knownIssues.size(), dataQuality, observationHours, snapshotCount);
-                sessionDao.update(session);
+                if (snapshotCount < 10) {
+                    Log.d(TAG, "Insufficient data for baseline (snapshots=" + snapshotCount + ")");
+                    return;
+                }
 
-                // Store pending session UUID
-                prefs.edit().putString(KEY_PENDING_SESSION_UUID, session.sessionUuid).apply();
-
-                Log.i(TAG, "Pre-update baseline locked: session=" + session.sessionUuid
-                        + " issues=" + knownIssues.size()
-                        + " quality=" + String.format("%.2f", dataQuality)
-                        + " hours=" + String.format("%.1f", observationHours)
-                        + " snapshots=" + snapshotCount);
+                Log.i(TAG, "Refreshing pre-update baseline automatically");
+                lockPreUpdateBaselineInternal();
 
             } catch (Exception e) {
-                Log.e(TAG, "Error locking pre-update baseline", e);
+                Log.e(TAG, "Error in refreshBaselineIfNeeded", e);
             }
         });
+    }
+
+    /**
+     * Locks the current state as the pre-update baseline.
+     * Call this when an update is pending, or automatically via refreshBaselineIfNeeded().
+     */
+    public void lockPreUpdateBaseline() {
+        executor.execute(() -> lockPreUpdateBaselineInternal());
+    }
+
+    /**
+     * Internal implementation of baseline locking (runs on executor thread).
+     */
+    private void lockPreUpdateBaselineInternal() {
+        try {
+            // Avoid duplicate baselines
+            UpdateSession activeSession = sessionDao.getActiveSession();
+            if (activeSession != null) {
+                Log.w(TAG, "Active session already exists (status=" + activeSession.status
+                        + "), skipping baseline lock");
+                return;
+            }
+
+            // Create new session
+            String sessionUuid = UUID.randomUUID().toString();
+            UpdateSession session = UpdateSession.createPending(
+                    sessionUuid,
+                    Build.FINGERPRINT,
+                    getCurrentAndroidVersion(),
+                    getCurrentSecurityPatch(),
+                    getModemVersion(),
+                    "auto_baseline_lock");
+
+            long sessionId = sessionDao.insert(session);
+            session.id = sessionId;
+
+            // Capture pre-update snapshot with real aggregated data
+            PreUpdateSnapshot snapshot = captureCurrentSnapshot(sessionId);
+            snapshotDao.insert(snapshot);
+
+            // Capture known issues from anomaly records
+            List<PreUpdateIssue> knownIssues = captureKnownIssues(sessionId);
+            if (!knownIssues.isEmpty()) {
+                issueDao.insertAll(knownIssues);
+            }
+
+            // Lock the baseline
+            double dataQuality = calculateDataQuality();
+            double observationHours = calculateObservationHours();
+            int snapshotCount = getSnapshotCount();
+            session.lockBaseline(knownIssues.size(), dataQuality, observationHours, snapshotCount);
+            sessionDao.update(session);
+
+            // Store pending session UUID and timestamp
+            prefs.edit()
+                    .putString(KEY_PENDING_SESSION_UUID, session.sessionUuid)
+                    .putLong("last_baseline_lock_time", System.currentTimeMillis())
+                    .apply();
+
+            Log.i(TAG, "Pre-update baseline locked: session=" + session.sessionUuid
+                    + " issues=" + knownIssues.size()
+                    + " quality=" + String.format("%.2f", dataQuality)
+                    + " hours=" + String.format("%.1f", observationHours)
+                    + " snapshots=" + snapshotCount);
+
+        } catch (Exception e) {
+            Log.e(TAG, "Error locking pre-update baseline", e);
+        }
     }
 
     // ========================================================================
@@ -1032,5 +1084,109 @@ public class UpdateImpactObserver {
             return "major_os_update";
         }
         return "security_patch";
+    }
+
+    // ========================================================================
+    // DIAGNOSTIC — for verifying system readiness via logcat
+    // ========================================================================
+
+    /**
+     * Logs the full state of the update impact observer for diagnostic purposes.
+     * Call from adb shell:
+     *   adb shell am broadcast -a com.example.hexnil.DIAGNOSE_UPDATE_OBSERVER
+     * Or programmatically to verify the system is ready before an OTA.
+     */
+    public void logDiagnostics() {
+        executor.execute(() -> {
+            try {
+                Log.i(TAG, "═══════════════════════════════════════════════════════");
+                Log.i(TAG, "  UPDATE IMPACT OBSERVER — DIAGNOSTIC REPORT");
+                Log.i(TAG, "═══════════════════════════════════════════════════════");
+
+                // Current fingerprint
+                String storedFp = prefs.getString(KEY_LAST_BUILD_FINGERPRINT, "NOT SET");
+                String currentFp = Build.FINGERPRINT;
+                Log.i(TAG, "Current fingerprint : " + currentFp);
+                Log.i(TAG, "Stored fingerprint  : " + storedFp);
+                Log.i(TAG, "Match               : " + currentFp.equals(storedFp));
+
+                // Active session
+                UpdateSession active = sessionDao.getActiveSession();
+                if (active != null) {
+                    Log.i(TAG, "Active session      : " + active.sessionUuid);
+                    Log.i(TAG, "  Status            : " + active.status);
+                    Log.i(TAG, "  Previous FP       : " + active.previousBuildFingerprint);
+                    Log.i(TAG, "  Created at        : " + new java.util.Date(active.detectedAt));
+                } else {
+                    Log.i(TAG, "Active session      : NONE");
+                }
+
+                // Baseline-locked session
+                String pendingUuid = prefs.getString(KEY_PENDING_SESSION_UUID, null);
+                if (pendingUuid != null) {
+                    UpdateSession pending = sessionDao.getByUuid(pendingUuid);
+                    if (pending != null) {
+                        Log.i(TAG, "Baseline session    : " + pending.sessionUuid);
+                        Log.i(TAG, "  Status            : " + pending.status);
+                        Log.i(TAG, "  Baseline quality  : " + String.format("%.2f", pending.preUpdateDataQuality));
+                        Log.i(TAG, "  Known issues      : " + pending.knownIssuesCount);
+                        Log.i(TAG, "  Locked at         : " + new java.util.Date(pending.preSnapshotLockedAt));
+
+                        // Pre-update snapshot
+                        PreUpdateSnapshot snap = snapshotDao.getBySessionId(pending.id);
+                        if (snap != null) {
+                            Log.i(TAG, "  PRE-UPDATE SNAPSHOT:");
+                            Log.i(TAG, "    Avg drain       : " + snap.avgDrainRatePerHour);
+                            Log.i(TAG, "    Avg temp        : " + snap.avgOperatingTemp);
+                            Log.i(TAG, "    Crashes/day     : " + snap.crashesPerDay);
+                            Log.i(TAG, "    ANRs/day        : " + snap.anrsPerDay);
+                            Log.i(TAG, "    Avg launch ms   : " + snap.avgColdLaunchMs);
+                        } else {
+                            Log.w(TAG, "  PRE-UPDATE SNAPSHOT: MISSING");
+                        }
+
+                        // Pre-update issues
+                        List<PreUpdateIssue> issues = issueDao.getBySessionId(pending.id);
+                        Log.i(TAG, "  PRE-UPDATE ISSUES : " + issues.size());
+                        for (PreUpdateIssue issue : issues) {
+                            Log.i(TAG, "    [" + issue.issueType + "] " + issue.issueTitle
+                                    + " (severity=" + issue.severity + ")");
+                        }
+                    }
+                } else {
+                    Log.w(TAG, "Pending baseline    : NONE — baseline not yet locked!");
+                }
+
+                // Last baseline lock time
+                long lastLock = prefs.getLong("last_baseline_lock_time", 0);
+                if (lastLock > 0) {
+                    long hoursAgo = (System.currentTimeMillis() - lastLock) / (3600L * 1000);
+                    Log.i(TAG, "Last baseline lock  : " + hoursAgo + "h ago (" + new java.util.Date(lastLock) + ")");
+                }
+
+                // Data coverage
+                int snapshotCount = getSnapshotCount();
+                double quality = calculateDataQuality();
+                Log.i(TAG, "Data quality        : " + String.format("%.2f", quality));
+                Log.i(TAG, "Battery snapshots   : " + snapshotCount + " (last 7 days)");
+
+                // Completed sessions
+                List<UpdateSession> completed = sessionDao.getVerifiedSessions(5);
+                Log.i(TAG, "Verified sessions   : " + (completed != null ? completed.size() : 0));
+                if (completed != null) {
+                    for (UpdateSession s : completed) {
+                        Log.i(TAG, "  [" + s.overallVerdict + "] impact=" + s.updateImpactScore
+                                + " fixed=" + s.issuesFixed + " regressions=" + s.newRegressionsDetected);
+                    }
+                }
+
+                Log.i(TAG, "═══════════════════════════════════════════════════════");
+                Log.i(TAG, "READY FOR UPDATE: " + (pendingUuid != null ? "YES ✓" : "NO ✗ (run app once to lock baseline)"));
+                Log.i(TAG, "═══════════════════════════════════════════════════════");
+
+            } catch (Exception e) {
+                Log.e(TAG, "Error running diagnostics", e);
+            }
+        });
     }
 }

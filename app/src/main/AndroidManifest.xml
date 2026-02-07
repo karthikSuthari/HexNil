@@ -112,13 +112,14 @@
                 android:value="Remote battery data access server"/>
         </service>
         
-        <!-- Boot Receiver -->
+        <!-- Boot Receiver + Diagnostic trigger -->
         <receiver
             android:name=".receiver.BootReceiver"
             android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.BOOT_COMPLETED"/>
                 <action android:name="android.intent.action.QUICKBOOT_POWERON"/>
+                <action android:name="com.example.hexnil.DIAGNOSE_UPDATE_OBSERVER"/>
             </intent-filter>
         </receiver>
         

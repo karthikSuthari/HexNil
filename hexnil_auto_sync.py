@@ -881,6 +881,158 @@ def transform_modem_firmware_event(row: Dict, device_id: str) -> Dict:
     }
 
 
+def transform_update_session(row: Dict, device_id: str) -> Dict:
+    """Transform update session for API."""
+    return {
+        'device_id': device_id,
+        'session_uuid': row.get('sessionUuid', row.get('session_uuid')),
+        'detected_at': row.get('detectedAt', row.get('detected_at', 0)),
+        'pre_snapshot_locked_at': row.get('preSnapshotLockedAt', row.get('pre_snapshot_locked_at')),
+        'update_installed_at': row.get('updateInstalledAt', row.get('update_installed_at')),
+        'verification_completed_at': row.get('verificationCompletedAt', row.get('verification_completed_at')),
+        'previous_build_fingerprint': row.get('previousBuildFingerprint', row.get('previous_build_fingerprint')),
+        'current_build_fingerprint': row.get('currentBuildFingerprint', row.get('current_build_fingerprint')),
+        'previous_android_version': row.get('previousAndroidVersion', row.get('previous_android_version')),
+        'current_android_version': row.get('currentAndroidVersion', row.get('current_android_version')),
+        'previous_security_patch': row.get('previousSecurityPatch', row.get('previous_security_patch')),
+        'current_security_patch': row.get('currentSecurityPatch', row.get('current_security_patch')),
+        'previous_modem_version': row.get('previousModemVersion', row.get('previous_modem_version')),
+        'current_modem_version': row.get('currentModemVersion', row.get('current_modem_version')),
+        'status': row.get('status'),
+        'update_type': row.get('updateType', row.get('update_type')),
+        'detection_method': row.get('detectionMethod', row.get('detection_method')),
+        'known_issues_count': int(row.get('knownIssuesCount', row.get('known_issues_count', 0)) or 0),
+        'pre_update_data_quality': float(row.get('preUpdateDataQuality', row.get('pre_update_data_quality', 0)) or 0),
+        'pre_update_observation_hours': float(row.get('preUpdateObservationHours', row.get('pre_update_observation_hours', 0)) or 0),
+        'pre_update_snapshot_count': row.get('preUpdateSnapshotCount', row.get('pre_update_snapshot_count')),
+        'issues_fixed': int(row.get('issuesFixed', row.get('issues_fixed', 0)) or 0),
+        'issues_unchanged': int(row.get('issuesUnchanged', row.get('issues_unchanged', 0)) or 0),
+        'new_regressions_detected': int(row.get('newRegressionsDetected', row.get('new_regressions_detected', 0)) or 0),
+        'update_impact_score': float(row.get('updateImpactScore', row.get('update_impact_score', 0)) or 0) if row.get('updateImpactScore') or row.get('update_impact_score') else None,
+        'overall_verdict': row.get('overallVerdict', row.get('overall_verdict')),
+        'user_was_notified': bool(row.get('userWasNotified', row.get('user_was_notified', 0))),
+        'user_dismissed': bool(row.get('userDismissed', row.get('user_dismissed', 0))),
+        'notes': row.get('notes')
+    }
+
+
+def transform_pre_update_snapshot(row: Dict, device_id: str) -> Dict:
+    """Transform pre-update snapshot for API."""
+    return {
+        'device_id': device_id,
+        'session_id': row.get('sessionId', row.get('session_id', 0)),
+        'captured_at': row.get('capturedAt', row.get('captured_at', 0)),
+        'build_fingerprint': row.get('buildFingerprint', row.get('build_fingerprint')),
+        'android_version': row.get('androidVersion', row.get('android_version')),
+        'security_patch': row.get('securityPatch', row.get('security_patch')),
+        'modem_version': row.get('modemVersion', row.get('modem_version')),
+        'avg_drain_rate_per_hour': float(row.get('avgDrainRatePerHour', row.get('avg_drain_rate_per_hour', 0)) or 0) if row.get('avgDrainRatePerHour') or row.get('avg_drain_rate_per_hour') else None,
+        'idle_drain_rate_per_hour': float(row.get('idleDrainRatePerHour', row.get('idle_drain_rate_per_hour', 0)) or 0) if row.get('idleDrainRatePerHour') or row.get('idle_drain_rate_per_hour') else None,
+        'battery_health_percent': float(row.get('batteryHealthPercent', row.get('battery_health_percent', 0)) or 0) if row.get('batteryHealthPercent') or row.get('battery_health_percent') else None,
+        'cycle_count': row.get('cycleCount', row.get('cycle_count')),
+        'avg_charging_temp': float(row.get('avgChargingTemp', row.get('avg_charging_temp', 0)) or 0) if row.get('avgChargingTemp') or row.get('avg_charging_temp') else None,
+        'avg_cold_launch_ms': float(row.get('avgColdLaunchMs', row.get('avg_cold_launch_ms', 0)) or 0) if row.get('avgColdLaunchMs') or row.get('avg_cold_launch_ms') else None,
+        'avg_jank_percent': float(row.get('avgJankPercent', row.get('avg_jank_percent', 0)) or 0) if row.get('avgJankPercent') or row.get('avg_jank_percent') else None,
+        'avg_fps': float(row.get('avgFps', row.get('avg_fps', 0)) or 0) if row.get('avgFps') or row.get('avg_fps') else None,
+        'avg_memory_used_percent': float(row.get('avgMemoryUsedPercent', row.get('avg_memory_used_percent', 0)) or 0) if row.get('avgMemoryUsedPercent') or row.get('avg_memory_used_percent') else None,
+        'crashes_per_day': float(row.get('crashesPerDay', row.get('crashes_per_day', 0)) or 0) if row.get('crashesPerDay') or row.get('crashes_per_day') else None,
+        'anrs_per_day': float(row.get('anrsPerDay', row.get('anrs_per_day', 0)) or 0) if row.get('anrsPerDay') or row.get('anrs_per_day') else None,
+        'thermal_events_per_day': float(row.get('thermalEventsPerDay', row.get('thermal_events_per_day', 0)) or 0) if row.get('thermalEventsPerDay') or row.get('thermal_events_per_day') else None,
+        'avg_operating_temp': float(row.get('avgOperatingTemp', row.get('avg_operating_temp', 0)) or 0) if row.get('avgOperatingTemp') or row.get('avg_operating_temp') else None,
+        'max_temp_recorded': float(row.get('maxTempRecorded', row.get('max_temp_recorded', 0)) or 0) if row.get('maxTempRecorded') or row.get('max_temp_recorded') else None,
+        'time_above_40c': row.get('timeAbove40C', row.get('time_above_40c')),
+        'time_above_45c': row.get('timeAbove45C', row.get('time_above_45c')),
+        'known_issues_json': row.get('knownIssuesJson', row.get('known_issues_json')),
+        'anomaly_count_total': row.get('anomalyCountTotal', row.get('anomaly_count_total')),
+        'high_severity_anomalies': row.get('highSeverityAnomalies', row.get('high_severity_anomalies')),
+        'data_quality_score': float(row.get('dataQualityScore', row.get('data_quality_score', 0)) or 0) if row.get('dataQualityScore') or row.get('data_quality_score') else None,
+        'observation_days': row.get('observationDays', row.get('observation_days')),
+        'snapshot_count': row.get('snapshotCount', row.get('snapshot_count'))
+    }
+
+
+def transform_pre_update_issue(row: Dict, device_id: str) -> Dict:
+    """Transform pre-update issue for API."""
+    return {
+        'device_id': device_id,
+        'session_id': row.get('sessionId', row.get('session_id', 0)),
+        'issue_uuid': row.get('issueUuid', row.get('issue_uuid')),
+        'detected_at': row.get('detectedAt', row.get('detected_at', 0)),
+        'issue_type': row.get('issueType', row.get('issue_type')),
+        'component': row.get('component'),
+        'severity': row.get('severity'),
+        'issue_title': row.get('issueTitle', row.get('issue_title')),
+        'issue_description': row.get('issueDescription', row.get('issue_description')),
+        'technical_details': row.get('technicalDetails', row.get('technical_details')),
+        'metric_name': row.get('metricName', row.get('metric_name')),
+        'baseline_value': float(row.get('baselineValue', row.get('baseline_value', 0)) or 0) if row.get('baselineValue') or row.get('baseline_value') else None,
+        'actual_value': float(row.get('actualValue', row.get('actual_value', 0)) or 0) if row.get('actualValue') or row.get('actual_value') else None,
+        'deviation_percent': float(row.get('deviationPercent', row.get('deviation_percent', 0)) or 0) if row.get('deviationPercent') or row.get('deviation_percent') else None,
+        'unit': row.get('unit'),
+        'occurrence_count': row.get('occurrenceCount', row.get('occurrence_count')),
+        'first_observed': row.get('firstObserved', row.get('first_observed')),
+        'last_observed': row.get('lastObserved', row.get('last_observed')),
+        'impact_score': float(row.get('impactScore', row.get('impact_score', 0)) or 0) if row.get('impactScore') or row.get('impact_score') else None,
+        'affects_user_experience': bool(row.get('affectsUserExperience', row.get('affects_user_experience', 1))),
+        'evidence_table_name': row.get('evidenceTableName', row.get('evidence_table_name')),
+        'evidence_query': row.get('evidenceQuery', row.get('evidence_query')),
+        'evidence_count': row.get('evidenceCount', row.get('evidence_count')),
+        'source_package_name': row.get('sourcePackageName', row.get('source_package_name')),
+        'source_app_label': row.get('sourceAppLabel', row.get('source_app_label'))
+    }
+
+
+def transform_post_update_verification(row: Dict, device_id: str) -> Dict:
+    """Transform post-update verification for API."""
+    return {
+        'device_id': device_id,
+        'session_id': row.get('sessionId', row.get('session_id', 0)),
+        'pre_update_issue_id': row.get('preUpdateIssueId', row.get('pre_update_issue_id', 0)),
+        'verified_at': row.get('verifiedAt', row.get('verified_at', 0)),
+        'issue_uuid': row.get('issueUuid', row.get('issue_uuid')),
+        'issue_type': row.get('issueType', row.get('issue_type')),
+        'issue_title': row.get('issueTitle', row.get('issue_title')),
+        'pre_update_value': float(row.get('preUpdateValue', row.get('pre_update_value', 0)) or 0) if row.get('preUpdateValue') or row.get('pre_update_value') else None,
+        'pre_update_occurrences': row.get('preUpdateOccurrences', row.get('pre_update_occurrences')),
+        'post_update_value': float(row.get('postUpdateValue', row.get('post_update_value', 0)) or 0) if row.get('postUpdateValue') or row.get('post_update_value') else None,
+        'post_update_occurrences': row.get('postUpdateOccurrences', row.get('post_update_occurrences')),
+        'absolute_change': float(row.get('absoluteChange', row.get('absolute_change', 0)) or 0) if row.get('absoluteChange') or row.get('absolute_change') else None,
+        'percent_change': float(row.get('percentChange', row.get('percent_change', 0)) or 0) if row.get('percentChange') or row.get('percent_change') else None,
+        'verification_status': row.get('verificationStatus', row.get('verification_status')),
+        'confidence_score': float(row.get('confidenceScore', row.get('confidence_score', 0)) or 0) if row.get('confidenceScore') or row.get('confidence_score') else None,
+        'post_update_evidence_json': row.get('postUpdateEvidenceJson', row.get('post_update_evidence_json')),
+        'comparison_details': row.get('comparisonDetails', row.get('comparison_details')),
+        'user_noticeable': bool(row.get('userNoticeable', row.get('user_noticeable', 0)))
+    }
+
+
+def transform_update_regression(row: Dict, device_id: str) -> Dict:
+    """Transform update regression for API."""
+    return {
+        'device_id': device_id,
+        'session_id': row.get('sessionId', row.get('session_id', 0)),
+        'regression_uuid': row.get('regressionUuid', row.get('regression_uuid')),
+        'detected_at': row.get('detectedAt', row.get('detected_at', 0)),
+        'regression_type': row.get('regressionType', row.get('regression_type')),
+        'component': row.get('component'),
+        'severity': row.get('severity'),
+        'title': row.get('title'),
+        'description': row.get('description'),
+        'technical_details': row.get('technicalDetails', row.get('technical_details')),
+        'metric_name': row.get('metricName', row.get('metric_name')),
+        'pre_update_baseline': float(row.get('preUpdateBaseline', row.get('pre_update_baseline', 0)) or 0) if row.get('preUpdateBaseline') or row.get('pre_update_baseline') else None,
+        'post_update_value': float(row.get('postUpdateValue', row.get('post_update_value', 0)) or 0) if row.get('postUpdateValue') or row.get('post_update_value') else None,
+        'delta_percent': float(row.get('deltaPercent', row.get('delta_percent', 0)) or 0) if row.get('deltaPercent') or row.get('delta_percent') else None,
+        'unit': row.get('unit'),
+        'first_occurrence': row.get('firstOccurrence', row.get('first_occurrence')),
+        'occurrence_count': row.get('occurrenceCount', row.get('occurrence_count')),
+        'evidence_json': row.get('evidenceJson', row.get('evidence_json')),
+        'impact_score': float(row.get('impactScore', row.get('impact_score', 0)) or 0) if row.get('impactScore') or row.get('impact_score') else None,
+        'user_noticeable': bool(row.get('userNoticeable', row.get('user_noticeable', 0))),
+        'acknowledged': bool(row.get('acknowledged', 0)),
+        'user_reported': bool(row.get('userReported', row.get('user_reported', 0)))
+    }
+
 def sync_to_backend(device_id: str, data: Dict[str, List], device_model: str = None) -> bool:
     """Sync collected data to the backend server."""
     payload = {
@@ -917,7 +1069,12 @@ def sync_to_backend(device_id: str, data: Dict[str, List], device_model: str = N
         'network_cellular_snapshots': data.get('network_cellular_snapshots', []),
         'network_wifi_snapshots': data.get('network_wifi_snapshots', []),
         'network_bluetooth_snapshots': data.get('network_bluetooth_snapshots', []),
-        'modem_firmware_events': data.get('modem_firmware_events', [])
+        'modem_firmware_events': data.get('modem_firmware_events', []),
+        'update_sessions': data.get('update_sessions', []),
+        'pre_update_snapshots': data.get('pre_update_snapshots', []),
+        'pre_update_issues': data.get('pre_update_issues', []),
+        'post_update_verifications': data.get('post_update_verifications', []),
+        'update_regressions': data.get('update_regressions', [])
     }
     
     total_records = sum(len(v) for v in data.values())
@@ -991,6 +1148,11 @@ def process_sync(device_id: str, device_model: str = None) -> bool:
         ('network_wifi_snapshots', 'last_network_wifi_snapshots_id', transform_network_wifi_snapshot),
         ('network_bluetooth_snapshots', 'last_network_bluetooth_snapshots_id', transform_network_bluetooth_snapshot),
         ('modem_firmware_events', 'last_modem_firmware_events_id', transform_modem_firmware_event),
+        ('update_sessions', 'last_update_sessions_id', transform_update_session),
+        ('pre_update_snapshots', 'last_pre_update_snapshots_id', transform_pre_update_snapshot),
+        ('pre_update_issues', 'last_pre_update_issues_id', transform_pre_update_issue),
+        ('post_update_verifications', 'last_post_update_verifications_id', transform_post_update_verification),
+        ('update_regressions', 'last_update_regressions_id', transform_update_regression),
     ]
     
     # Read new data from each table
@@ -1040,7 +1202,12 @@ def process_sync(device_id: str, device_model: str = None) -> bool:
                 'network_cellular_snapshots': 'network_cellular_snapshots',
                 'network_wifi_snapshots': 'network_wifi_snapshots',
                 'network_bluetooth_snapshots': 'network_bluetooth_snapshots',
-                'modem_firmware_events': 'modem_firmware_events'
+                'modem_firmware_events': 'modem_firmware_events',
+                'update_sessions': 'update_sessions',
+                'pre_update_snapshots': 'pre_update_snapshots',
+                'pre_update_issues': 'pre_update_issues',
+                'post_update_verifications': 'post_update_verifications',
+                'update_regressions': 'update_regressions'
             }
             key = key_map.get(table_name, table_name)
             new_data[key] = transformed

@@ -8,6 +8,7 @@ import android.os.Build;
 import android.util.Log;
 
 import com.example.hexnil.database.HexNilDatabase;
+import com.example.hexnil.service.UpdateImpactObserver;
 import com.example.hexnil.network.AppwriteClientProvider;
 import com.example.hexnil.service.BatteryMonitorService;
 import com.example.hexnil.service.RemoteMonitorServer;
@@ -45,6 +46,15 @@ public class HexNilApplication extends Application {
         // Create notification channels
         createNotificationChannels();
         Log.d(TAG, "Notification channels created");
+        
+        // Lock pre-update baseline for Silent Update Impact Observer
+        // This runs on every app start so a fresh baseline exists before any OTA
+        try {
+            UpdateImpactObserver.getInstance(this).refreshBaselineIfNeeded();
+            Log.d(TAG, "Update impact baseline check initiated");
+        } catch (Exception e) {
+            Log.e(TAG, "Failed to refresh update baseline", e);
+        }
         
         // Start battery monitoring service (always)
         BatteryMonitorService.start(this);
