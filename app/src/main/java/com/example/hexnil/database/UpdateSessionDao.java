@@ -17,7 +17,7 @@ import java.util.List;
 @Dao
 public interface UpdateSessionDao {
 
-    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    @Insert(onConflict = OnConflictStrategy.ABORT)
     long insert(UpdateSession session);
 
     @Update

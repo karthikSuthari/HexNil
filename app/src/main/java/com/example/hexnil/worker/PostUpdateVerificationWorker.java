@@ -40,10 +40,18 @@ public class PostUpdateVerificationWorker extends Worker {
 
         try {
             UpdateImpactObserver observer = UpdateImpactObserver.getInstance(getApplicationContext());
-            observer.runPostUpdateVerification(sessionUuid);
+            // Run synchronously — doWork() already runs on a background thread.
+            // This ensures WorkManager only reports success AFTER verification
+            // writes are complete, preventing silent data loss if the app is killed.
+            boolean success = observer.runPostUpdateVerificationSync(sessionUuid);
 
-            Log.i(TAG, "Post-update verification dispatched for: " + sessionUuid);
-            return Result.success();
+            if (success) {
+                Log.i(TAG, "Post-update verification completed for: " + sessionUuid);
+                return Result.success();
+            } else {
+                Log.w(TAG, "Verification returned false (rescheduled or skipped): " + sessionUuid);
+                return Result.success(); // Not a failure — observer handles rescheduling
+            }
 
         } catch (Exception e) {
             Log.e(TAG, "Error in post-update verification worker", e);

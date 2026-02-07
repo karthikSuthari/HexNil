@@ -180,6 +180,9 @@ public interface BatterySnapshotDao {
     
     @Query("SELECT COUNT(*) FROM battery_snapshots WHERE timestamp >= :startTime")
     int getCountSince(long startTime);
+
+    @Query("SELECT MIN(timestamp) FROM battery_snapshots WHERE timestamp >= :since")
+    Long getOldestTimestampSince(long since);
     
     @Query("SELECT COUNT(*) FROM battery_snapshots WHERE timestamp BETWEEN :startTime AND :endTime")
     int getCountInRange(long startTime, long endTime);

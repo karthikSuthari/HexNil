@@ -17,10 +17,10 @@ import java.util.List;
 @Dao
 public interface UpdateRegressionDao {
 
-    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    @Insert(onConflict = OnConflictStrategy.ABORT)
     long insert(UpdateRegression regression);
 
-    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    @Insert(onConflict = OnConflictStrategy.ABORT)
     List<Long> insertAll(List<UpdateRegression> regressions);
 
     @Update

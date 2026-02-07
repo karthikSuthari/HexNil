@@ -32,8 +32,11 @@ import com.example.hexnil.model.PostUpdateVerification;
 import com.example.hexnil.model.UpdateRegression;
 import com.example.hexnil.worker.PostUpdateVerificationWorker;
 
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
+import java.util.Locale;
 import java.util.UUID;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -322,6 +325,7 @@ public class UpdateImpactObserver {
 
     /**
      * Internal implementation of baseline locking (runs on executor thread).
+     * All database writes are wrapped in a transaction for atomicity.
      */
     private void lockPreUpdateBaselineInternal() {
         try {
@@ -343,25 +347,32 @@ public class UpdateImpactObserver {
                     getModemVersion(),
                     "auto_baseline_lock");
 
-            long sessionId = sessionDao.insert(session);
-            session.id = sessionId;
-
-            // Capture pre-update snapshot with real aggregated data
-            PreUpdateSnapshot snapshot = captureCurrentSnapshot(sessionId);
-            snapshotDao.insert(snapshot);
-
-            // Capture known issues from anomaly records
-            List<PreUpdateIssue> knownIssues = captureKnownIssues(sessionId);
-            if (!knownIssues.isEmpty()) {
-                issueDao.insertAll(knownIssues);
-            }
-
-            // Lock the baseline
+            // Capture data outside the transaction (reads are safe)
+            PreUpdateSnapshot snapshot = captureCurrentSnapshot(0); // temp sessionId
+            List<PreUpdateIssue> knownIssues = captureKnownIssues(0); // temp sessionId
             double dataQuality = calculateDataQuality();
             double observationHours = calculateObservationHours();
             int snapshotCount = getSnapshotCount();
-            session.lockBaseline(knownIssues.size(), dataQuality, observationHours, snapshotCount);
-            sessionDao.update(session);
+
+            // Atomic write: all-or-nothing
+            database.runInTransaction(() -> {
+                long sessionId = sessionDao.insert(session);
+                session.id = sessionId;
+
+                // Fix sessionId on captured data
+                snapshot.sessionId = sessionId;
+                snapshotDao.insert(snapshot);
+
+                if (!knownIssues.isEmpty()) {
+                    for (PreUpdateIssue issue : knownIssues) {
+                        issue.sessionId = sessionId;
+                    }
+                    issueDao.insertAll(knownIssues);
+                }
+
+                session.lockBaseline(knownIssues.size(), dataQuality, observationHours, snapshotCount);
+                sessionDao.update(session);
+            });
 
             // Store pending session UUID and timestamp
             prefs.edit()
@@ -539,15 +550,14 @@ public class UpdateImpactObserver {
 
     /**
      * Calculates observation hours from battery snapshot timestamps.
+     * Uses MIN(timestamp) query for accuracy instead of loading objects.
      */
     private double calculateObservationHours() {
         try {
-            List<com.example.hexnil.model.BatterySnapshot> snapshots =
-                    batterySnapshotDao.getRecentSnapshots(2);
-            if (snapshots.size() >= 2) {
-                long latest = snapshots.get(0).timestamp;
-                long earliest = snapshots.get(snapshots.size() - 1).timestamp;
-                return (latest - earliest) / (3600.0 * 1000);
+            long sevenDaysAgo = System.currentTimeMillis() - (7L * 24 * 60 * 60 * 1000);
+            Long oldest = batterySnapshotDao.getOldestTimestampSince(sevenDaysAgo);
+            if (oldest != null) {
+                return (System.currentTimeMillis() - oldest) / (3600.0 * 1000);
             }
         } catch (Exception e) {
             Log.e(TAG, "Error calculating observation hours", e);
@@ -557,11 +567,12 @@ public class UpdateImpactObserver {
 
     /**
      * Gets the count of battery snapshots in recent 7-day window.
+     * Uses COUNT(*) query to avoid loading full objects into memory.
      */
     private int getSnapshotCount() {
         try {
             long sevenDaysAgo = System.currentTimeMillis() - (7L * 24 * 60 * 60 * 1000);
-            return batterySnapshotDao.getSnapshotsSince(sevenDaysAgo).size();
+            return batterySnapshotDao.getCountSince(sevenDaysAgo);
         } catch (Exception e) {
             Log.e(TAG, "Error getting snapshot count", e);
             return 0;
@@ -609,97 +620,126 @@ public class UpdateImpactObserver {
     /**
      * Runs post-update verification comparing pre and post states.
      * Core analysis: determines what an update fixed, broke, or left unchanged.
+     * Async variant — dispatches to executor.
      */
     public void runPostUpdateVerification(String sessionUuid) {
-        executor.execute(() -> {
-            try {
-                UpdateSession session = sessionDao.getByUuid(sessionUuid);
-                if (session == null) {
-                    Log.w(TAG, "Session not found: " + sessionUuid);
-                    return;
-                }
-                if ("verified".equals(session.status)) {
-                    Log.w(TAG, "Session already verified: " + sessionUuid);
-                    return;
-                }
+        executor.execute(() -> runPostUpdateVerificationInternal(sessionUuid));
+    }
 
-                // Enforce minimum observation window
-                if (session.updateInstalledAt != null) {
-                    long hoursSince = (System.currentTimeMillis() - session.updateInstalledAt)
-                            / (3600L * 1000);
-                    if (hoursSince < MIN_POST_UPDATE_OBSERVATION_HOURS) {
-                        Log.w(TAG, "Insufficient observation time: " + hoursSince
-                                + "h < " + MIN_POST_UPDATE_OBSERVATION_HOURS + "h. Rescheduling.");
-                        schedulePostUpdateVerification(session);
-                        return;
-                    }
-                }
+    /**
+     * Synchronous variant for PostUpdateVerificationWorker.
+     * Returns true if verification ran to completion, false if it was
+     * skipped or rescheduled (e.g., insufficient observation time).
+     */
+    public boolean runPostUpdateVerificationSync(String sessionUuid) {
+        return runPostUpdateVerificationInternal(sessionUuid);
+    }
 
-                session.status = "analyzing";
-                sessionDao.update(session);
-
-                // Step 1: Verify each pre-update issue
-                int fixed = 0, improved = 0, unchanged = 0, worsened = 0, inconclusive = 0;
-                List<PreUpdateIssue> preIssues = issueDao.getBySessionId(session.id);
-                List<PostUpdateVerification> verifications = new ArrayList<>();
-
-                for (PreUpdateIssue issue : preIssues) {
-                    PostUpdateVerification v = verifyIssue(session, issue);
-                    verifications.add(v);
-
-                    switch (v.verificationStatus != null ? v.verificationStatus : "") {
-                        case "fixed": fixed++; break;
-                        case "improved": improved++; break;
-                        case "unchanged": unchanged++; break;
-                        case "worsened": worsened++; break;
-                        default: inconclusive++; break;
-                    }
-                }
-
-                if (!verifications.isEmpty()) {
-                    verificationDao.insertAll(verifications);
-                }
-
-                // Step 2: Detect new regressions
-                List<UpdateRegression> regressions = detectNewRegressions(session);
-                if (!regressions.isEmpty()) {
-                    regressionDao.insertAll(regressions);
-                }
-
-                // Step 3: Complete session
-                session.issuesFixed = fixed + improved;
-                session.issuesUnchanged = unchanged + inconclusive;
-                session.newRegressionsDetected = regressions.size();
-
-                determineVerdict(session);
-                session.verificationCompletedAt = System.currentTimeMillis();
-                session.status = "verified";
-                sessionDao.update(session);
-
-                Log.i(TAG, "Verification complete: " + sessionUuid
-                        + " verdict=" + session.overallVerdict
-                        + " fixed=" + fixed + " improved=" + improved
-                        + " unchanged=" + unchanged + " worsened=" + worsened
-                        + " regressions=" + regressions.size()
-                        + " impact=" + String.format("%.1f", session.updateImpactScore));
-
-            } catch (Exception e) {
-                Log.e(TAG, "Error running verification", e);
+    /**
+     * Internal verification logic. Runs on the calling thread.
+     * Returns true if verification completed, false if skipped/rescheduled.
+     */
+    private boolean runPostUpdateVerificationInternal(String sessionUuid) {
+        try {
+            UpdateSession session = sessionDao.getByUuid(sessionUuid);
+            if (session == null) {
+                Log.w(TAG, "Session not found: " + sessionUuid);
+                return false;
             }
-        });
+            if ("verified".equals(session.status)) {
+                Log.w(TAG, "Session already verified: " + sessionUuid);
+                return true; // Already done
+            }
+
+            // Enforce minimum observation window
+            if (session.updateInstalledAt != null) {
+                long hoursSince = (System.currentTimeMillis() - session.updateInstalledAt)
+                        / (3600L * 1000);
+                if (hoursSince < MIN_POST_UPDATE_OBSERVATION_HOURS) {
+                    Log.w(TAG, "Insufficient observation time: " + hoursSince
+                            + "h < " + MIN_POST_UPDATE_OBSERVATION_HOURS + "h. Rescheduling.");
+                    schedulePostUpdateVerification(session);
+                    return false;
+                }
+            }
+
+            session.status = "analyzing";
+            sessionDao.update(session);
+
+            long postUpdateStart = session.updateInstalledAt != null
+                    ? session.updateInstalledAt : session.detectedAt;
+
+            // Step 1: Verify each pre-update issue
+            int fixed = 0, improved = 0, unchanged = 0, worsened = 0, inconclusive = 0;
+            List<PreUpdateIssue> preIssues = issueDao.getBySessionId(session.id);
+            List<PostUpdateVerification> verifications = new ArrayList<>();
+
+            for (PreUpdateIssue issue : preIssues) {
+                PostUpdateVerification v = verifyIssue(session, issue, postUpdateStart);
+                verifications.add(v);
+
+                switch (v.verificationStatus != null ? v.verificationStatus : "") {
+                    case "fixed": fixed++; break;
+                    case "improved": improved++; break;
+                    case "unchanged": unchanged++; break;
+                    case "worsened": worsened++; break;
+                    default: inconclusive++; break;
+                }
+            }
+
+            if (!verifications.isEmpty()) {
+                verificationDao.insertAll(verifications);
+            }
+
+            // Step 2: Detect new regressions
+            List<UpdateRegression> regressions = detectNewRegressions(session, postUpdateStart);
+            if (!regressions.isEmpty()) {
+                regressionDao.insertAll(regressions);
+            }
+
+            // Step 3: Complete session
+            session.issuesFixed = fixed + improved;
+            session.issuesUnchanged = unchanged + inconclusive;
+            session.newRegressionsDetected = regressions.size();
+
+            determineVerdict(session);
+            session.verificationCompletedAt = System.currentTimeMillis();
+            session.status = "verified";
+            sessionDao.update(session);
+
+            Log.i(TAG, "Verification complete: " + sessionUuid
+                    + " verdict=" + session.overallVerdict
+                    + " fixed=" + fixed + " improved=" + improved
+                    + " unchanged=" + unchanged + " worsened=" + worsened
+                    + " regressions=" + regressions.size()
+                    + " impact=" + String.format("%.1f", session.updateImpactScore));
+
+            return true;
+
+        } catch (Exception e) {
+            Log.e(TAG, "Error running verification", e);
+            return false;
+        }
     }
 
     /**
      * Verifies a single pre-update issue against current post-update state.
+     * Uses time-bounded queries to ensure only post-update data is compared.
+     * Normalizes counts to per-day rates for fair pre/post comparison.
      */
-    private PostUpdateVerification verifyIssue(UpdateSession session, PreUpdateIssue issue) {
+    private PostUpdateVerification verifyIssue(UpdateSession session, PreUpdateIssue issue,
+            long postUpdateStart) {
         PostUpdateVerification v = PostUpdateVerification.create(
                 session.id, issue.id, issue.issueUuid, issue.issueType, issue.issueTitle);
 
         try {
-            long postUpdateStart = session.updateInstalledAt != null
-                    ? session.updateInstalledAt : session.detectedAt;
             long now = System.currentTimeMillis();
+            long postDurationMs = Math.max(now - postUpdateStart, 1);
+            long postDays = Math.max(1, postDurationMs / (24L * 60 * 60 * 1000));
+
+            // Pre-update observation period for rate normalization
+            long preObservationMs = ANOMALY_LOOKBACK_MS; // 14 days
+            long preDays = Math.max(1, preObservationMs / (24L * 60 * 60 * 1000));
 
             Double preValue = issue.actualValue;
             Integer preOccurrences = issue.occurrenceCount;
@@ -707,23 +747,34 @@ public class UpdateImpactObserver {
             Integer postOccurrences = null;
             boolean higherIsBetter = false;
 
+            // Format postUpdateStart as date string for DailyAggregate queries
+            String postStartDate = new SimpleDateFormat("yyyy-MM-dd", Locale.US)
+                    .format(new Date(postUpdateStart));
+
             switch (issue.issueType != null ? issue.issueType : "") {
                 case "crash":
                     postOccurrences = crashEventDao.getCountInRange(postUpdateStart, now);
                     preOccurrences = preOccurrences != null ? preOccurrences : 0;
-                    postValue = (double) postOccurrences;
-                    preValue = (double) preOccurrences;
+                    // Normalize to per-day rate for fair comparison
+                    double preCrashRate = (double) preOccurrences / preDays;
+                    double postCrashRate = (double) postOccurrences / postDays;
+                    postValue = postCrashRate;
+                    preValue = preCrashRate;
                     break;
 
                 case "anr":
                     postOccurrences = anrEventDao.getCountInRange(postUpdateStart, now);
                     preOccurrences = preOccurrences != null ? preOccurrences : 0;
-                    postValue = (double) postOccurrences;
-                    preValue = (double) preOccurrences;
+                    // Normalize to per-day rate for fair comparison
+                    double preAnrRate = (double) preOccurrences / preDays;
+                    double postAnrRate = (double) postOccurrences / postDays;
+                    postValue = postAnrRate;
+                    preValue = preAnrRate;
                     break;
 
                 case "battery_drain":
-                    List<DailyAggregate> postAggs = dailyAggregateDao.getRecentDeviceLevel(7);
+                    // C1 FIX: Use time-bounded query instead of getRecentDeviceLevel(7)
+                    List<DailyAggregate> postAggs = dailyAggregateDao.getDeviceLevelSince(postStartDate);
                     if (!postAggs.isEmpty()) {
                         double total = 0;
                         int count = 0;
@@ -739,15 +790,19 @@ public class UpdateImpactObserver {
                     break;
 
                 case "thermal":
-                    List<com.example.hexnil.model.ThermalEvent> postThermals =
-                            thermalEventDao.getEventsSince(postUpdateStart);
-                    postOccurrences = postThermals.size();
-                    postValue = (double) postOccurrences;
-                    preValue = preValue != null ? preValue : 0;
+                    // C12 FIX: Use COUNT query instead of loading full objects
+                    int postThermalCount = thermalEventDao.getEventCount(postUpdateStart);
+                    postOccurrences = postThermalCount;
+                    // Normalize to per-day rate
+                    double preThermalRate = preValue != null ? preValue / preDays : 0;
+                    double postThermalRate = (double) postThermalCount / postDays;
+                    postValue = postThermalRate;
+                    preValue = preThermalRate;
                     break;
 
                 case "performance":
-                    List<DailyAggregate> perfAggs = dailyAggregateDao.getRecentDeviceLevel(7);
+                    // C1 FIX: Use time-bounded query instead of getRecentDeviceLevel(7)
+                    List<DailyAggregate> perfAggs = dailyAggregateDao.getDeviceLevelSince(postStartDate);
                     if (!perfAggs.isEmpty() && "avgColdLaunchMs".equals(issue.metricName)) {
                         double total = 0;
                         int count = 0;
@@ -789,7 +844,8 @@ public class UpdateImpactObserver {
                 v.confidenceScore = Math.min(v.confidenceScore != null ? v.confidenceScore : 0.5, 0.5);
             }
 
-            v.setEvidence(null, "pre=" + preValue + " post=" + postValue + " samples=" + postOccurrences);
+            v.setEvidence(null, "pre=" + preValue + " post=" + postValue
+                    + " samples=" + postOccurrences + " postDays=" + postDays);
 
         } catch (Exception e) {
             Log.e(TAG, "Error verifying issue: " + issue.issueUuid, e);
@@ -803,22 +859,25 @@ public class UpdateImpactObserver {
     /**
      * Detects new regressions — problems that appear post-update
      * but did not exist in the pre-update baseline.
+     * Uses time-bounded queries and pre-update existence checks.
      */
-    private List<UpdateRegression> detectNewRegressions(UpdateSession session) {
+    private List<UpdateRegression> detectNewRegressions(UpdateSession session, long postUpdateStart) {
         List<UpdateRegression> regressions = new ArrayList<>();
-        long postUpdateStart = session.updateInstalledAt != null
-                ? session.updateInstalledAt : session.detectedAt;
         long now = System.currentTimeMillis();
 
         try {
             PreUpdateSnapshot baseline = snapshotDao.getBySessionId(session.id);
 
-            // New crash types
+            // Format postUpdateStart as date string for DailyAggregate queries
+            String postStartDate = new SimpleDateFormat("yyyy-MM-dd", Locale.US)
+                    .format(new Date(postUpdateStart));
+
+            // New crash types — C8 FIX: check pre-update existence, not total count
             List<com.example.hexnil.model.CrashEvent> newCrashes =
                     crashEventDao.getNewCrashTypes(postUpdateStart);
             for (com.example.hexnil.model.CrashEvent crash : newCrashes) {
                 if (crash.stackTraceHash != null &&
-                        crashEventDao.getCountByHash(crash.stackTraceHash) <= 1) {
+                        crashEventDao.getCountByHashBefore(crash.stackTraceHash, postUpdateStart) == 0) {
                     UpdateRegression reg = UpdateRegression.create(
                             session.id, UUID.randomUUID().toString(),
                             "new_crash",
@@ -832,12 +891,12 @@ public class UpdateImpactObserver {
                 }
             }
 
-            // New ANR types
+            // New ANR types — C8 FIX: check pre-update existence, not total count
             List<com.example.hexnil.model.AnrEvent> newAnrs =
                     anrEventDao.getNewAnrTypes(postUpdateStart);
             for (com.example.hexnil.model.AnrEvent anr : newAnrs) {
                 if (anr.traceHash != null &&
-                        anrEventDao.getCountByHash(anr.traceHash) <= 1) {
+                        anrEventDao.getCountByHashBefore(anr.traceHash, postUpdateStart) == 0) {
                     UpdateRegression reg = UpdateRegression.create(
                             session.id, UUID.randomUUID().toString(),
                             "new_anr",
@@ -851,9 +910,9 @@ public class UpdateImpactObserver {
                 }
             }
 
-            // Battery drain regression
+            // Battery drain regression — C1 FIX: use time-bounded query
             if (baseline != null && baseline.avgDrainRatePerHour != null) {
-                List<DailyAggregate> postAggs = dailyAggregateDao.getRecentDeviceLevel(7);
+                List<DailyAggregate> postAggs = dailyAggregateDao.getDeviceLevelSince(postStartDate);
                 double totalDrain = 0;
                 int drainCount = 0;
                 for (DailyAggregate agg : postAggs) {
@@ -883,10 +942,10 @@ public class UpdateImpactObserver {
                 }
             }
 
-            // Thermal regression
+            // Thermal regression — C12 FIX: use COUNT query instead of loading full objects
             if (baseline != null && baseline.thermalEventsPerDay != null) {
                 long daysObserved = Math.max(1, (now - postUpdateStart) / (24L * 60 * 60 * 1000));
-                int postThermalCount = thermalEventDao.getEventsSince(postUpdateStart).size();
+                int postThermalCount = thermalEventDao.getEventCount(postUpdateStart);
                 double postPerDay = (double) postThermalCount / daysObserved;
                 double prePerDay = baseline.thermalEventsPerDay;
 

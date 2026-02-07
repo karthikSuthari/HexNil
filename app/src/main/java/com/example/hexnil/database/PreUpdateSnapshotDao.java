@@ -17,7 +17,7 @@ import java.util.List;
 @Dao
 public interface PreUpdateSnapshotDao {
 
-    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    @Insert(onConflict = OnConflictStrategy.ABORT)
     long insert(PreUpdateSnapshot snapshot);
 
     @Update

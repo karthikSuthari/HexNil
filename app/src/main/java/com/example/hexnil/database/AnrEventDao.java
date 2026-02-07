@@ -113,6 +113,9 @@ public interface AnrEventDao {
     @Query("SELECT COUNT(*) FROM anr_events WHERE traceHash = :hash")
     int getCountByHash(String hash);
 
+    @Query("SELECT COUNT(*) FROM anr_events WHERE traceHash = :hash AND timestamp < :before")
+    int getCountByHashBefore(String hash, long before);
+
     // =========================================================================
     // Version-Based Check (for regression after update)
     // =========================================================================

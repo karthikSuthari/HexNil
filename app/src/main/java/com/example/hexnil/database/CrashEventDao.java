@@ -113,6 +113,9 @@ public interface CrashEventDao {
     @Query("SELECT COUNT(*) FROM crash_events WHERE stackTraceHash = :hash")
     int getCountByHash(String hash);
 
+    @Query("SELECT COUNT(*) FROM crash_events WHERE stackTraceHash = :hash AND timestamp < :before")
+    int getCountByHashBefore(String hash, long before);
+
     // =========================================================================
     // Distinct Packages
     // =========================================================================
