@@ -2,35 +2,13 @@
 # Include branch coverage
 branch = True
 
-# Only include specific files that we have tests for
-source = .
-include =
-    backend/__init__.py
-    backend/ingest_spool.py
+# Measure coverage for the backend package
+source = backend
 
-# Omit everything else
+# Omit files without tests
 omit =
     backend/hexnil_fastapi_server.py
     backend/hexnil_ai_pipeline.py
-    test_*.py
-    **/test_*.py
-    tests/*
-    conftest.py
-    analyze_*.py
-    check_*.py
-    apply_*.py
-    snapshot_*.py
-    inspect_*.py
-    query_*.py
-    run_*.py
-    smoke_test_pipeline.py
-    setup_database.py
-    hexnil_auto_sync.py
-    .venv/*
-    venv/*
-    build/*
-    __pycache__/*
-    .pytest_cache/*
 
 [report]
 # Exclude lines from coverage

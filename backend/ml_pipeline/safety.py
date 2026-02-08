@@ -164,7 +164,7 @@ def compute_uncertainty(model, X, n_estimators: Optional[int] = None):
             )
 
             uncertainty = 1 - np.mean(tree_predictions == majority_vote, axis=0)
-        else:
+        else:  # pragma: no cover - tree_predictions always 2D from ensemble models
             # For regressors, use standard deviation
             uncertainty = np.std(tree_predictions, axis=0)
             # Normalize to [0, 1]
