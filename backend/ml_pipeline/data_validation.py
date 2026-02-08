@@ -119,10 +119,10 @@ class DataValidator:
             self._check_baseline_stability(dataset),
         ]
 
-        confidence = self._compute_confidence(checks)
+        confidence = float(self._compute_confidence(checks))
         issues = [c.issue for c in checks if not c.passed and c.issue]
 
-        passed = confidence >= 60.0  # Minimum threshold
+        passed = bool(confidence >= 60.0)  # Minimum threshold
 
         logger.info(
             f"Validation: {problem_type}, confidence={confidence:.1f}, "
@@ -294,10 +294,10 @@ class DataValidator:
 
         # Weighted average of check scores
         weights = {
-            "completeness": 0.30,
-            "temporal_continuity": 0.20,
-            "value_ranges": 0.20,
-            "corruption": 0.20,
+            "completeness": 0.45,
+            "temporal_continuity": 0.10,
+            "value_ranges": 0.10,
+            "corruption": 0.25,
             "baseline_stability": 0.10,
         }
 
